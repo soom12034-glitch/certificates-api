@@ -1,0 +1,96 @@
+<Window x:Class="BlueMax.Presentation.Wpf.Views.MaintenanceReceiptStickerWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="استيكر استلام الصيانة"
+        Width="980"
+        Height="680"
+        WindowStartupLocation="CenterOwner"
+        FlowDirection="RightToLeft"
+        Background="White">
+    <Grid Margin="12">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="320" />
+            <ColumnDefinition Width="12" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+
+        <Border Grid.Column="0" Background="#1F2937" CornerRadius="10" Padding="12">
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <StackPanel>
+                    <TextBlock Text="إعدادات استيكر الاستلام" Foreground="White" FontSize="18" FontWeight="Bold" Margin="0,0,0,12" />
+
+                    <TextBlock Text="بيانات الاستيكر" Foreground="White" FontWeight="SemiBold" Margin="0,0,0,6" />
+
+                    <TextBlock Text="اسم العميل" Foreground="#D1D5DB" FontSize="13" />
+                    <TextBox Text="{Binding StickerCustomerName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" MinHeight="30" Margin="0,2,0,8" />
+
+                    <TextBlock Text="نوع الجهاز" Foreground="#D1D5DB" FontSize="13" />
+                    <TextBox Text="{Binding StickerDeviceType, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" MinHeight="30" Margin="0,2,0,8" />
+
+                    <TextBlock Text="الموديل" Foreground="#D1D5DB" FontSize="13" />
+                    <TextBox Text="{Binding StickerModel, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" MinHeight="30" Margin="0,2,0,8" />
+
+                    <TextBlock Text="سيريال الجهاز" Foreground="#D1D5DB" FontSize="13" />
+                    <TextBox Text="{Binding StickerSerialNumber, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" MinHeight="30" Margin="0,2,0,8" />
+
+                    <TextBlock Text="تاريخ الاستلام" Foreground="#D1D5DB" FontSize="13" />
+                    <DatePicker SelectedDate="{Binding StickerReceivedDate, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Margin="0,2,0,12" />
+
+                    <TextBlock Text="الأبعاد الحقيقية (mm)" Foreground="White" FontWeight="SemiBold" Margin="0,0,0,6" />
+                    <Grid Margin="0,0,0,4">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel Grid.Column="0" Margin="0,0,6,0">
+                            <TextBlock Text="العرض (مم)" Foreground="#D1D5DB" FontSize="13" />
+                            <TextBox Text="{Binding StickerWidthMm, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, StringFormat=F1}" MinHeight="30" Margin="0,2,0,0" />
+                        </StackPanel>
+
+                        <StackPanel Grid.Column="1" Margin="6,0,0,0">
+                            <TextBlock Text="الارتفاع (مم)" Foreground="#D1D5DB" FontSize="13" />
+                            <TextBox Text="{Binding StickerHeightMm, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, StringFormat=F1}" MinHeight="30" Margin="0,2,0,0" />
+                        </StackPanel>
+                    </Grid>
+                    <TextBlock Text="الافتراضي: 41 × 21 مم" Foreground="#9CA3AF" FontSize="12" Margin="0,0,0,12" />
+
+                    <TextBlock Text="الطابعة الخاصة باستيكر الاستلام" Foreground="White" Margin="0,0,0,4" />
+                    <ComboBox ItemsSource="{Binding InstalledPrinters}"
+                              SelectedItem="{Binding SelectedPrinterName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                              MinHeight="30"
+                              Margin="0,0,0,8" />
+
+                    <Button Content="اختيار طابعة"
+                            Command="{Binding ChoosePrinterCommand}"
+                            Margin="0,0,0,12"
+                            Height="32" />
+
+                    <TextBlock Text="تكبير المحتوى" Foreground="White" Margin="0,0,0,4" />
+                    <Slider Minimum="0.8" Maximum="1.3" TickFrequency="0.01" IsSnapToTickEnabled="True"
+                            Value="{Binding ContentScale, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                    <TextBlock Text="{Binding ContentScale, StringFormat=F2}" Foreground="#D1D5DB" Margin="0,2,0,12" />
+
+                    <TextBlock Text="إزاحة أفقية" Foreground="White" Margin="0,0,0,4" />
+                    <Slider Minimum="-30" Maximum="30" TickFrequency="1" IsSnapToTickEnabled="True"
+                            Value="{Binding ContentOffsetX, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                    <TextBlock Text="{Binding ContentOffsetX, StringFormat=F0}" Foreground="#D1D5DB" Margin="0,2,0,12" />
+
+                    <TextBlock Text="إزاحة رأسية" Foreground="White" Margin="0,0,0,4" />
+                    <Slider Minimum="-30" Maximum="30" TickFrequency="1" IsSnapToTickEnabled="True"
+                            Value="{Binding ContentOffsetY, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                    <TextBlock Text="{Binding ContentOffsetY, StringFormat=F0}" Foreground="#D1D5DB" Margin="0,2,0,14" />
+
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                        <Button Content="معاينة حقيقية" Command="{Binding RefreshPreviewCommand}" Width="130" Height="32" Margin="0,0,8,0" />
+                        <Button Content="طباعة الاستيكر" Command="{Binding PrintCommand}" Width="130" Height="32" />
+                    </StackPanel>
+                </StackPanel>
+            </ScrollViewer>
+        </Border>
+
+        <Border Grid.Column="2" BorderBrush="#E5E7EB" BorderThickness="1" CornerRadius="10" Padding="8" Background="White">
+            <DocumentViewer Document="{Binding PreviewDocument}" />
+        </Border>
+    </Grid>
+</Window>

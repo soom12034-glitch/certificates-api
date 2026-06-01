@@ -1,0 +1,92 @@
+<Window x:Class="BlueMax.Presentation.Wpf.Views.MaintenanceReceiptWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:viewmodels="clr-namespace:BlueMax.Presentation.Wpf.ViewModels"
+        Title="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=DeviceReceipt}"
+        Width="900"
+        Height="700"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="CanResize"
+        FlowDirection="RightToLeft"
+        Background="White">
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <Border Grid.Row="0" BorderBrush="#22000000" BorderThickness="1" CornerRadius="8" Padding="12" Margin="0,0,0,10">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="200" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=Printer}" VerticalAlignment="Center" Margin="0,0,10,0" />
+                <ComboBox Grid.Column="1" ItemsSource="{Binding InstalledPrinters}" SelectedItem="{Binding SelectedPrinterName}" Height="30" />
+                <Button Grid.Column="2" Content="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=SelectPrinter}" Width="100" Height="32" Margin="10,0,0,0" Command="{Binding ChoosePrinterCommand}" />
+                <StackPanel Grid.Column="3" Orientation="Horizontal" HorizontalAlignment="Right">
+                    <Button Content="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=RefreshPreview}" Width="110" Height="32" Margin="0,0,8,0" Command="{Binding RefreshPreviewCommand}" />
+                    <Button Content="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=PrintReceiptWindow}" Width="90" Height="32" Margin="0,0,8,0" Command="{Binding PrintCommand}" />
+                </StackPanel>
+                <Button Grid.Column="4" Content="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=CloseReceipt}" Width="80" Height="32" IsCancel="True" />
+
+                <WrapPanel Grid.Row="1" Grid.ColumnSpan="5" Margin="0,10,0,0" Orientation="Horizontal">
+                    <CheckBox Content="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=UseLetterhead}" IsChecked="{Binding IsLetterhead}" VerticalAlignment="Center" Margin="0,0,20,10" FontWeight="SemiBold" />
+                    
+                    <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=VerticalOffset}" VerticalAlignment="Center" Margin="0,0,6,10" />
+                    <Slider Width="100" Minimum="-80" Maximum="80" Value="{Binding ContentOffsetY}" VerticalAlignment="Center" Margin="0,0,20,10" />
+                    
+                    <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=HorizontalOffset}" VerticalAlignment="Center" Margin="0,0,6,10" />
+                    <Slider Width="100" Minimum="-80" Maximum="80" Value="{Binding ContentOffsetX}" VerticalAlignment="Center" Margin="0,0,20,10" />
+                    
+                    <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=HeaderMargin}" VerticalAlignment="Center" Margin="0,0,6,10" />
+                    <Slider Width="100" Minimum="0" Maximum="200" Value="{Binding TopMargin}" IsEnabled="{Binding IsLetterhead}" VerticalAlignment="Center" Margin="0,0,20,10" />
+                    
+                    <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=FooterMargin}" VerticalAlignment="Center" Margin="0,0,6,10" />
+                    <Slider Width="100" Minimum="0" Maximum="200" Value="{Binding BottomMargin}" VerticalAlignment="Center" Margin="0,0,20,10" />
+
+                    <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=FrameColor}" VerticalAlignment="Center" Margin="0,0,6,10" />
+                    <ComboBox Width="120" ItemsSource="{Binding FrameColors}" SelectedItem="{Binding SelectedFrameColor}" Height="28" VerticalAlignment="Center" Margin="0,0,20,10" />
+                </WrapPanel>
+            </Grid>
+        </Border>
+
+        <Border Grid.Row="1" BorderBrush="#22000000" BorderThickness="1" CornerRadius="8" Padding="8">
+            <DockPanel>
+                <StackPanel Orientation="Horizontal" DockPanel.Dock="Top" Margin="0,0,0,8">
+                    <Button Content="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=RefreshPreview}"
+                            Command="{Binding RefreshPreviewCommand}"
+                            Height="32" Margin="0,0,8,0" />
+                    <Button Content="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=PrintReceiptWindow}"
+                            Command="{Binding PrintCommand}"
+                            Height="32" Margin="0,0,16,0" />
+
+                    <Button Content="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=ZoomIn}" Width="40" Height="32"
+                            Command="{x:Static NavigationCommands.IncreaseZoom}"
+                            CommandTarget="{Binding ElementName=ReceiptDocumentViewer}" Margin="0,0,6,0" />
+                    <Button Content="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=ZoomOut}" Width="40" Height="32"
+                            Command="{x:Static NavigationCommands.DecreaseZoom}"
+                            CommandTarget="{Binding ElementName=ReceiptDocumentViewer}" Margin="0,0,6,0" />
+                    <Button Content="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=FitWidth}" Height="32"
+                            Command="{x:Static DocumentViewer.FitToWidthCommand}"
+                            CommandTarget="{Binding ElementName=ReceiptDocumentViewer}" Margin="0,0,6,0" />
+                    <Button Content="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=FitPage}" Height="32"
+                            Command="{x:Static DocumentViewer.FitToMaxPagesAcrossCommand}"
+                            CommandTarget="{Binding ElementName=ReceiptDocumentViewer}" />
+                </StackPanel>
+
+                <DocumentViewer x:Name="ReceiptDocumentViewer"
+                                Document="{Binding PreviewDocument}"
+                                Loaded="DocumentViewer_OnLoaded" />
+            </DockPanel>
+        </Border>
+    </Grid>
+</Window>

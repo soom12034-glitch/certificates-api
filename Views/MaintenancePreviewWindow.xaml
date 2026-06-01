@@ -1,0 +1,110 @@
+<Window x:Class="BlueMax.Presentation.Wpf.Views.MaintenancePreviewWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="معاينة أمر الصيانة"
+        Width="820"
+        Height="640"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="CanResize"
+        FlowDirection="RightToLeft"
+        Background="White">
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <DockPanel Grid.Row="0" Margin="0,0,0,10">
+            <TextBlock Text="معاينة أمر الصيانة"
+                       FontSize="18"
+                       FontWeight="SemiBold"
+                       VerticalAlignment="Center"
+                       DockPanel.Dock="Right" />
+            <Button Content="إغلاق" Width="120" Height="34" HorizontalAlignment="Left" IsCancel="True" />
+        </DockPanel>
+
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+
+                    <GroupBox Header="بيانات العميل" Margin="0,0,10,10">
+                        <Grid Margin="10">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="150" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="اسم العميل" VerticalAlignment="Center" />
+                            <TextBlock Grid.Column="1" Text="{Binding CustomerName}" FontWeight="SemiBold" VerticalAlignment="Center" />
+                            <TextBlock Grid.Row="1" Text="الهاتف" Margin="0,8,0,0" VerticalAlignment="Center" />
+                            <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding CustomerPhone}" Margin="0,8,0,0" VerticalAlignment="Center" />
+                        </Grid>
+                    </GroupBox>
+
+                    <GroupBox Grid.Column="1" Header="بيانات الجهاز" Margin="10,0,0,10">
+                        <Grid Margin="10">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="150" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="نوع الجهاز" VerticalAlignment="Center" />
+                            <TextBlock Grid.Column="1" Text="{Binding DeviceType}" FontWeight="SemiBold" VerticalAlignment="Center" />
+                            <TextBlock Grid.Row="1" Text="الموديل" Margin="0,8,0,0" VerticalAlignment="Center" />
+                            <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding Model}" Margin="0,8,0,0" VerticalAlignment="Center" />
+                            <TextBlock Grid.Row="2" Text="الرقم التسلسلي" Margin="0,8,0,0" VerticalAlignment="Center" />
+                            <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding SerialNumber}" Margin="0,8,0,0" VerticalAlignment="Center" />
+                            <TextBlock Grid.Row="3" Text="الملحقات" Margin="0,8,0,0" VerticalAlignment="Center" />
+                            <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding Accessories}" Margin="0,8,0,0" TextWrapping="Wrap" VerticalAlignment="Center" />
+                        </Grid>
+                    </GroupBox>
+                </Grid>
+
+                <GroupBox Header="الحالة والتواريخ" Margin="0,0,0,10">
+                    <Grid Margin="10">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="150" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="150" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+
+                        <TextBlock Text="الحالة" VerticalAlignment="Center" />
+                        <TextBlock Grid.Column="1" Text="{Binding Status}" FontWeight="SemiBold" VerticalAlignment="Center" />
+                        <TextBlock Grid.Column="2" Text="تاريخ الاستلام" VerticalAlignment="Center" />
+                        <TextBlock Grid.Column="3" Text="{Binding ReceivedDate, StringFormat=yyyy-MM-dd}" VerticalAlignment="Center" />
+
+                        <TextBlock Grid.Row="1" Text="تاريخ التحديث" Margin="0,8,0,0" VerticalAlignment="Center" />
+                        <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding UpdatedDate, StringFormat=yyyy-MM-dd}" Margin="0,8,0,0" VerticalAlignment="Center" />
+                        <TextBlock Grid.Row="1" Grid.Column="2" Text="الإجمالي" Margin="0,8,0,0" VerticalAlignment="Center" />
+                        <TextBlock Grid.Row="1" Grid.Column="3" Text="{Binding TotalCost}" Margin="0,8,0,0" VerticalAlignment="Center" />
+                    </Grid>
+                </GroupBox>
+
+                <GroupBox Header="الشكوى" Margin="0,0,0,10">
+                    <TextBlock Margin="10" Text="{Binding Complaint}" TextWrapping="Wrap" />
+                </GroupBox>
+
+                <GroupBox Header="التقرير الفني">
+                    <TextBlock Margin="10" Text="{Binding TechnicalReport}" TextWrapping="Wrap" />
+                </GroupBox>
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</Window>

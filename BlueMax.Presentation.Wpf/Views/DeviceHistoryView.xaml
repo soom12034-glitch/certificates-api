@@ -1,0 +1,48 @@
+<UserControl x:Class="BlueMax.Presentation.Wpf.Views.DeviceHistoryView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:viewmodels="clr-namespace:BlueMax.Presentation.Wpf.ViewModels"
+             Background="Transparent"
+             FlowDirection="RightToLeft">
+    <UserControl.Resources>
+    </UserControl.Resources>
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,0,0,10">
+            <Button Style="{StaticResource CapsuleButtonStyle}"
+                    Command="{Binding DataContext.ShowHomeCommand, RelativeSource={RelativeSource AncestorType=Window}}">
+                <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=Back}" />
+            </Button>
+        </StackPanel>
+        <Grid Grid.Row="1">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+            <GroupBox Header="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=SerialSearch}">
+                <StackPanel Margin="10" Orientation="Horizontal">
+                    <TextBox Width="300" Text="{Binding SerialQuery, UpdateSourceTrigger=PropertyChanged}"
+                             ToolTip="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=SerialSearch}" />
+                    <Button Content="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=Search}" Margin="10,0,0,0" Command="{Binding SearchHistoryCommand}" />
+                </StackPanel>
+            </GroupBox>
+            <GroupBox Grid.Row="1" Header="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=DeviceHistoryField}" Margin="0,10,0,0">
+                <DataGrid Margin="10"
+                          ItemsSource="{Binding Timeline}"
+                          AutoGenerateColumns="False"
+                          IsReadOnly="True"
+                          CanUserAddRows="False">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=DateField}" Binding="{Binding Date, StringFormat=yyyy-MM-dd}" Width="120" />
+                        <DataGridTextColumn Header="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=HistoryType}" Binding="{Binding Type}" Width="140" />
+                        <DataGridTextColumn Header="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=HistoryTitle}" Binding="{Binding Title}" Width="*" />
+                        <DataGridTextColumn Header="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=ClientNotes}" Binding="{Binding Notes}" Width="2*" />
+                    </DataGrid.Columns>
+                </DataGrid>
+            </GroupBox>
+        </Grid>
+    </Grid>
+</UserControl>

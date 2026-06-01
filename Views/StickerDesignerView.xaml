@@ -1,0 +1,426 @@
+<UserControl x:Class="BlueMax.Presentation.Wpf.Views.StickerDesignerView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:vm="clr-namespace:BlueMax.Presentation.Wpf.ViewModels"
+             xmlns:converters="clr-namespace:BlueMax.Presentation.Wpf.Converters"
+             xmlns:views="clr-namespace:BlueMax.Presentation.Wpf.Views"
+             mc:Ignorable="d"
+             d:DataContext="{d:DesignInstance Type=vm:StickerDesignerViewModel}"
+             Background="#F5F5F5"
+             FlowDirection="RightToLeft">
+    <UserControl.Resources>
+        <converters:BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
+        <converters:QrCodeConverter x:Key="QrCodeConverter"/>
+        
+        <!-- Item Templates -->
+        <DataTemplate x:Key="LogoTemplate">
+            <Image Source="{Binding DisplayText}" Stretch="Uniform"/>
+        </DataTemplate>
+        <DataTemplate x:Key="TextTemplate">
+            <TextBlock Text="{Binding DisplayText}" FontSize="{Binding FontSize}" TextWrapping="Wrap" HorizontalAlignment="Stretch" VerticalAlignment="Top">
+                <TextBlock.Style>
+                    <Style TargetType="TextBlock">
+                        <Setter Property="TextAlignment" Value="Left"/>
+                        <Setter Property="FontWeight" Value="Normal"/>
+                        <Setter Property="FlowDirection" Value="LeftToRight"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding Key}" Value="company">
+                                <Setter Property="TextAlignment" Value="Center"/>
+                                <Setter Property="FontWeight" Value="Bold"/>
+                                <Setter Property="FlowDirection" Value="RightToLeft"/>
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding Key}" Value="header">
+                                <Setter Property="TextAlignment" Value="Center"/>
+                                <Setter Property="FontWeight" Value="SemiBold"/>
+                                <Setter Property="FlowDirection" Value="RightToLeft"/>
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding Key}" Value="model_label">
+                                <Setter Property="FontWeight" Value="Bold"/>
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding Key}" Value="serial_label">
+                                <Setter Property="FontWeight" Value="Bold"/>
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding Key}" Value="cal_label">
+                                <Setter Property="FontWeight" Value="Bold"/>
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding Key}" Value="exp_label">
+                                <Setter Property="FontWeight" Value="Bold"/>
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding Key}" Value="address">
+                                <Setter Property="TextAlignment" Value="Center"/>
+                                <Setter Property="FlowDirection" Value="RightToLeft"/>
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding Key}" Value="phone">
+                                <Setter Property="TextAlignment" Value="Center"/>
+                                <Setter Property="FlowDirection" Value="LeftToRight"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </TextBlock.Style>
+            </TextBlock>
+        </DataTemplate>
+        <DataTemplate x:Key="LineTemplate">
+            <Rectangle Width="{Binding Width}" Height="{Binding Height}" Fill="Black"/>
+        </DataTemplate>
+        <DataTemplate x:Key="QrTemplate">
+            <Image Source="{Binding DisplayText, Converter={StaticResource QrCodeConverter}}" Stretch="Uniform"/>
+        </DataTemplate>
+        
+        <views:StickerItemTemplateSelector x:Key="StickerTemplateSelector"
+                                           LogoTemplate="{StaticResource LogoTemplate}"
+                                           QrTemplate="{StaticResource QrTemplate}"
+                                           LineTemplate="{StaticResource LineTemplate}"
+                                           TextTemplate="{StaticResource TextTemplate}"/>
+        
+        <Style x:Key="DesignerThumbStyle" TargetType="Thumb">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Thumb">
+                        <Border Background="{TemplateBinding Background}" 
+                                BorderBrush="{TemplateBinding BorderBrush}" 
+                                BorderThickness="{TemplateBinding BorderThickness}"/>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="BorderBrush" Value="#16A085"/>
+                    <Setter Property="Background" Value="#1016A085"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style x:Key="ResizeThumbStyle" TargetType="Thumb" BasedOn="{StaticResource DesignerThumbStyle}">
+            <Setter Property="Width" Value="10"/>
+            <Setter Property="Height" Value="10"/>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#16A085"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style TargetType="GroupBox" BasedOn="{StaticResource {x:Type GroupBox}}">
+            <Setter Property="Margin" Value="0,0,0,15"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="BorderBrush" Value="#E0E0E0"/>
+        </Style>
+
+        <Style TargetType="TextBox" BasedOn="{StaticResource {x:Type TextBox}}">
+            <Setter Property="Margin" Value="0,5,0,10"/>
+            <Setter Property="Height" Value="45"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+
+        <Style TargetType="TextBlock" x:Key="LabelStyle">
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="#546E7A"/>
+            <Setter Property="Margin" Value="0,5,0,0"/>
+        </Style>
+
+        <Style x:Key="ActionButtonStyle" TargetType="Button">
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Padding" Value="12,6"/>
+            <Setter Property="Margin" Value="6"/>
+            <Setter Property="MinHeight" Value="38"/>
+            <Setter Property="MinWidth" Value="120"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" CornerRadius="10">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="PillToggleStyle" TargetType="ToggleButton">
+            <Setter Property="Background" Value="#E2E8F0"/>
+            <Setter Property="BorderBrush" Value="#CBD5E1"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Foreground" Value="#0F172A"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Padding" Value="10,4"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ToggleButton">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="16">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsChecked" Value="True">
+                    <Setter Property="Background" Value="#16A085"/>
+                    <Setter Property="BorderBrush" Value="#0F766E"/>
+                    <Setter Property="Foreground" Value="White"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+    </UserControl.Resources>
+
+    <Grid FlowDirection="LeftToRight" Background="#F3F4F6">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="320"/>
+            <ColumnDefinition Width="6"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+        <!-- Tools Panel (Left) -->
+        <Border Grid.Column="0" Background="White" Margin="16,16,8,16" CornerRadius="12">
+            <Border.Effect>
+                <DropShadowEffect BlurRadius="18" Color="#CBD5E1" Opacity="0.35" ShadowDepth="2"/>
+            </Border.Effect>
+            <DockPanel FlowDirection="RightToLeft">
+                <Border DockPanel.Top Background="#F0F4F8" Padding="14" CornerRadius="12,12,0,0">
+                    <StackPanel>
+                        <TextBlock Text="مصمم الملصق" FontSize="16" FontWeight="Bold" Foreground="#0F172A"/>
+                        <TextBlock Text="أدوات واضحة ومعاينة مطابقة للطباعة" FontSize="12" Foreground="#64748B"/>
+                    </StackPanel>
+                </Border>
+
+                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                    <StackPanel Margin="12">
+                        <Expander Header="الصفحة" IsExpanded="True">
+                            <StackPanel Margin="0,8,0,0">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Margin="0,0,8,0">
+                                        <TextBlock Text="العرض (مم)" Style="{StaticResource LabelStyle}"/>
+                                        <TextBox Text="{Binding StickerWidthMm, UpdateSourceTrigger=PropertyChanged}" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="1">
+                                        <TextBlock Text="الارتفاع (مم)" Style="{StaticResource LabelStyle}"/>
+                                        <TextBox Text="{Binding StickerHeightMm, UpdateSourceTrigger=PropertyChanged}" />
+                                    </StackPanel>
+                                </Grid>
+                                <TextBlock Text="معامل المعاينة" Style="{StaticResource LabelStyle}" Margin="0,6,0,0"/>
+                                <DockPanel LastChildFill="True" Margin="0,5">
+                                    <TextBlock Text="{Binding PreviewScale}" Width="40" VerticalAlignment="Center" FontWeight="Bold"/>
+                                    <Slider Minimum="0.5" Maximum="2.0" Value="{Binding PreviewScale}" SmallChange="0.01" LargeChange="0.1" VerticalAlignment="Center"/>
+                                </DockPanel>
+                            </StackPanel>
+                        </Expander>
+
+                        <Expander Header="المعاينة والشبكة" IsExpanded="True">
+                            <StackPanel Margin="0,8,0,0">
+                                <CheckBox Content="إظهار شبكة المعاينة" IsChecked="{Binding ShowGrid}"/>
+                                <CheckBox Content="محاذاة للسلم (Snap-To-Grid)" IsChecked="{Binding SnapToGrid}" Margin="0,6,0,0"/>
+                                <CheckBox Content="تمكين التحرير بالماوس" IsChecked="{Binding EditEnabled}" Margin="0,6,0,0"/>
+                                <TextBlock Text="خطوة الشبكة (مم)" Style="{StaticResource LabelStyle}" Margin="0,6,0,0"/>
+                                <TextBox Text="{Binding SnapStepMm, UpdateSourceTrigger=PropertyChanged}" />
+                            </StackPanel>
+                        </Expander>
+
+                        <Expander Header="العنصر المحدد" IsExpanded="True">
+                            <StackPanel Margin="0,8,0,0">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Margin="0,0,8,0">
+                                        <TextBlock Text="موقع X (مم)" Style="{StaticResource LabelStyle}"/>
+                                        <TextBox Text="{Binding SelectedItemXMm, UpdateSourceTrigger=PropertyChanged}" />
+                                        <TextBlock Text="العرض (مم)" Style="{StaticResource LabelStyle}"/>
+                                        <TextBox Text="{Binding SelectedItemWidthMm, UpdateSourceTrigger=PropertyChanged}" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="1">
+                                        <TextBlock Text="موقع Y (مم)" Style="{StaticResource LabelStyle}"/>
+                                        <TextBox Text="{Binding SelectedItemYMm, UpdateSourceTrigger=PropertyChanged}" />
+                                        <TextBlock Text="الارتفاع (مم)" Style="{StaticResource LabelStyle}"/>
+                                        <TextBox Text="{Binding SelectedItemHeightMm, UpdateSourceTrigger=PropertyChanged}" />
+                                    </StackPanel>
+                                </Grid>
+                                <TextBlock Text="حجم خط العناصر" Style="{StaticResource LabelStyle}" Margin="0,6,0,0"/>
+                                <DockPanel LastChildFill="True" Margin="0,5">
+                                    <TextBlock Text="{Binding BodyFontSize}" Width="30" VerticalAlignment="Center" FontWeight="Bold"/>
+                                    <Slider Minimum="8" Maximum="36" Value="{Binding BodyFontSize}" VerticalAlignment="Center"/>
+                                </DockPanel>
+                            </StackPanel>
+                        </Expander>
+
+                        <Expander Header="الترويسة" IsExpanded="False">
+                            <StackPanel Margin="0,8,0,0">
+                                <CheckBox Content="استخدام الشعار" IsChecked="{Binding UseLogo}" Margin="0,5,0,10"/>
+                                <Grid Margin="0,0,0,15">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBox Text="{Binding LogoPath}" IsReadOnly="True" Margin="0,0,5,0"/>
+                                    <Button Grid.Column="1" Content="..." Command="{Binding PickLogoCommand}" Background="#E0E0E0" BorderBrush="#BDBDBD" Height="45" Width="45" Padding="0"/>
+                                </Grid>
+                                <TextBlock Text="عنوان الترويسة" Style="{StaticResource LabelStyle}"/>
+                                <TextBox Text="{Binding CompanyHeader}" />
+                                <TextBlock Text="اسم الشركة" Style="{StaticResource LabelStyle}"/>
+                                <TextBox Text="{Binding CompanyName}" />
+                                <TextBlock Text="العنوان" Style="{StaticResource LabelStyle}"/>
+                                <TextBox Text="{Binding CompanyAddress}" />
+                                <TextBlock Text="الهاتف" Style="{StaticResource LabelStyle}"/>
+                                <TextBox Text="{Binding CompanyPhone}" />
+                                <TextBlock Text="حجم خط الترويسة" Style="{StaticResource LabelStyle}"/>
+                                <DockPanel LastChildFill="True" Margin="0,5">
+                                    <TextBlock Text="{Binding HeaderFontSize}" Width="30" VerticalAlignment="Center" FontWeight="Bold"/>
+                                    <Slider Minimum="8" Maximum="36" Value="{Binding HeaderFontSize}" VerticalAlignment="Center"/>
+                                </DockPanel>
+                            </StackPanel>
+                        </Expander>
+
+                        <Expander Header="المحتوى" IsExpanded="False">
+                            <StackPanel Margin="0,8,0,0">
+                                <TextBlock Text="نوع/اسم الجهاز" Style="{StaticResource LabelStyle}"/>
+                                <TextBox Text="{Binding Model}"/>
+                                <TextBlock Text="الماركة" Style="{StaticResource LabelStyle}"/>
+                                <TextBox Text="{Binding Brand}"/>
+                                <TextBlock Text="الرقم التسلسلي" Style="{StaticResource LabelStyle}"/>
+                                <TextBox Text="{Binding Serial}"/>
+                                <TextBlock Text="تاريخ المعايرة" Style="{StaticResource LabelStyle}"/>
+                                <DatePicker SelectedDate="{Binding CalDate}" />
+                                <TextBlock Text="تاريخ الانتهاء" Style="{StaticResource LabelStyle}"/>
+                                <DatePicker SelectedDate="{Binding ExpDate}" />
+                            </StackPanel>
+                        </Expander>
+
+                        <Expander Header="QR" IsExpanded="False">
+                            <StackPanel Margin="0,8,0,0">
+                                <CheckBox Content="إظهار QR في المعاينة" IsChecked="{Binding ShowQr}" Margin="0,0,0,10"/>
+                                <Button Content="توليد وحفظ QR" Command="{Binding GenerateAndSaveQrCodeCommand}" Style="{StaticResource ActionButtonStyle}" Background="#8B5CF6" />
+                            </StackPanel>
+                        </Expander>
+                    </StackPanel>
+                </ScrollViewer>
+
+                <Border DockPanel.Bottom Background="#F8FAFC" Padding="12" CornerRadius="0,0,12,12" BorderBrush="#E2E8F0" BorderThickness="1,1,1,0">
+                    <UniformGrid Columns="2" Rows="2">
+                        <Button Content="حفظ التخطيط" Command="{Binding SaveLayoutCommand}" Style="{StaticResource ActionButtonStyle}" Background="#16A34A"/>
+                        <Button Content="إعادة تعيين" Command="{Binding ResetLayoutCommand}" Style="{StaticResource ActionButtonStyle}" Background="#64748B"/>
+                        <Button Content="معاينة" Command="{Binding PreviewCommand}" Style="{StaticResource ActionButtonStyle}" Background="#2563EB"/>
+                        <Button Content="اختبار الطباعة" Command="{Binding TestPrintCommand}" Style="{StaticResource ActionButtonStyle}" Background="#F59E0B"/>
+                    </UniformGrid>
+                </Border>
+            </DockPanel>
+        </Border>
+
+        <GridSplitter Grid.Column="1" Width="6" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Background="#CBD5E1"/>
+
+        <!-- Preview Panel (Right) -->
+        <Border Grid.Column="2" Background="White" Margin="8,16,16,16" CornerRadius="12">
+            <Border.Effect>
+                <DropShadowEffect BlurRadius="18" Color="#CBD5E1" Opacity="0.35" ShadowDepth="2"/>
+            </Border.Effect>
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <Border Background="#F8FAFC" Padding="12" CornerRadius="12,12,0,0">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <TextBlock Text="👁" FontSize="18" Foreground="#0EA5E9" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                            <TextBlock Text="معاينة الملصق" FontSize="16" FontWeight="Bold" Foreground="#0F172A"/>
+                            <TextBlock Text="•" Foreground="#CBD5E1" Margin="8,0"/>
+                            <TextBlock Text="الحجم:" FontSize="12" Foreground="#64748B"/>
+                            <TextBlock Margin="4,0,0,0" FontSize="12" Foreground="#334155">
+                                <Run Text="{Binding StickerWidthMm, StringFormat={}{0:0.##}}"/>
+                                <Run Text=" × "/>
+                                <Run Text="{Binding StickerHeightMm, StringFormat={}{0:0.##}}"/>
+                                <Run Text=" مم"/>
+                            </TextBlock>
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                            <ToggleButton Style="{StaticResource PillToggleStyle}" Content="شبكة" IsChecked="{Binding ShowGrid}" Margin="0,0,6,0"/>
+                            <ToggleButton Style="{StaticResource PillToggleStyle}" Content="محاذاة" IsChecked="{Binding SnapToGrid}" Margin="0,0,6,0"/>
+                            <ToggleButton Style="{StaticResource PillToggleStyle}" Content="تحرير" IsChecked="{Binding EditEnabled}"/>
+                            <StackPanel Orientation="Horizontal" Margin="10,0,0,0" VerticalAlignment="Center">
+                                <TextBlock Text="{Binding PreviewScale, StringFormat={}{0:0.00}x}" Foreground="#334155" FontWeight="SemiBold" Margin="0,0,6,0"/>
+                                <Slider Minimum="0.5" Maximum="2.0" Value="{Binding PreviewScale}" Width="120" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" Padding="20" Background="#F1F5F9">
+                    <Border Background="White" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="8" Padding="12">
+                        <Grid Width="{Binding CanvasWidthPx}" Height="{Binding CanvasHeightPx}" FlowDirection="RightToLeft" RenderTransformOrigin="0,0">
+                            <Grid.LayoutTransform>
+                                <ScaleTransform ScaleX="{Binding PreviewScale}" ScaleY="{Binding PreviewScale}"/>
+                            </Grid.LayoutTransform>
+                            <TextBlock Text="{Binding QrDebugInfo}" Visibility="Collapsed" Foreground="Red" FontSize="10" Margin="5"/>
+                            <Canvas x:Name="StickerCanvas"
+                                    Width="{Binding CanvasWidthPx}"
+                                    Height="{Binding CanvasHeightPx}"
+                                    Background="White"/>
+                            <Canvas x:Name="GridOverlay"
+                                    Width="{Binding CanvasWidthPx}"
+                                    Height="{Binding CanvasHeightPx}"
+                                    IsHitTestVisible="False"
+                                    Background="Transparent"/>
+                            <ItemsControl ItemsSource="{Binding StickerItems}" Width="{Binding CanvasWidthPx}" Height="{Binding CanvasHeightPx}">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <Canvas ClipToBounds="False"/>
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemContainerStyle>
+                                    <Style TargetType="ContentPresenter">
+                                        <Setter Property="Canvas.Left" Value="{Binding X}"/>
+                                        <Setter Property="Canvas.Top" Value="{Binding Y}"/>
+                                        <Setter Property="Visibility" Value="{Binding IsVisible, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                                    </Style>
+                                </ItemsControl.ItemContainerStyle>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid Width="{Binding Width}" Height="{Binding Height}">
+                                            <Thumb Name="DragThumb" Style="{StaticResource DesignerThumbStyle}"
+                                                   Tag="{Binding}"
+                                                   Cursor="SizeAll"
+                                                   IsHitTestVisible="{Binding DataContext.EditEnabled, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                   DragDelta="StickerThumb_OnDragDelta"
+                                                   MouseLeftButtonDown="StickerThumb_OnMouseLeftButtonDown"/>
+                                            <ContentControl Content="{Binding}"
+                                                            ContentTemplateSelector="{StaticResource StickerTemplateSelector}"
+                                                            IsHitTestVisible="False"/>
+                                            <Thumb Name="ResizeThumb"
+                                                   Style="{StaticResource ResizeThumbStyle}"
+                                                   HorizontalAlignment="Right"
+                                                   VerticalAlignment="Bottom"
+                                                   Tag="{Binding}"
+                                                   IsHitTestVisible="{Binding DataContext.EditEnabled, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                   DragDelta="StickerResizeThumb_OnDragDelta"/>
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </Grid>
+                    </Border>
+                </ScrollViewer>
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>

@@ -1,0 +1,179 @@
+<UserControl x:Class="BlueMax.Presentation.Wpf.Views.HomeView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:viewmodels="clr-namespace:BlueMax.Presentation.Wpf.ViewModels"
+             Background="Transparent"
+             FlowDirection="RightToLeft">
+    <UserControl.Resources>
+    </UserControl.Resources>
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="20">
+            <!-- الرأس (Header) -->
+            <Border Background="{DynamicResource PurpleGradient}" CornerRadius="16" Padding="30" Margin="0,0,0,24">
+                <StackPanel>
+                    <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=Dashboard}" Foreground="White" FontSize="28" FontWeight="Bold" Margin="0,0,0,8"/>
+                    <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=SystemOverview}" Foreground="White" FontSize="16" Opacity="0.9"/>
+                </StackPanel>
+            </Border>
+
+            <!-- إجراءات سريعة -->
+            <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=QuickActions}" FontSize="18" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimary}" Margin="0,0,0,16"/>
+            <WrapPanel Margin="0,0,0,24">
+                <Button Width="200" Height="80" Margin="0,0,12,12" Style="{StaticResource ModernButtonStyle}" Background="{DynamicResource PurpleGradient}"
+                        Command="{Binding DataContext.SearchCertificateCommand, RelativeSource={RelativeSource AncestorType=Window}}">
+                    <StackPanel HorizontalAlignment="Center">
+                        <TextBlock Text="🔍" FontSize="24" HorizontalAlignment="Center"/>
+                        <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=SearchCertificate}" FontSize="14" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,4,0,0"/>
+                    </StackPanel>
+                </Button>
+                <Button Width="200" Height="80" Margin="0,0,12,12" Style="{StaticResource ModernButtonStyle}" Background="{DynamicResource PinkGradient}"
+                        Command="{Binding DataContext.PrintStickerCommand, RelativeSource={RelativeSource AncestorType=Window}}">
+                    <StackPanel HorizontalAlignment="Center">
+                        <TextBlock Text="🏷️" FontSize="24" HorizontalAlignment="Center"/>
+                        <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=PrintSticker}" FontSize="14" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,4,0,0"/>
+                    </StackPanel>
+                </Button>
+                <Button Width="200" Height="80" Margin="0,0,12,12" Style="{StaticResource ModernButtonStyle}" Background="{DynamicResource CyanGradient}"
+                        Command="{Binding DataContext.ExpiredDevicesCommand, RelativeSource={RelativeSource AncestorType=Window}}">
+                    <StackPanel HorizontalAlignment="Center">
+                        <TextBlock Text="⚠️" FontSize="24" HorizontalAlignment="Center"/>
+                        <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=ExpiredDevices}" FontSize="14" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,4,0,0"/>
+                    </StackPanel>
+                </Button>
+            </WrapPanel>
+
+            <!-- بطاقات الإحصائيات -->
+            <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=Statistics}" FontSize="18" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimary}" Margin="0,0,0,16"/>
+            <WrapPanel Margin="0,0,0,24">
+                <!-- إجمالي الشهادات -->
+                <Border Width="280" Height="120" Margin="0,0,12,12" Style="{StaticResource StatCardStyle}" Background="{DynamicResource PurpleGradient}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                            <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=TotalCertificates}" Foreground="White" FontSize="14" Opacity="0.9"/>
+                            <TextBlock Text="{Binding TotalCertificates}" Foreground="White" FontSize="32" FontWeight="Bold" Margin="0,4,0,0"/>
+                        </StackPanel>
+                        <TextBlock Grid.Column="1" Text="📄" FontSize="48" Foreground="White" Opacity="0.8" VerticalAlignment="Center"/>
+                    </Grid>
+                </Border>
+
+                <!-- إجمالي العملاء -->
+                <Border Width="280" Height="120" Margin="0,0,12,12" Style="{StaticResource StatCardStyle}" Background="{DynamicResource PinkGradient}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                            <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=TotalClients}" Foreground="White" FontSize="14" Opacity="0.9"/>
+                            <TextBlock Text="{Binding TotalClients}" Foreground="White" FontSize="32" FontWeight="Bold" Margin="0,4,0,0"/>
+                        </StackPanel>
+                        <TextBlock Grid.Column="1" Text="👥" FontSize="48" Foreground="White" Opacity="0.8" VerticalAlignment="Center"/>
+                    </Grid>
+                </Border>
+
+                <!-- سجلات الصيانة -->
+                <Border Width="280" Height="120" Margin="0,0,12,12" Style="{StaticResource StatCardStyle}" Background="{DynamicResource CyanGradient}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                            <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=MaintenanceRecords}" Foreground="White" FontSize="14" Opacity="0.9"/>
+                            <TextBlock Text="{Binding TotalWorkOrders}" Foreground="White" FontSize="32" FontWeight="Bold" Margin="0,4,0,0"/>
+                        </StackPanel>
+                        <TextBlock Grid.Column="1" Text="🔧" FontSize="48" Foreground="White" Opacity="0.8" VerticalAlignment="Center"/>
+                    </Grid>
+                </Border>
+
+                <!-- قيد الانتظار -->
+                <Border Width="280" Height="120" Margin="0,0,12,12" Style="{StaticResource StatCardStyle}" Background="{DynamicResource GreenGradient}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                            <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=Pending}" Foreground="White" FontSize="14" Opacity="0.9"/>
+                            <TextBlock Text="{Binding PendingWorkOrders}" Foreground="White" FontSize="32" FontWeight="Bold" Margin="0,4,0,0"/>
+                        </StackPanel>
+                        <TextBlock Grid.Column="1" Text="⏳" FontSize="48" Foreground="White" Opacity="0.8" VerticalAlignment="Center"/>
+                    </Grid>
+                </Border>
+
+                <!-- المخزون -->
+                <Border Width="280" Height="120" Margin="0,0,12,12" Style="{StaticResource StatCardStyle}" Background="{DynamicResource OrangeGradient}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                            <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=Inventory}" Foreground="White" FontSize="14" Opacity="0.9"/>
+                            <TextBlock Text="{Binding TotalInventoryItems}" Foreground="White" FontSize="32" FontWeight="Bold" Margin="0,4,0,0"/>
+                        </StackPanel>
+                        <TextBlock Grid.Column="1" Text="📦" FontSize="48" Foreground="White" Opacity="0.8" VerticalAlignment="Center"/>
+                    </Grid>
+                </Border>
+
+                <!-- مخزون منخفض -->
+                <Border Width="280" Height="120" Margin="0,0,12,12" Style="{StaticResource StatCardStyle}" Background="{DynamicResource ErrorRed}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                            <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=LowStock}" Foreground="White" FontSize="14" Opacity="0.9"/>
+                            <TextBlock Text="{Binding LowStockItems}" Foreground="White" FontSize="32" FontWeight="Bold" Margin="0,4,0,0"/>
+                        </StackPanel>
+                        <TextBlock Grid.Column="1" Text="⚠️" FontSize="48" Foreground="White" Opacity="0.8" VerticalAlignment="Center"/>
+                    </Grid>
+                </Border>
+            </WrapPanel>
+
+            <!-- جداول النشاط الأخير -->
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="16"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- آخر الشهادات -->
+                <Border Grid.Column="0" Style="{StaticResource CardStyle}">
+                    <StackPanel>
+                        <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=LastCertificates}" FontSize="16" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimary}" Margin="0,0,0,16"/>
+                        <DataGrid ItemsSource="{Binding RecentCertificates}" Style="{StaticResource ModernDataGridStyle}" Height="250" AutoGenerateColumns="False" IsReadOnly="True">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=CertificateNumber}" Binding="{Binding CertificateNumber}" Width="*"/>
+                                <DataGridTextColumn Header="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=Client}" Binding="{Binding ClientName}" Width="*"/>
+                                <DataGridTextColumn Header="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=Device}" Binding="{Binding DeviceType}" Width="*"/>
+                                <DataGridTextColumn Header="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=IssueDate}" Binding="{Binding IssueDate, StringFormat=dd-MM-yyyy}" Width="*"/>
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </StackPanel>
+                </Border>
+
+                <!-- آخر الصيانات -->
+                <Border Grid.Column="2" Style="{StaticResource CardStyle}">
+                    <StackPanel>
+                        <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=LastMaintenances}" FontSize="16" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimary}" Margin="0,0,0,16"/>
+                        <DataGrid ItemsSource="{Binding RecentWorkOrders}" Style="{StaticResource ModernDataGridStyle}" Height="250" AutoGenerateColumns="False" IsReadOnly="True">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=MaintenanceOrder}" Binding="{Binding ReceiptNumber}" Width="*"/>
+                                <DataGridTextColumn Header="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=Client}" Binding="{Binding CustomerName}" Width="*"/>
+                                <DataGridTextColumn Header="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=Status}" Binding="{Binding Status}" Width="*"/>
+                                <DataGridTextColumn Header="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=ReceiptDate}" Binding="{Binding ReceivedDate, StringFormat=dd-MM-yyyy}" Width="*"/>
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </StackPanel>
+                </Border>
+            </Grid>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

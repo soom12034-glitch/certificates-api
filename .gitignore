@@ -1,0 +1,38 @@
+## Build and IDE
+**/[Bb]in/
+**/[Oo]bj/
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+## Publish/Dist/Installer outputs
+BlueMax.Presentation.Wpf/bin/
+BlueMax.Presentation.Wpf/obj/
+BlueMax.Presentation.Wpf/dist/
+BlueMax.Presentation.Wpf/bin/Release/
+BlueMax.Presentation.Wpf/bin/Debug/
+BlueMax.Presentation.Wpf/bin/*
+BlueMax.Presentation.Wpf/Properties/PublishProfiles/
+Installer/Output/
+
+## Logs and temp
+*.log
+*.tlog
+*.tmp
+*.cache
+
+## OS files
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+## Packages
+**/packages/
+*.nupkg
+
+## Rider/VSCode
+.idea/
+*.iml
+.vscode/

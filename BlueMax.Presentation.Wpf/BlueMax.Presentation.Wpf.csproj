@@ -1,0 +1,50 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <NuGetAudit>false</NuGetAudit>
+    <ApplicationIcon>Calibration2.ico</ApplicationIcon>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <RollForward>LatestPatch</RollForward>
+    <Version>6.1.0</Version>
+    <AssemblyVersion>6.1.0.0</AssemblyVersion>
+    <FileVersion>6.1.0.0</FileVersion>
+    <Product>Calibration Certificates</Product>
+    <AssemblyTitle>Calibration Certificates</AssemblyTitle>
+    <AssemblyInformationalVersion>6.1</AssemblyInformationalVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\BlueMax.Infrastructure\BlueMax.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.1" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.1" />
+    
+    <PackageReference Include="System.Configuration.ConfigurationManager" Version="8.0.1" />
+    <PackageReference Include="System.Management" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.2792.45" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Use wildcard to include all font files -->
+    <Resource Include="Assets\Fonts\**\*.ttf" />
+    <Resource Include="Assets\Fonts\**\*.otf" />
+    <Resource Include="Assets\Images\**\*.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="**\bin\**\*.cs" />
+    <Compile Remove="**\obj\**\*.cs" />
+    <Compile Remove="Keygen\**\*.cs" />
+    <EmbeddedResource Remove="Keygen\**\*" />
+    <None Remove="Keygen\**\*" />
+  </ItemGroup>
+
+</Project>

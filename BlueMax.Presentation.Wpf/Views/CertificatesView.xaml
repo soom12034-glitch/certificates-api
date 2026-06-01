@@ -1,0 +1,362 @@
+<UserControl x:Class="BlueMax.Presentation.Wpf.Views.CertificatesView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:viewmodels="clr-namespace:BlueMax.Presentation.Wpf.ViewModels"
+             Background="Transparent"
+             FlowDirection="RightToLeft">
+    <UserControl.InputBindings>
+        <KeyBinding Gesture="Ctrl+N" Command="{Binding NewCertificateCommand}" />
+        <KeyBinding Gesture="Ctrl+P" Command="{Binding PrintA4Command}" />
+    </UserControl.InputBindings>
+    <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis" />
+    </UserControl.Resources>
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <Grid Grid.Row="0" Margin="0,0,0,20">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <TextBlock Grid.Column="0"
+                       Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=Certificates}"
+                       FontSize="24"
+                       FontWeight="Bold"
+                       VerticalAlignment="Center"
+                       Foreground="{DynamicResource TextPrimary}" />
+            <Button Grid.Column="1"
+                    Style="{StaticResource CapsuleButtonStyle}"
+                    Command="{Binding DataContext.ShowHomeCommand, RelativeSource={RelativeSource AncestorType=Window}}">
+                <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=Back}" />
+            </Button>
+        </Grid>
+
+        <TabControl Grid.Row="1" Background="Transparent" BorderThickness="0">
+            <TabItem Header="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=NewCertificate}">
+                <Grid Margin="0,16,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="16" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="16" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+
+                    <!-- العمود الأيسر: بيانات العميل -->
+                    <Border Grid.Column="0" Style="{StaticResource CardStyle}">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                            <StackPanel>
+                                <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=ClientData}" Style="{StaticResource HeaderTextStyle}"/>
+                            
+                            <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=ClientNameField}" Style="{StaticResource LabelStyle}"/>
+                            <Grid>
+                                <TextBox x:Name="ClientNameBox" 
+                                         Text="{Binding ClientName, UpdateSourceTrigger=PropertyChanged}" 
+                                         Style="{StaticResource ModernTextBox}"
+                                         PreviewKeyDown="ClientNameBox_PreviewKeyDown" />
+                                <Popup x:Name="ClientNamePopup"
+                                       IsOpen="{Binding IsClientOptionsOpen}" 
+                                       PlacementTarget="{Binding ElementName=ClientNameBox}" 
+                                       StaysOpen="False"
+                                       AllowsTransparency="True"
+                                       PopupAnimation="Slide">
+                                    <Border Background="White" BorderBrush="Gray" BorderThickness="1" CornerRadius="4" MaxHeight="200" MinWidth="200">
+                                        <ListBox x:Name="ClientNameList"
+                                                 ItemsSource="{Binding ClientOptions}" 
+                                                 SelectedItem="{Binding SelectedClientOption}" 
+                                                 ScrollViewer.VerticalScrollBarVisibility="Auto" 
+                                                 BorderThickness="0"
+                                                 PreviewKeyDown="ClientNameList_PreviewKeyDown" />
+                                    </Border>
+                                </Popup>
+                            </Grid>
+
+                            <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=PhoneNumber}" Style="{StaticResource LabelStyle}"/>
+                            <TextBox Text="{Binding Phone, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource ModernTextBox}"/>
+
+                            <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=DelegateName}" Style="{StaticResource LabelStyle}"/>
+                            <TextBox Text="{Binding DelegateName, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource ModernTextBox}"/>
+                            </StackPanel>
+                        </ScrollViewer>
+                    </Border>
+
+                    <!-- العمود الأوسط: بيانات الجهاز -->
+                    <Border Grid.Column="2" Style="{StaticResource CardStyle}">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                            <StackPanel>
+                                <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=DeviceData}" Style="{StaticResource HeaderTextStyle}"/>
+                                
+                                <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=DeviceType}" Style="{StaticResource LabelStyle}"/>
+                                <ComboBox ItemsSource="{Binding DeviceTypes}" SelectedItem="{Binding DeviceType}"/>
+
+                                <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=Brand}" Style="{StaticResource LabelStyle}"/>
+                                <ComboBox ItemsSource="{Binding BrandOptions}" SelectedItem="{Binding Brand}" IsEditable="True"/>
+
+                                <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=Model}" Style="{StaticResource LabelStyle}"/>
+                                <TextBox Text="{Binding Model, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource ModernTextBox}"/>
+
+                                <StackPanel Margin="0,10,0,0">
+                                    <StackPanel.Style>
+                                        <Style TargetType="StackPanel">
+                                            <Setter Property="Visibility" Value="Visible" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsGpsDeviceType}" Value="True">
+                                                    <Setter Property="Visibility" Value="Collapsed" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </StackPanel.Style>
+                                    <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=MainSerial}" Style="{StaticResource LabelStyle}"/>
+                                    <TextBox Text="{Binding SerialText, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource ModernTextBox}"/>
+                                </StackPanel>
+
+                                <StackPanel Margin="0,10,0,0" Visibility="{Binding IsGpsDeviceType, Converter={StaticResource BoolToVis}}">
+                                    <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=FirstSerial}" Style="{StaticResource LabelStyle}"/>
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="110" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <ComboBox Grid.Column="0"
+                                                  ItemsSource="{Binding GpsSerialKinds}"
+                                                  SelectedItem="{Binding SelectedGpsSerial1Kind}" 
+                                                  Style="{StaticResource ModernComboBoxStyle}"/>
+                                        <TextBox Grid.Column="1"
+                                                 Margin="8,0,0,0"
+                                                 Text="{Binding GpsSerial1Text, UpdateSourceTrigger=PropertyChanged}" 
+                                                 Style="{StaticResource ModernTextBox}"/>
+                                    </Grid>
+                                </StackPanel>
+
+                                <StackPanel Margin="0,10,0,0" Visibility="{Binding IsGpsDeviceType, Converter={StaticResource BoolToVis}}">
+                                    <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=SecondSerial}" Style="{StaticResource LabelStyle}"/>
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="110" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <ComboBox Grid.Column="0"
+                                                  ItemsSource="{Binding GpsSerialKinds}"
+                                                  SelectedItem="{Binding SelectedGpsSerial2Kind}" 
+                                                  Style="{StaticResource ModernComboBoxStyle}"/>
+                                        <TextBox Grid.Column="1"
+                                                 Margin="8,0,0,0"
+                                                 Text="{Binding GpsSerial2Text, UpdateSourceTrigger=PropertyChanged}" 
+                                                 Style="{StaticResource ModernTextBox}"/>
+                                    </Grid>
+                                </StackPanel>
+
+                                <StackPanel Margin="0,10,0,0" Visibility="{Binding IsTotalStationDeviceType, Converter={StaticResource BoolToVis}}">
+                                    <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=Accuracy}" Style="{StaticResource LabelStyle}"/>
+                                    <ComboBox ItemsSource="{Binding AccuracyOptions}"
+                                              SelectedItem="{Binding Accuracy}"
+                                              IsEditable="True"/>
+                                </StackPanel>
+
+                                <StackPanel Margin="0,10,0,0" Visibility="{Binding IsAutoLevelDeviceType, Converter={StaticResource BoolToVis}}">
+                                    <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=DeviationRate}" Style="{StaticResource LabelStyle}"/>
+                                    <ComboBox ItemsSource="{Binding AutoLevelSpecOptions}"
+                                              Text="{Binding SpecValue, UpdateSourceTrigger=PropertyChanged}"
+                                              IsEditable="True"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </ScrollViewer>
+                    </Border>
+
+                    <!-- العمود الأيمن: بيانات الشهادة -->
+                    <Border Grid.Column="4" Style="{StaticResource CardStyle}">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                            <StackPanel>
+                                <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=CertificateData}" Style="{StaticResource HeaderTextStyle}"/>
+                            
+                            <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=CertificateNumber}" Style="{StaticResource LabelStyle}"/>
+                            <TextBox Text="{Binding CertificateNumber}" IsReadOnly="True" Style="{StaticResource ModernTextBox}"/>
+
+                            <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=IssueDate}" Style="{StaticResource LabelStyle}"/>
+                            <DatePicker SelectedDate="{Binding IssueDate}" Style="{StaticResource ModernDatePickerStyle}"/>
+
+                            <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=ExpiryDate}" Style="{StaticResource LabelStyle}"/>
+                            <DatePicker SelectedDate="{Binding ExpiryDate}" IsEnabled="False" Style="{StaticResource ModernDatePickerStyle}"/>
+
+                            <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=TemplateType}" Style="{StaticResource LabelStyle}"/>
+                            <ComboBox ItemsSource="{Binding TemplateOptions}" SelectedItem="{Binding SelectedTemplateName}" Style="{StaticResource ModernComboBoxStyle}"/>
+
+                            <TextBlock Text="{Binding ModeText}" Style="{StaticResource SubheaderTextStyle}" Foreground="{DynamicResource TextSecondary}"/>
+                            
+                            <TextBlock Text="{Binding StatusMessage}" Style="{StaticResource SubheaderTextStyle}" Foreground="{DynamicResource TextSecondary}" TextWrapping="Wrap"/>
+
+                            <Separator Margin="0,16,0,16"/>
+
+                            <!-- أزرار الإجراءات -->
+                            <Button Content="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=SaveCertificate}" 
+                                    Command="{Binding SaveCertificateCommand}" 
+                                    Style="{StaticResource ModernButtonStyle}" 
+                                    Background="{DynamicResource GreenGradient}"
+                                    Margin="0,0,0,8"/>
+                            
+                            <Button Content="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=PrintCertificateWord}" 
+                                    Command="{Binding PrintA4Command}" 
+                                    Style="{StaticResource ModernButtonStyle}" 
+                                    Background="{DynamicResource CyanGradient}"
+                                    Margin="0,0,0,8"/>
+                            
+                            <Button Content="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=PrintCertificatePdf}" 
+                                    Command="{Binding PrintA4Command}" 
+                                    Style="{StaticResource ModernButtonStyle}" 
+                                    Background="{DynamicResource CyanGradient}"
+                                    Margin="0,0,0,8"/>
+                            
+                            <Button Content="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=StickerPreview}" 
+                                    Command="{Binding PreviewStickerZplCommand}" 
+                                    Style="{StaticResource ModernButtonStyle}" 
+                                    Background="#9CA3AF"
+                                    Margin="0,0,0,8"/>
+                            
+                            <Button Content="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=PrintStickerButton}"
+                                    Command="{Binding PrintStickerCommand}"
+                                    Style="{StaticResource ModernButtonStyle}"
+                                    Background="{DynamicResource OrangeGradient}"/>
+                            </StackPanel>
+                        </ScrollViewer>
+                    </Border>
+
+                    <Grid Background="#66000000"
+                          Visibility="{Binding IsBusy, Converter={StaticResource BoolToVis}}"
+                          Panel.ZIndex="100" Grid.ColumnSpan="5">
+                        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                            <ProgressBar IsIndeterminate="True" Width="260" />
+                            <TextBlock Text="{Binding BusyMessage}" Foreground="White" Margin="0,8,0,0" />
+                        </StackPanel>
+                    </Grid>
+                </Grid>
+            </TabItem>
+
+            <TabItem Header="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=CertificatesLog}">
+                <Border Style="{StaticResource CardStyle}" Margin="0,16,0,0">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+
+                        <!-- شريط البحث -->
+                        <Grid Grid.Row="0" Margin="0,0,0,16">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <TextBox Grid.Column="0" 
+                                     Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
+                                     Style="{StaticResource ModernTextBox}"
+                                     KeyDown="ArchiveSearchBox_KeyDown"
+                                     ToolTip="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=Search}" />
+                            <Button Grid.Column="1" 
+                                    Content="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=Refresh}" 
+                                    Command="{Binding RefreshCertificatesCommand}" 
+                                    Style="{StaticResource ModernButtonStyle}" 
+                                    Width="100" 
+                                    Margin="8,0,0,0"/>
+                        </Grid>
+
+                        <!-- جدول الشهادات -->
+                        <DataGrid Grid.Row="1"
+                                  ItemsSource="{Binding Certificates}"
+                                  SelectedItem="{Binding SelectedCertificate}"
+                                  MouseDoubleClick="ArchiveGrid_MouseDoubleClick"
+                                  Style="{StaticResource ModernDataGridStyle}"
+                                  AutoGenerateColumns="False"
+                                  CanUserAddRows="False"
+                                  IsReadOnly="True"
+                                  EnableRowVirtualization="True"
+                                  EnableColumnVirtualization="True"
+                                  VirtualizingPanel.IsVirtualizing="True"
+                                  VirtualizingPanel.VirtualizationMode="Recycling"
+                                  ScrollViewer.CanContentScroll="True">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=CertificateNumber}" Binding="{Binding CertificateNumber}" Width="*" />
+                                <DataGridTextColumn Header="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=ClientName}" Binding="{Binding ClientName}" Width="*" />
+                                <DataGridTextColumn Header="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=DeviceName}" Binding="{Binding DeviceType}" Width="*" />
+                                <DataGridTextColumn Header="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=Brand}" Binding="{Binding Brand}" Width="*" />
+                                <DataGridTextColumn Header="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=Model}" Binding="{Binding Model}" Width="*" />
+                                <DataGridTextColumn Header="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=SerialNumber}" Binding="{Binding SerialText}" Width="*" />
+                                <DataGridTextColumn Header="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=IssueDate}" Binding="{Binding IssueDate, StringFormat=dd-MM-yyyy}" Width="*" />
+                                <DataGridTextColumn Header="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=ExpiryDate}" Binding="{Binding ExpiryDate, StringFormat=dd-MM-yyyy}" Width="*" />
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </Grid>
+                </Border>
+            </TabItem>
+
+            <TabItem Header="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=TemplateSettings}">
+                <Border Style="{StaticResource CardStyle}" Margin="0,16,0,0">
+                    <Grid FlowDirection="LeftToRight">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="1.1*" />
+                            <ColumnDefinition Width="2*" />
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel Grid.Column="0" Margin="0,0,14,0">
+                            <GroupBox Header="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=TemplateDocTypeStep}">
+                                <StackPanel Margin="10">
+                                    <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=DocumentType}" Margin="0,0,0,6" />
+                                    <ComboBox ItemsSource="{Binding TemplateHubDocumentTypes}"
+                                              SelectedItem="{Binding SelectedTemplateHubDocumentType}"
+                                              DisplayMemberPath="Name" />
+                                    <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=CurrentPath}" Margin="0,10,0,6" />
+                                    <TextBox Text="{Binding SelectedTemplateHubPath}"
+                                             IsReadOnly="True"
+                                             TextWrapping="Wrap" 
+                                             Style="{StaticResource ModernTextBox}"/>
+                                </StackPanel>
+                            </GroupBox>
+
+                            <GroupBox Header="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=TemplateChooseStep}" Margin="0,12,0,0">
+                                <StackPanel Margin="10">
+                                    <Button Content="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=ChooseWordTemplate}"
+                                            Command="{Binding UploadWordTemplateHubCommand}" 
+                                            Style="{StaticResource ModernButtonStyle}"/>
+                                    <Button Content="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=SaveTemplateSetting}"
+                                            Margin="0,8,0,0"
+                                            Command="{Binding SaveTemplateHubConfigurationCommand}" 
+                                            Style="{StaticResource ModernButtonStyle}"/>
+                                    <TextBlock Text="{Binding StatusMessage}"
+                                               Margin="0,10,0,0"
+                                               TextWrapping="Wrap"
+                                               Foreground="{DynamicResource TextSecondary}" />
+                                </StackPanel>
+                            </GroupBox>
+                        </StackPanel>
+
+                        <Expander Grid.Column="1" Header="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=TemplateTagsDictionary}" IsExpanded="False">
+                            <DataGrid Margin="10"
+                                      ItemsSource="{Binding TemplateHubTags}"
+                                      Style="{StaticResource ModernDataGridStyle}"
+                                      AutoGenerateColumns="False"
+                                      CanUserAddRows="False"
+                                      IsReadOnly="True">
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn Header="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=DescriptionLabel}" Binding="{Binding Description}" Width="2*" />
+                                    <DataGridTextColumn Header="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=TagLabel}" Binding="{Binding Tag}" Width="2*" />
+                                    <DataGridTemplateColumn Header="" Width="120">
+                                        <DataGridTemplateColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <Button Content="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=Copy}"
+                                                        Style="{StaticResource CapsuleButtonStyle}"
+                                                        Command="{Binding DataContext.CopyTemplateHubTagCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                        CommandParameter="{Binding Tag}" />
+                                            </DataTemplate>
+                                        </DataGridTemplateColumn.CellTemplate>
+                                    </DataGridTemplateColumn>
+                                </DataGrid.Columns>
+                            </DataGrid>
+                        </Expander>
+                    </Grid>
+                </Border>
+            </TabItem>
+        </TabControl>
+    </Grid>
+</UserControl>
