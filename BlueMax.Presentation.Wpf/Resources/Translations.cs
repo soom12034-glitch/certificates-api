@@ -401,6 +401,13 @@ public static class Translations
         public const string PrintCertificate = "طباعة الشهادة";
         public const string ExportPDF = "تصدير PDF";
 
+        // Cloud Upload
+        public const string UploadToCloud = "رفع للسحابة";
+        public const string AutoUpload = "رفع تلقائي";
+        public const string VerificationLink = "رابط التحقق";
+        public const string CopyVerificationLink = "نسخ رابط التحقق";
+        public const string OpenVerificationLink = "فتح رابط التحقق";
+
         // Certificates Tabs / Template Settings
         public const string TemplateDocTypeStep = "1) اختيار نوع المستند";
         public const string TemplateChooseStep = "2) اختيار وحفظ القالب";

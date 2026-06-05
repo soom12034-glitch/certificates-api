@@ -210,6 +210,34 @@
                                     Background="{DynamicResource CyanGradient}"
                                     Margin="0,0,0,8"/>
                             
+                            <!-- Cloud Upload -->
+                            <CheckBox Content="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=AutoUpload}"
+                                      IsChecked="{Binding IsAutoUploadEnabled, Mode=TwoWay}"
+                                      Margin="0,0,0,8"/>
+                            <Button Content="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=UploadToCloud}"
+                                    Command="{Binding UploadCertificateCommand}"
+                                    Style="{StaticResource ModernButtonStyle}"
+                                    Background="{DynamicResource PurpleGradient}"
+                                    Margin="0,0,0,8"/>
+
+                            <Button Content="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=ExportPDF}" 
+                                    Command="{Binding ExportPdfCommand}" 
+                                    Style="{StaticResource ModernButtonStyle}" 
+                                    Background="{DynamicResource CyanGradient}"
+                                    Margin="0,0,0,8"/>
+
+                            <!-- Verification Link panel -->
+                            <StackPanel Orientation="Horizontal" Margin="0,4,0,8">
+                                <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=VerificationLink}" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                <TextBox Text="{Binding LastVerificationUrl}" IsReadOnly="True" Style="{StaticResource ModernTextBox}" Width="260"/>
+                                <Button Content="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=CopyVerificationLink}"
+                                        Command="{Binding CopyVerificationUrlCommand}"
+                                        Style="{StaticResource CapsuleButtonStyle}" Margin="6,0,0,0"/>
+                                <Button Content="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=OpenVerificationLink}"
+                                        Command="{Binding OpenVerificationUrlCommand}"
+                                        Style="{StaticResource CapsuleButtonStyle}" Margin="6,0,0,0"/>
+                            </StackPanel>
+                            
                             <Button Content="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=StickerPreview}" 
                                     Command="{Binding PreviewStickerZplCommand}" 
                                     Style="{StaticResource ModernButtonStyle}" 

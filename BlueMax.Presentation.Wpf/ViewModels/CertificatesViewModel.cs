@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -21,6 +21,8 @@ using System.Windows.Documents;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using BlueMax.Presentation.Wpf.ViewModels;
+using System.Net.Http;
+using System.Net.Http.Headers;
 
 namespace BlueMax.Presentation.Wpf.ViewModels;
 
@@ -37,6 +39,8 @@ public sealed class CertificatesViewModel : ViewModelBase
     const int SearchDelayMs = 200;
     const int AutoFillDelayMs = 250;
     const int DeviceDefaultsDelayMs = 200;
+    const string CloudApiBase = "https://vnumera.cashierpro-cloud.com";
+    const string CloudApiKey = "fb3a9c12d7e54a8f309b2c6de1457f90c3ab8d6e1f2c4b5a7689e0f1d2c3b4a5";
     readonly Dictionary<string, CalibrationTemplate> _templates;
     readonly Dictionary<string, List<TemplateHubTagItem>> _templateHubTagsByDocumentType;
     CancellationTokenSource? _clientOptionsCts;
@@ -80,6 +84,9 @@ public sealed class CertificatesViewModel : ViewModelBase
     bool _isInitialized;
     bool _isBusy;
     string _busyMessage = "";
+    bool _isAutoUploadEnabled = true;
+    string _lastExportedPdfPath = "";
+    string _lastVerificationUrl = "";
     TemplateHubDocumentType? _selectedTemplateHubDocumentType;
     string _selectedTemplateHubPath = "";
     bool _isGpsDeviceType;
@@ -109,6 +116,7 @@ public sealed class CertificatesViewModel : ViewModelBase
             var value = (i / 100.0).ToString("0.00", System.Globalization.CultureInfo.InvariantCulture);
             AutoLevelSpecOptions.Add(value);
         }
+
         GpsSerialKinds = new ObservableCollection<string> { "Base", "Rover" };
         ClientOptions = new ObservableCollection<string>();
         _templates = BuildCalibrationTemplates();
@@ -162,6 +170,10 @@ public sealed class CertificatesViewModel : ViewModelBase
         DeleteCertificateCommand = new AsyncRelayCommand(async _ => await DeleteCertificateAsync(), _ => _isEditMode && SelectedCertificate != null);
         RefreshCertificatesCommand = new AsyncRelayCommand(async _ => await RefreshCertificatesAsync());
         GeneratePdfCommand = new AsyncRelayCommand(async _ => await GeneratePdfAsync());
+        ExportPdfCommand = new AsyncRelayCommand(async _ => await ExportPdfAsync());
+        UploadCertificateCommand = new AsyncRelayCommand(async _ => await UploadCertificateAsync());
+        CopyVerificationUrlCommand = new RelayCommand(_ => CopyVerificationUrl(), _ => !string.IsNullOrWhiteSpace(LastVerificationUrl));
+        OpenVerificationUrlCommand = new RelayCommand(_ => OpenVerificationUrl(), _ => !string.IsNullOrWhiteSpace(LastVerificationUrl));
         PrintStickerCommand = new AsyncRelayCommand(async _ => await ExportStickerZplAsync());
         PreviewStickerZplCommand = new AsyncRelayCommand(async _ => await PreviewStickerZplAsync());
         PrintA4Command = new AsyncRelayCommand(async _ => await PrintA4Async());
@@ -175,7 +187,335 @@ public sealed class CertificatesViewModel : ViewModelBase
         UpdateModeText();
 
         CalibrationRows.CollectionChanged += CalibrationRows_CollectionChanged;
+
     }
+
+    async Task UploadCertificateAsync()
+    {
+        if (IsBusy)
+        {
+            StatusMessage = "Another operation is in progress.";
+            return;
+        }
+        if (!await SaveCertificateInternalAsync())
+            return;
+        if (!_currentCertificateId.HasValue)
+            return;
+
+        IsBusy = true; BusyMessage = "Uploading PDF...";
+        try
+        {
+            var outputDir = System.IO.Path.Combine(AppContext.BaseDirectory, "Certificates_Output");
+            var certNo = (CertificateNumber ?? "").Trim();
+            var pdfPath = System.IO.Path.Combine(outputDir, $"Cert_{certNo}.pdf");
+            if (!File.Exists(pdfPath))
+            {
+                using var db = CreateDbContext();
+                await EnsureDbCreatedOnceAsync();
+                var certificateId = _currentCertificateId.Value;
+                var templateKey = MapCertificateTemplateKey(DeviceType);
+                var engine = new WordTemplateEngine("", outputDir);
+                var docService = new CertificateDocumentService(db, engine);
+                var templatePath = await EnsureTemplatePathAsync(templateKey);
+                if (string.IsNullOrWhiteSpace(templatePath))
+                {
+                    StatusMessage = "يرجى تحديد قالب Word أولاً من إدارة القوالب.";
+                    return;
+                }
+                var docxPath = await docService.GenerateCertificateDocxAndPdfByIdFromPathAsync(certificateId, templatePath);
+                if (string.IsNullOrWhiteSpace(docxPath) || !File.Exists(docxPath))
+                {
+                    StatusMessage = "فشل إنشاء ملف Word.";
+                    return;
+                }
+                Directory.CreateDirectory(outputDir);
+                var questPdfPath = System.IO.Path.ChangeExtension(docxPath, ".pdf");
+                if (System.IO.File.Exists(questPdfPath))
+                {
+                    pdfPath = questPdfPath;
+                }
+                _lastExportedPdfPath = pdfPath;
+            }
+
+            await UploadPdfToServerAsync(pdfPath);
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"تعذر رفع الشهادة: {ex.Message}";
+        }
+        finally
+        {
+            IsBusy = false; BusyMessage = "";
+        }
+    }
+
+    async Task UploadPdfToServerAsync(string pdfPath)
+    {
+        try
+        {
+            using var client = new HttpClient();
+            client.Timeout = TimeSpan.FromSeconds(60);
+            client.DefaultRequestHeaders.Add("X-Api-Key", CloudApiKey);
+
+            using var content = new MultipartFormDataContent();
+            var bytes = await File.ReadAllBytesAsync(pdfPath);
+            var fileContent = new ByteArrayContent(bytes);
+            fileContent.Headers.ContentType = new MediaTypeHeaderValue("application/pdf");
+            content.Add(fileContent, "file", Path.GetFileName(pdfPath));
+
+            var fingerprint = (CertificateNumber ?? "").Trim();
+            if (!string.IsNullOrWhiteSpace(fingerprint))
+                content.Add(new StringContent(fingerprint), "fingerprint");
+
+            var meta = new Dictionary<string, string>
+            {
+                ["certificateNo"] = CertificateNumber ?? "",
+                ["clientName"] = ClientName ?? "",
+                ["deviceType"] = DeviceType ?? "",
+                ["brand"] = Brand ?? "",
+                ["model"] = Model ?? "",
+                ["serial"] = SerialText ?? "",
+                ["issueDate"] = IssueDate == default ? "" : IssueDate.ToString("yyyy-MM-dd"),
+                ["expiryDate"] = ExpiryDate == default ? "" : ExpiryDate.ToString("yyyy-MM-dd")
+            };
+            content.Add(new StringContent(JsonSerializer.Serialize(meta)), "meta");
+
+            var url = $"{CloudApiBase}/v1/certificates";
+            var resp = await client.PostAsync(url, content);
+            var body = await resp.Content.ReadAsStringAsync();
+            if (!resp.IsSuccessStatusCode)
+            {
+                StatusMessage = $"فشل الرفع: {(int)resp.StatusCode} {resp.ReasonPhrase}. {body}";
+                return;
+            }
+
+            try
+            {
+                using var doc = JsonDocument.Parse(body);
+                var verifyUrl = doc.RootElement.TryGetProperty("verifyUrl", out var v) ? v.GetString() : null;
+                if (!string.IsNullOrWhiteSpace(verifyUrl))
+                {
+                    LastVerificationUrl = verifyUrl!;
+                    StatusMessage = $"تم رفع الشهادة: {verifyUrl}";
+                    try { SaveVerifyUrlLocal(CertificateNumber ?? string.Empty, verifyUrl!); } catch { }
+                }
+                else
+                    StatusMessage = "تم رفع الشهادة بنجاح.";
+            }
+            catch
+            {
+                StatusMessage = "تم رفع الشهادة بنجاح.";
+            }
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"تعذر رفع الشهادة: {ex.Message}";
+        }
+    }
+
+    async Task UploadCurrentCertificateAfterSaveAsync()
+    {
+        if (!_currentCertificateId.HasValue)
+            return;
+
+        var certNo = (CertificateNumber ?? "").Trim();
+        if (string.IsNullOrWhiteSpace(certNo))
+            return;
+
+        var hadPreviousUrl = false;
+        try
+        {
+            var mapPath = System.IO.Path.Combine(AppContext.BaseDirectory, "Certificates_Output", "verify_urls.json");
+            if (System.IO.File.Exists(mapPath))
+            {
+                var json = System.IO.File.ReadAllText(mapPath);
+                var dict = JsonSerializer.Deserialize<Dictionary<string, string>>(json);
+                hadPreviousUrl = dict != null && dict.TryGetValue(certNo, out var url) && !string.IsNullOrWhiteSpace(url);
+            }
+        }
+        catch
+        {
+        }
+
+        var outputDir = System.IO.Path.Combine(AppContext.BaseDirectory, "Certificates_Output");
+        using var db = CreateDbContext();
+        await EnsureDbCreatedOnceAsync();
+        var certificateId = _currentCertificateId.Value;
+        var templateKey = MapCertificateTemplateKey(DeviceType);
+        var engine = new WordTemplateEngine("", outputDir);
+        var docService = new CertificateDocumentService(db, engine);
+        var templatePath = await EnsureTemplatePathAsync(templateKey);
+        if (string.IsNullOrWhiteSpace(templatePath))
+        {
+            StatusMessage = "تم حفظ الشهادة، لكن تعذر الرفع: يرجى تحديد قالب Word أولاً من إدارة القوالب.";
+            return;
+        }
+
+        var docxPath = await docService.GenerateCertificateDocxAndPdfByIdFromPathAsync(certificateId, templatePath);
+        if (string.IsNullOrWhiteSpace(docxPath) || !File.Exists(docxPath))
+        {
+            StatusMessage = "تم حفظ الشهادة، لكن تعذر إنشاء ملف Word للرفع.";
+            return;
+        }
+
+        var pdfPath = System.IO.Path.ChangeExtension(docxPath, ".pdf");
+        if (!File.Exists(pdfPath))
+        {
+            StatusMessage = "تم حفظ الشهادة، لكن تعذر إنشاء ملف PDF للرفع.";
+            return;
+        }
+
+        _lastExportedPdfPath = pdfPath;
+        await UploadPdfToServerAsync(pdfPath);
+
+        if (StatusMessage.StartsWith("تم رفع الشهادة", StringComparison.Ordinal))
+        {
+            StatusMessage = hadPreviousUrl
+                ? $"تم تحديث الملف المرفوع بنجاح: {LastVerificationUrl}"
+                : $"تم رفع الشهادة تلقائياً بنجاح: {LastVerificationUrl}";
+        }
+        else if (StatusMessage == "تم رفع الشهادة بنجاح.")
+        {
+            StatusMessage = hadPreviousUrl
+                ? "تم تحديث الملف المرفوع بنجاح."
+                : "تم رفع الشهادة تلقائياً بنجاح.";
+        }
+    }
+
+    async Task EnsureVerifyUrlBeforeDocumentAsync()
+    {
+        try
+        {
+            var certNo = (CertificateNumber ?? "").Trim();
+            if (string.IsNullOrWhiteSpace(certNo)) return;
+            var mapPath = System.IO.Path.Combine(AppContext.BaseDirectory, "Certificates_Output", "verify_urls.json");
+            var hasUrl = false;
+            if (System.IO.File.Exists(mapPath))
+            {
+                try
+                {
+                    var json = System.IO.File.ReadAllText(mapPath);
+                    var dict = JsonSerializer.Deserialize<Dictionary<string, string>>(json);
+                    if (dict != null && dict.TryGetValue(certNo, out var url) && !string.IsNullOrWhiteSpace(url))
+                        hasUrl = true;
+                }
+                catch { }
+            }
+
+            if (!hasUrl)
+            {
+                // Generate PDF (if not present) and upload to get verifyUrl
+                var outputDir = System.IO.Path.Combine(AppContext.BaseDirectory, "Certificates_Output");
+                var path = System.IO.Path.Combine(outputDir, $"Cert_{certNo}.pdf");
+                if (!System.IO.File.Exists(path))
+                {
+                    if (!_currentCertificateId.HasValue) return;
+                    using var db = CreateDbContext();
+                    await EnsureDbCreatedOnceAsync();
+                    var certificateId = _currentCertificateId.Value;
+                    var templateKey = MapCertificateTemplateKey(DeviceType);
+                    var engine = new WordTemplateEngine("", outputDir);
+                    var docService = new CertificateDocumentService(db, engine);
+                    var templatePath = await EnsureTemplatePathAsync(templateKey);
+                    if (string.IsNullOrWhiteSpace(templatePath)) return;
+                    var docxPath = await docService.GenerateCertificateDocxAndPdfByIdFromPathAsync(certificateId, templatePath);
+                    var questPdf = System.IO.Path.ChangeExtension(docxPath, ".pdf");
+                    if (System.IO.File.Exists(questPdf))
+                        path = questPdf;
+                }
+                await UploadPdfToServerAsync(path);
+            }
+        }
+        catch { }
+    }
+
+    async Task ExportPdfAsync()
+    {
+        if (IsBusy)
+        {
+            StatusMessage = "Another operation is in progress.";
+            return;
+        }
+        if (!await SaveCertificateInternalAsync())
+            return;
+        if (!_currentCertificateId.HasValue)
+            return;
+        if (IsAutoUploadEnabled)
+            await EnsureVerifyUrlBeforeDocumentAsync();
+
+        IsBusy = true; BusyMessage = "Exporting PDF...";
+        try
+        {
+            using var db = CreateDbContext();
+            await EnsureDbCreatedOnceAsync();
+            var certificateId = _currentCertificateId.Value;
+            var templateKey = MapCertificateTemplateKey(DeviceType);
+            var outputDir = System.IO.Path.Combine(AppContext.BaseDirectory, "Certificates_Output");
+            var engine = new WordTemplateEngine("", outputDir);
+            var docService = new CertificateDocumentService(db, engine);
+            var templatePath = await EnsureTemplatePathAsync(templateKey);
+
+            if (string.IsNullOrWhiteSpace(templatePath))
+            {
+                StatusMessage = "يرجى تحديد قالب Word أولاً من إدارة القوالب.";
+                return;
+            }
+
+            var docxPath = await docService.GenerateCertificateDocxAndPdfByIdFromPathAsync(certificateId, templatePath);
+            if (string.IsNullOrWhiteSpace(docxPath) || !File.Exists(docxPath))
+            {
+                StatusMessage = "فشل إنشاء ملف Word.";
+                return;
+            }
+
+            Directory.CreateDirectory(outputDir);
+            var certNo = (CertificateNumber ?? "").Trim();
+            string Sanitize(string s)
+            {
+                if (string.IsNullOrWhiteSpace(s)) return "UNNAMED";
+                var arr = s.Select(ch => char.IsLetterOrDigit(ch) ? ch : '-').ToArray();
+                var cleaned = new string(arr).Trim('-');
+                return string.IsNullOrWhiteSpace(cleaned) ? "UNNAMED" : cleaned;
+            }
+            var safeNo = Sanitize(certNo);
+            var pdfPath = System.IO.Path.Combine(outputDir, $"Cert_{safeNo}.pdf");
+
+            // Use QuestPDF output produced by CertificateDocumentService
+            var questPdfPath = System.IO.Path.ChangeExtension(docxPath, ".pdf");
+            if (System.IO.File.Exists(questPdfPath))
+            {
+                try
+                {
+                    System.IO.File.Copy(questPdfPath, pdfPath, overwrite: true);
+                }
+                catch { pdfPath = questPdfPath; }
+            }
+            else
+            {
+                // Fallback: if QuestPDF output missing, just use the intended path
+                pdfPath = questPdfPath;
+            }
+
+            StatusMessage = $"تم إنشاء PDF: {pdfPath}";
+            try { Process.Start(new ProcessStartInfo { FileName = pdfPath, UseShellExecute = true }); } catch { }
+            _lastExportedPdfPath = pdfPath;
+            if (IsAutoUploadEnabled)
+            {
+                BusyMessage = "Uploading PDF...";
+                await UploadPdfToServerAsync(pdfPath);
+            }
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"تعذر تصدير PDF: {ex.Message}";
+        }
+        finally
+        {
+            IsBusy = false; BusyMessage = "";
+        }
+    }
+
+
 
     async Task OpenSelectedCertificateFileAsync()
     {
@@ -388,6 +728,8 @@ public sealed class CertificatesViewModel : ViewModelBase
             if (!SetProperty(ref _isBusy, value))
                 return;
             GeneratePdfCommand?.RaiseCanExecuteChanged();
+            ExportPdfCommand?.RaiseCanExecuteChanged();
+            UploadCertificateCommand?.RaiseCanExecuteChanged();
             PrintStickerCommand?.RaiseCanExecuteChanged();
             PreviewStickerZplCommand?.RaiseCanExecuteChanged();
             PrintA4Command?.RaiseCanExecuteChanged();
@@ -397,6 +739,23 @@ public sealed class CertificatesViewModel : ViewModelBase
     {
         get => _busyMessage;
         set => SetProperty(ref _busyMessage, value);
+    }
+
+    public bool IsAutoUploadEnabled
+    {
+        get => _isAutoUploadEnabled;
+        set => SetProperty(ref _isAutoUploadEnabled, value);
+    }
+
+    public string LastVerificationUrl
+    {
+        get => _lastVerificationUrl;
+        set
+        {
+            if (!SetProperty(ref _lastVerificationUrl, value)) return;
+            CopyVerificationUrlCommand?.RaiseCanExecuteChanged();
+            OpenVerificationUrlCommand?.RaiseCanExecuteChanged();
+        }
     }
 
     public string ClientName
@@ -666,6 +1025,10 @@ public sealed class CertificatesViewModel : ViewModelBase
     public AsyncRelayCommand DeleteCertificateCommand { get; }
     public AsyncRelayCommand RefreshCertificatesCommand { get; }
     public AsyncRelayCommand GeneratePdfCommand { get; }
+    public AsyncRelayCommand ExportPdfCommand { get; }
+    public AsyncRelayCommand UploadCertificateCommand { get; }
+    public RelayCommand CopyVerificationUrlCommand { get; }
+    public RelayCommand OpenVerificationUrlCommand { get; }
     public AsyncRelayCommand PrintStickerCommand { get; }
     public AsyncRelayCommand PreviewStickerZplCommand { get; }
     public AsyncRelayCommand PrintA4Command { get; }
@@ -835,13 +1198,13 @@ public sealed class CertificatesViewModel : ViewModelBase
         if (string.IsNullOrWhiteSpace(ClientName))
         {
             StatusMessage = "Client name is required.";
-            MessageBox.Show("يرجى إدخال اسم العميل أولًا.", "بيانات ناقصة", MessageBoxButton.OK, MessageBoxImage.Warning);
+            MessageBox.Show("يرجى إدخال اسم العميل أولاً.", "بيانات ناقصة", MessageBoxButton.OK, MessageBoxImage.Warning);
             return false;
         }
         if (string.IsNullOrWhiteSpace(Model))
         {
             StatusMessage = "Model is required.";
-            MessageBox.Show("يرجى إدخال الموديل أولًا.", "بيانات ناقصة", MessageBoxButton.OK, MessageBoxImage.Warning);
+            MessageBox.Show("يرجى إدخال الموديل أولاً.", "بيانات ناقصة", MessageBoxButton.OK, MessageBoxImage.Warning);
             return false;
         }
         if (string.Equals(DeviceType, "GPS", StringComparison.OrdinalIgnoreCase))
@@ -858,7 +1221,7 @@ public sealed class CertificatesViewModel : ViewModelBase
             if (string.IsNullOrWhiteSpace(SerialText))
             {
                 StatusMessage = "Serial number is required.";
-                MessageBox.Show("يرجى إدخال السيريال أولًا.", "بيانات ناقصة", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show("يرجى إدخال السيريال أولاً.", "بيانات ناقصة", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return false;
             }
         }
@@ -867,7 +1230,7 @@ public sealed class CertificatesViewModel : ViewModelBase
             && string.IsNullOrWhiteSpace(SpecValue))
         {
             StatusMessage = "Auto Level deviation rate is required.";
-            MessageBox.Show("يرجى إدخال قيمة معيار الانحراف (Auto Level) أولًا.", "بيانات ناقصة", MessageBoxButton.OK, MessageBoxImage.Warning);
+            MessageBox.Show("يرجى إدخال قيمة معيار الانحراف (Auto Level) أولاً.", "بيانات ناقصة", MessageBoxButton.OK, MessageBoxImage.Warning);
             return false;
         }
 
@@ -1039,7 +1402,7 @@ public sealed class CertificatesViewModel : ViewModelBase
             PreviewStickerZplCommand.RaiseCanExecuteChanged();
             PrintA4Command.RaiseCanExecuteChanged();
             await RefreshCertificatesAsync();
-            StatusMessage = "Certificate saved.";
+            StatusMessage = "تم حفظ الشهادة.";
 
             try
             {
@@ -1093,7 +1456,14 @@ public sealed class CertificatesViewModel : ViewModelBase
 
     async Task SaveCertificateAsync()
     {
-        _ = await SaveCertificateInternalAsync();
+        if (!await SaveCertificateInternalAsync())
+            return;
+
+        if (IsAutoUploadEnabled)
+        {
+            BusyMessage = "جارٍ رفع الشهادة للسحابة...";
+            await UploadCurrentCertificateAfterSaveAsync();
+        }
     }
 
     void CalibrationRows_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
@@ -1244,6 +1614,7 @@ public sealed class CertificatesViewModel : ViewModelBase
             DelegateName = row.DelegateName;
             CertificateNumber = row.CertificateNumber;
             LoadCalibrationPayload(row.PayloadEnc);
+            try { LastVerificationUrl = LoadVerifyUrlLocal(CertificateNumber ?? ""); } catch { }
         }
         finally
         {
@@ -1377,7 +1748,7 @@ public sealed class CertificatesViewModel : ViewModelBase
         var path = (LayoutTemplatePdfPath ?? "") != "" ? LayoutTemplatePdfPath : (LayoutTemplatePath ?? "");
         if (string.IsNullOrWhiteSpace(path))
         {
-            StatusMessage = "قم برفع قالب أولًا ثم اضغط معاينة.";
+            StatusMessage = "قم برفع قالب أولاً ثم اضغط معاينة.";
             return;
         }
         var ext = System.IO.Path.GetExtension(path).ToLowerInvariant();
@@ -1793,6 +2164,9 @@ public sealed class CertificatesViewModel : ViewModelBase
         if (!_currentCertificateId.HasValue)
             return;
 
+        if (IsAutoUploadEnabled)
+            await EnsureVerifyUrlBeforeDocumentAsync();
+
         IsBusy = true; BusyMessage = "Generating Word preview...";
         try
         {
@@ -1842,6 +2216,8 @@ public sealed class CertificatesViewModel : ViewModelBase
             return;
         if (!_currentCertificateId.HasValue)
             return;
+        if (IsAutoUploadEnabled)
+            await EnsureVerifyUrlBeforeDocumentAsync();
         IsBusy = true; BusyMessage = "Preparing document for printing...";
         try
         {
@@ -1971,6 +2347,8 @@ public sealed class CertificatesViewModel : ViewModelBase
             return;
         if (!_currentCertificateId.HasValue)
             return;
+        if (IsAutoUploadEnabled)
+            await EnsureVerifyUrlBeforeDocumentAsync();
 
         IsBusy = true; BusyMessage = "جارٍ إرسال الملصق...";
         var reportSettings = await Task.Run(() => new ReportDesignerSettingsStore().Load());
@@ -2017,6 +2395,8 @@ public sealed class CertificatesViewModel : ViewModelBase
             StatusMessage = "Select a certificate before preview.";
             return;
         }
+        if (IsAutoUploadEnabled)
+            await EnsureVerifyUrlBeforeDocumentAsync();
         IsBusy = true; BusyMessage = "جارٍ إنشاء معاينة الملصق...";
         var reportSettings = await Task.Run(() => new ReportDesignerSettingsStore().Load());
         var companyName = reportSettings.CompanyName ?? "";
@@ -2055,7 +2435,7 @@ public sealed class CertificatesViewModel : ViewModelBase
                 vm.CalDate = IssueDate;
                 vm.ExpDate = ExpiryDate;
 
-                // إضافة سجلات التصحيح هنا
+                // Ø¥Ø¶Ø§ÙØ© Ø³Ø¬Ù„Ø§Øª Ø§Ù„ØªØµØ­ÙŠØ­ Ù‡Ù†Ø§
                 Debug.WriteLine($"[CertificatesViewModel] Passing to StickerDesignerViewModel:");
                 Debug.WriteLine($"  CompanyName: {vm.CompanyName}");
                 Debug.WriteLine($"  CompanyHeader: {vm.CompanyHeader}");
@@ -2802,6 +3182,74 @@ public sealed class CertificatesViewModel : ViewModelBase
         var date = certificate.IssueDate == default ? DateTime.Today : certificate.IssueDate;
         var yymm = date.ToString("yyMM");
         return $"HAT-{yymm}-{certificate.Id:0000}";
+    }
+
+    static string GetVerifyUrlMapPath()
+    {
+        var dir = System.IO.Path.Combine(AppContext.BaseDirectory, "Certificates_Output");
+        System.IO.Directory.CreateDirectory(dir);
+        return System.IO.Path.Combine(dir, "verify_urls.json");
+    }
+
+    static void SaveVerifyUrlLocal(string certificateNumber, string url)
+    {
+        if (string.IsNullOrWhiteSpace(certificateNumber) || string.IsNullOrWhiteSpace(url)) return;
+        var path = GetVerifyUrlMapPath();
+        var dict = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        try
+        {
+            if (System.IO.File.Exists(path))
+            {
+                var json = System.IO.File.ReadAllText(path);
+                var existing = JsonSerializer.Deserialize<Dictionary<string, string>>(json);
+                if (existing != null)
+                    dict = new Dictionary<string, string>(existing, StringComparer.OrdinalIgnoreCase);
+            }
+        }
+        catch { }
+        dict[certificateNumber] = url;
+        try
+        {
+            System.IO.File.WriteAllText(path, JsonSerializer.Serialize(dict));
+        }
+        catch { }
+    }
+
+    static string LoadVerifyUrlLocal(string certificateNumber)
+    {
+        if (string.IsNullOrWhiteSpace(certificateNumber)) return "";
+        var path = GetVerifyUrlMapPath();
+        try
+        {
+            if (!System.IO.File.Exists(path)) return "";
+            var json = System.IO.File.ReadAllText(path);
+            var dict = JsonSerializer.Deserialize<Dictionary<string, string>>(json);
+            if (dict != null && dict.TryGetValue(certificateNumber, out var url))
+                return url ?? "";
+        }
+        catch { }
+        return "";
+    }
+
+    void CopyVerificationUrl()
+    {
+        try
+        {
+            if (!string.IsNullOrWhiteSpace(LastVerificationUrl))
+                Clipboard.SetText(LastVerificationUrl);
+            StatusMessage = "تم نسخ رابط التحقق.";
+        }
+        catch { }
+    }
+
+    void OpenVerificationUrl()
+    {
+        try
+        {
+            if (!string.IsNullOrWhiteSpace(LastVerificationUrl))
+                Process.Start(new ProcessStartInfo { FileName = LastVerificationUrl, UseShellExecute = true });
+        }
+        catch { }
     }
 }
 

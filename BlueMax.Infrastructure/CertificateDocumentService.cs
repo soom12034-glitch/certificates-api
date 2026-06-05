@@ -11,6 +11,7 @@ using ZXing.Common;
 using ZXing.QrCode;
 using ZXing.QrCode.Internal;
 using ZXing.Windows.Compatibility;
+using System.Text.Json;
 
 namespace BlueMax.Infrastructure;
 
@@ -220,26 +221,95 @@ public class CertificateDocumentService
 
         await Task.Run(() =>
         {
-            Document.Create(container =>
-            {
-                container.Page(page =>
-                {
-                    page.Size(595, 842);
-                    page.Margin(2, Unit.Centimetre);
-                    page.DefaultTextStyle(x => x.FontSize(12));
-
-                    page.Header().Element(c => c.AlignCenter().Text("Certificate of Calibration").Bold().FontSize(20));
-                    page.Content().Element(c => GeneratePdfContent(c, cert));
-                    page.Footer().AlignCenter().Text(x =>
-                    {
-                        x.Span("Page ");
-                        x.CurrentPageNumber();
-                    });
-                });
-            }).GeneratePdf(pdfPath);
+            if (!TryConvertDocxToPdfWithWord(docxPath, pdfPath))
+                GenerateFallbackPdf(pdfPath, cert);
         });
 
         return docxPath;
+    }
+
+    private static bool TryConvertDocxToPdfWithWord(string docxPath, string pdfPath)
+    {
+        dynamic? app = null;
+        dynamic? document = null;
+        try
+        {
+            if (string.IsNullOrWhiteSpace(docxPath) || !File.Exists(docxPath))
+                return false;
+
+            Directory.CreateDirectory(Path.GetDirectoryName(pdfPath) ?? AppContext.BaseDirectory);
+            var wordType = Type.GetTypeFromProgID("Word.Application");
+            if (wordType == null)
+                return false;
+
+            app = Activator.CreateInstance(wordType);
+            if (app == null)
+                return false;
+
+            app.Visible = false;
+            app.DisplayAlerts = 0;
+            try { app.AutomationSecurity = 3; } catch { }
+            document = app.Documents.Open(
+                FileName: docxPath,
+                ConfirmConversions: false,
+                ReadOnly: true,
+                AddToRecentFiles: false,
+                PasswordDocument: "",
+                PasswordTemplate: "",
+                Revert: false,
+                WritePasswordDocument: "",
+                WritePasswordTemplate: "",
+                Format: 0,
+                Encoding: 65001,
+                Visible: false,
+                OpenAndRepair: true,
+                NoEncodingDialog: true);
+            document.ExportAsFixedFormat(
+                pdfPath,
+                17,
+                OpenAfterExport: false,
+                OptimizeFor: 0,
+                Range: 0,
+                Item: 0,
+                IncludeDocProps: true,
+                KeepIRM: true,
+                CreateBookmarks: 0,
+                DocStructureTags: true,
+                BitmapMissingFonts: true,
+                UseISO19005_1: true);
+
+            return File.Exists(pdfPath) && new FileInfo(pdfPath).Length > 0;
+        }
+        catch
+        {
+            return false;
+        }
+        finally
+        {
+            try { document?.Close(false); } catch { }
+            try { app?.Quit(false); } catch { }
+        }
+    }
+
+    private static void GenerateFallbackPdf(string pdfPath, Certificate cert)
+    {
+        Document.Create(container =>
+        {
+            container.Page(page =>
+            {
+                page.Size(595, 842);
+                page.Margin(2, Unit.Centimetre);
+                page.DefaultTextStyle(x => x.FontSize(12));
+
+                page.Header().Element(c => c.AlignCenter().Text("Certificate of Calibration").Bold().FontSize(20));
+                page.Content().Element(c => GeneratePdfContent(c, cert));
+                page.Footer().AlignCenter().Text(x =>
+                {
+                    x.Span("Page ");
+                    x.CurrentPageNumber();
+                });
+            });
+        }).GeneratePdf(pdfPath);
     }
 
     private static string BuildCertificateQrPayload(Certificate cert, ReportDesignerSettings reportSettings, string verificationBaseUrl)
@@ -260,7 +330,11 @@ public class CertificateDocumentService
         var baseUrl = string.IsNullOrWhiteSpace(verificationBaseUrl)
             ? "https://example.com/certificates"
             : verificationBaseUrl.Trim();
-        var certUrl = BuildCertificateUrl(baseUrl, certNo);
+
+        // Prefer verifyUrl saved locally (after cloud upload). Fallback to baseUrl/certNo.
+        var certUrl = TryLoadVerifyUrlLocal(certNo);
+        if (string.IsNullOrWhiteSpace(certUrl))
+            certUrl = BuildCertificateUrl(baseUrl, certNo);
 
         var lines = new List<string>();
         if (!string.IsNullOrWhiteSpace(companyName))
@@ -279,6 +353,28 @@ public class CertificateDocumentService
         lines.Add($"URL:{certUrl}");
 
         return string.Join(Environment.NewLine, lines.Where(x => !string.IsNullOrWhiteSpace(x)));
+    }
+
+    private static string TryLoadVerifyUrlLocal(string certificateNumber)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(certificateNumber))
+                return string.Empty;
+            var dir = Path.Combine(AppContext.BaseDirectory, "Certificates_Output");
+            var mapPath = Path.Combine(dir, "verify_urls.json");
+            if (!File.Exists(mapPath))
+                return string.Empty;
+            var json = File.ReadAllText(mapPath);
+            var dict = JsonSerializer.Deserialize<Dictionary<string, string>>(json);
+            if (dict != null && dict.TryGetValue(certificateNumber, out var url))
+                return url ?? string.Empty;
+            return string.Empty;
+        }
+        catch
+        {
+            return string.Empty;
+        }
     }
 
     private static string BuildCertificateUrl(string baseUrl, string certNo)

@@ -78,6 +78,7 @@ public class TranslationViewModel : INotifyPropertyChanged
                 OnPropertyChanged(nameof(SaveCertificate));
                 OnPropertyChanged(nameof(PrintCertificateWord));
                 OnPropertyChanged(nameof(PrintCertificatePdf));
+                OnPropertyChanged(nameof(ExportPDF));
                 OnPropertyChanged(nameof(PreviewCertificate));
                 OnPropertyChanged(nameof(Preview));
                 OnPropertyChanged(nameof(PrintStickerButton));
@@ -459,6 +460,12 @@ public class TranslationViewModel : INotifyPropertyChanged
     public string SaveCertificate => Translations.Get("SaveCertificate");
     public string PrintCertificateWord => Translations.Get("PrintCertificateWord");
     public string PrintCertificatePdf => Translations.Get("PrintCertificatePdf");
+    public string ExportPDF => Translations.Get("ExportPDF");
+    public string UploadToCloud => Translations.Get("UploadToCloud");
+    public string AutoUpload => Translations.Get("AutoUpload");
+    public string VerificationLink => Translations.Get("VerificationLink");
+    public string CopyVerificationLink => Translations.Get("CopyVerificationLink");
+    public string OpenVerificationLink => Translations.Get("OpenVerificationLink");
     public string PreviewCertificate => Translations.Get("PreviewCertificate");
     public string Preview => Translations.Get("Preview");
     public string PrintStickerButton => Translations.Get("PrintStickerButton");

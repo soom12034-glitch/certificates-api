@@ -10,6 +10,7 @@ using System.IO;
 using System.Windows.Media.Imaging;
 using System.Diagnostics;
 using System.Threading.Tasks;
+using System.Text.Json;
 
 namespace BlueMax.Presentation.Wpf.ViewModels;
 
@@ -861,11 +862,38 @@ public class StickerDesignerViewModel : ViewModelBase
         {
             var qrItem = FindItem("qr");
         if (qrItem == null) return;
-        
-        // Construct payload compatible with the system
-        var payload = $"{_companyName}\n{_brand}\n{_model}\n{_serial}\n{_expDate:dd-MM-yyyy}\n{_companyPhone}";
-        qrItem.DisplayText = payload;
-        QrDebugInfo = $"QR Item Debug: DisplayText='{qrItem.DisplayText}', X={qrItem.X}, Y={qrItem.Y}, Width={qrItem.Width}, Height={qrItem.Height}, IsVisible={qrItem.IsVisible}";
+
+        // Prefer direct verifyUrl if available (after cloud upload). Fallback to informative text.
+        var verifyUrl = TryLoadVerifyUrlLocal(_certificateNumber);
+        if (!string.IsNullOrWhiteSpace(verifyUrl))
+        {
+            qrItem.DisplayText = verifyUrl;
+            QrDebugInfo = $"QR uses verifyUrl: {verifyUrl}";
+        }
+        else
+        {
+            // Fallback payload (not a link)
+            var payload = $"{_companyName}\n{_brand}\n{_model}\n{_serial}\n{_expDate:dd-MM-yyyy}\n{_companyPhone}";
+            qrItem.DisplayText = payload;
+            QrDebugInfo = $"QR fallback payload (no verifyUrl).";
+        }
+    }
+
+    static string TryLoadVerifyUrlLocal(string certificateNumber)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(certificateNumber)) return string.Empty;
+            var dir = System.IO.Path.Combine(AppContext.BaseDirectory, "Certificates_Output");
+            var mapPath = System.IO.Path.Combine(dir, "verify_urls.json");
+            if (!System.IO.File.Exists(mapPath)) return string.Empty;
+            var json = System.IO.File.ReadAllText(mapPath);
+            var dict = JsonSerializer.Deserialize<Dictionary<string, string>>(json);
+            if (dict != null && dict.TryGetValue(certificateNumber, out var url))
+                return url ?? string.Empty;
+            return string.Empty;
+        }
+        catch { return string.Empty; }
     }
 
     public RelayCommand GenerateAndSaveQrCodeCommand { get; }
