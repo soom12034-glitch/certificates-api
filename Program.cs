@@ -31,13 +31,7 @@ builder.Services.AddDbContext<AppDbContext>(opt => opt.UseSqlite($"Data Source={
 
 var app = builder.Build();
 
-// Optional path base (e.g., /verify) for running behind a reverse proxy on a sub-path
 var pathBase = Environment.GetEnvironmentVariable("PATH_BASE");
-if (!string.IsNullOrWhiteSpace(pathBase))
-{
-    if (!pathBase.StartsWith("/")) pathBase = "/" + pathBase;
-    app.UsePathBase(pathBase);
-}
 
 // Ensure DB is created
 using (var scope = app.Services.CreateScope())
@@ -135,7 +129,8 @@ app.MapPost("/v1/certificates", async (HttpRequest request, AppDbContext db) =>
         publicBase = $"{scheme}://{host}{pb}";
     }
 
-    var verifyUrl = $"{publicBase}/v1/verify/{id:N}";
+    var apiPrefix = string.Equals(pathBase?.Trim('/'), "v1", StringComparison.OrdinalIgnoreCase) ? string.Empty : "/v1";
+    var verifyUrl = $"{publicBase}{apiPrefix}/verify/{id:N}";
     return Results.Ok(new { id = id.ToString("N"), verifyUrl, updated = isUpdate });
 });
 
