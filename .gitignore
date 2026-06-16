@@ -1,6 +1,7 @@
 ## Build and IDE
 **/[Bb]in/
 **/[Oo]bj/
+**/_obj/
 .vs/
 *.user
 *.suo

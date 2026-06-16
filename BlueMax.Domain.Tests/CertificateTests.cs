@@ -140,38 +140,38 @@ public class WorkOrderTests
     }
 }
 
-public class LedgerEntryTests
+public class SparePartTests
 {
     [Fact]
-    public void LedgerEntry_WithValidData_PassesValidation()
+    public void SparePart_WithValidData_PassesValidation()
     {
         // Arrange
-        var ledgerEntry = new LedgerEntry
+        var sparePart = new SparePart
         {
-            EntryDate = DateTime.Now,
-            Type = "Income",
-            Description = "Payment received",
-            Amount = 500
+            Code = "SP-001",
+            Name = "Main Board",
+            Quantity = 5,
+            CostPrice = 100,
+            SellingPrice = 150
         };
 
         // Assert
-        Assert.Equal("Income", ledgerEntry.Type);
-        Assert.Equal(500, ledgerEntry.Amount);
+        Assert.Equal("SP-001", sparePart.Code);
+        Assert.Equal(5, sparePart.Quantity);
     }
 
     [Fact]
-    public void LedgerEntry_Amount_ShouldBePositive()
+    public void SparePart_SellingPrice_ShouldBePositive()
     {
         // Arrange
-        var ledgerEntry = new LedgerEntry
+        var sparePart = new SparePart
         {
-            EntryDate = DateTime.Now,
-            Type = "Income",
-            Description = "Payment received",
-            Amount = 100
+            Code = "SP-002",
+            Name = "Battery",
+            SellingPrice = 100
         };
 
         // Assert
-        Assert.True(ledgerEntry.Amount >= 0);
+        Assert.True(sparePart.SellingPrice >= 0);
     }
 }
