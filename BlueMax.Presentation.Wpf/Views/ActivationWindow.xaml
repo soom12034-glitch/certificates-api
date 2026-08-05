@@ -16,7 +16,15 @@
             <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=ProductActivation}" FontSize="20" FontWeight="Bold" Margin="0,0,0,20" HorizontalAlignment="Center"/>
             
             <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=HardwareFingerprint}" Margin="0,0,0,5"/>
-            <TextBox x:Name="TxtHardwareId" IsReadOnly="True" Background="#F0F0F0" Padding="5" FontSize="14" FontWeight="SemiBold"/>
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBox Grid.Column="0" x:Name="TxtHardwareId" IsReadOnly="True" Background="#F0F0F0" Padding="5" FontSize="15" FontWeight="SemiBold" FontFamily="Consolas" TextAlignment="Center" VerticalContentAlignment="Center" BorderBrush="#B0B0B0"/>
+                <Button Grid.Column="1" x:Name="BtnCopyHardwareId" Content="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=CopyButton}" Margin="8,0,0,0" Padding="14,6" Click="BtnCopyHardwareId_Click"/>
+            </Grid>
+            <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=HardwareIdHint}" Foreground="#777777" FontSize="11" Margin="0,4,0,0" TextWrapping="Wrap"/>
             
             <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=ActivationCode}" Margin="0,15,0,5"/>
             <TextBox x:Name="TxtActivationCode" Padding="5" FontSize="16" FontFamily="Consolas" MaxLength="19" TextChanged="TxtActivationCode_TextChanged"/>

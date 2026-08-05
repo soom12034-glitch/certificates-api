@@ -2,6 +2,7 @@ using System;
 using System.Windows;
 using BlueMax.Infrastructure;
 using BlueMax.Presentation.Wpf;
+using BlueMax.Presentation.Wpf.ViewModels;
 
 namespace BlueMax.Presentation.Wpf.Views
 {
@@ -17,6 +18,28 @@ namespace BlueMax.Presentation.Wpf.Views
             TxtHardwareId.Text = _licenseService.GetHardwareId();
 
             WindowHelper.ApplyDarkTitleBar(this);
+        }
+
+        private void BtnCopyHardwareId_Click(object sender, RoutedEventArgs e)
+        {
+            if (string.IsNullOrEmpty(TxtHardwareId.Text)) return;
+
+            try
+            {
+                Clipboard.SetText(TxtHardwareId.Text);
+                BtnCopyHardwareId.Content = "✓ " + TranslationViewModel.Instance.CopyButton;
+                var timer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(2) };
+                timer.Tick += (_, _) =>
+                {
+                    BtnCopyHardwareId.Content = TranslationViewModel.Instance.CopyButton;
+                    timer.Stop();
+                };
+                timer.Start();
+            }
+            catch
+            {
+                TxtStatus.Text = "تعذر نسخ بصمة الجهاز.";
+            }
         }
 
         private void BtnActivate_Click(object sender, RoutedEventArgs e)

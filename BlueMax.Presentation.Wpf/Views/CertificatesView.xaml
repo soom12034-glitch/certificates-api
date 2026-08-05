@@ -304,6 +304,19 @@
                                   VirtualizingPanel.IsVirtualizing="True"
                                   VirtualizingPanel.VirtualizationMode="Recycling"
                                   ScrollViewer.CanContentScroll="True">
+                            <DataGrid.RowStyle>
+                                <Style TargetType="DataGridRow">
+                                    <EventSetter Event="PreviewMouseRightButtonDown" Handler="ArchiveGridRow_PreviewMouseRightButtonDown"/>
+                                </Style>
+                            </DataGrid.RowStyle>
+                            <DataGrid.ContextMenu>
+                                <ContextMenu>
+                                    <MenuItem Header="تعديل / إعادة تسمية" Command="{Binding EditOldCertificateCommand}" />
+                                    <MenuItem Header="حذف" Command="{Binding DeleteCertificateCommand}" />
+                                    <Separator />
+                                    <MenuItem Header="فتح" Command="{Binding OpenSelectedCertificateFileCommand}" />
+                                </ContextMenu>
+                            </DataGrid.ContextMenu>
                             <DataGrid.Columns>
                                 <DataGridTextColumn Header="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=CertificateNumber}" Binding="{Binding CertificateNumber}" Width="*" />
                                 <DataGridTextColumn Header="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=ClientName}" Binding="{Binding ClientName}" Width="*" />

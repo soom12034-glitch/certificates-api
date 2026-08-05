@@ -1,4 +1,4 @@
-<Window x:Class="BlueMax.Presentation.Wpf.Views.HelpWindow"
+﻿<Window x:Class="BlueMax.Presentation.Wpf.Views.HelpWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -12,7 +12,7 @@
         ResizeMode="CanResize"
         WindowStyle="SingleBorderWindow"
         FlowDirection="RightToLeft"
-        FontFamily="Cairo 2026, Segoe UI">
+        FontFamily="Cairo, Segoe UI">
     
     <Window.DataContext>
         <viewmodels:HelpViewModel/>

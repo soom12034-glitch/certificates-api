@@ -1,10 +1,12 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Media;
 using System.Threading.Tasks;
 using System.Windows;
+using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using BlueMax.Domain;
 using BlueMax.Infrastructure;
@@ -65,12 +67,204 @@ public sealed class RentalsViewModel : ViewModelBase
 
     static AppDbContext CreateDbContext()
     {
-        // Use the same database path as the backup system (AppContext.BaseDirectory)
-        var dbPath = Path.Combine(AppContext.BaseDirectory, "BlueMax.db");
-        var optionsBuilder = new DbContextOptionsBuilder<AppDbContext>();
-        var connectionString = $"Data Source={dbPath}";
-        optionsBuilder.UseSqlite(connectionString);
-        return new AppDbContext(optionsBuilder.Options);
+        return DbContextFactory.CreateDbContext();
+    }
+
+    static string GetLegacyRentalsDbPath()
+    {
+        return Path.Combine(AppContext.BaseDirectory, "BlueMax.db");
+    }
+
+    static void TryMigrateLegacyRentals(AppDbContext db)
+    {
+        try
+        {
+            var legacyDbPath = GetLegacyRentalsDbPath();
+            var primaryDbPath = AppDbContext.GetLocalDbPath();
+
+            if (!File.Exists(legacyDbPath))
+                return;
+
+            var legacyFullPath = Path.GetFullPath(legacyDbPath);
+            var primaryFullPath = Path.GetFullPath(primaryDbPath);
+            if (string.Equals(legacyFullPath, primaryFullPath, StringComparison.OrdinalIgnoreCase))
+                return;
+
+            var legacyRentals = LoadLegacyRentals(legacyDbPath);
+            if (legacyRentals.Count == 0)
+                return;
+
+            var existingRentalNumbers = db.Rentals
+                .AsNoTracking()
+                .Where(r => !string.IsNullOrWhiteSpace(r.RentalNumber))
+                .Select(r => r.RentalNumber)
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+            var existingCompositeKeys = db.Rentals
+                .AsNoTracking()
+                .Select(r => BuildRentalCompositeKey(r.CustomerName, r.Serial, r.StartDate, r.EndDate, r.Price))
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+            var addedCount = 0;
+            foreach (var legacy in legacyRentals)
+            {
+                var hasRentalNumber = !string.IsNullOrWhiteSpace(legacy.RentalNumber);
+                if (hasRentalNumber && existingRentalNumbers.Contains(legacy.RentalNumber))
+                    continue;
+
+                var compositeKey = BuildRentalCompositeKey(legacy.CustomerName, legacy.Serial, legacy.StartDate, legacy.EndDate, legacy.Price);
+                if (existingCompositeKeys.Contains(compositeKey))
+                    continue;
+
+                db.Rentals.Add(legacy);
+                addedCount++;
+
+                if (hasRentalNumber)
+                    existingRentalNumbers.Add(legacy.RentalNumber);
+                existingCompositeKeys.Add(compositeKey);
+            }
+
+            if (addedCount > 0)
+            {
+                db.SaveChanges();
+                LogService.LogInfo($"Migrated {addedCount} legacy rental records from BlueMax.db to shared database.");
+            }
+        }
+        catch (Exception ex)
+        {
+            LogService.LogException(ex);
+        }
+    }
+
+    static List<Rental> LoadLegacyRentals(string legacyDbPath)
+    {
+        var rentals = new List<Rental>();
+
+        using var connection = new SqliteConnection($"Data Source={legacyDbPath}");
+        connection.Open();
+
+        var columns = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        using (var columnsCommand = connection.CreateCommand())
+        {
+            columnsCommand.CommandText = "PRAGMA table_info(\"Rentals\")";
+            using var columnsReader = columnsCommand.ExecuteReader();
+            while (columnsReader.Read())
+            {
+                var columnName = columnsReader["name"]?.ToString();
+                if (!string.IsNullOrWhiteSpace(columnName))
+                    columns.Add(columnName);
+            }
+        }
+
+        if (columns.Count == 0)
+            return rentals;
+
+        string SelectColumn(string name, string fallbackSql)
+            => columns.Contains(name) ? $"\"{name}\"" : $"{fallbackSql} AS \"{name}\"";
+
+        using var command = connection.CreateCommand();
+        command.CommandText = $@"
+            SELECT
+                {SelectColumn("RentalNumber", "''")},
+                {SelectColumn("CustomerName", "''")},
+                {SelectColumn("Company", "''")},
+                {SelectColumn("Phone", "''")},
+                {SelectColumn("TaxNumber", "''")},
+                {SelectColumn("IdNumber", "''")},
+                {SelectColumn("DeviceType", "''")},
+                {SelectColumn("Brand", "''")},
+                {SelectColumn("Model", "''")},
+                {SelectColumn("Serial", "''")},
+                {SelectColumn("Serial2", "''")},
+                {SelectColumn("StartDate", "''")},
+                {SelectColumn("EndDate", "''")},
+                {SelectColumn("RentalType", "'Daily'")},
+                {SelectColumn("Price", "0")},
+                {SelectColumn("PaidAmount", "0")},
+                {SelectColumn("RemainingAmount", "0")},
+                {SelectColumn("Status", "'Active'")},
+                {SelectColumn("Notes", "''")},
+                {SelectColumn("CreatedAt", "''")}
+            FROM ""Rentals"";";
+
+        using var reader = command.ExecuteReader();
+        while (reader.Read())
+        {
+            var rentalNumber = ReadString(reader, "RentalNumber");
+            if (string.IsNullOrWhiteSpace(rentalNumber))
+                rentalNumber = GenerateLegacyRentalNumber();
+
+            rentals.Add(new Rental
+            {
+                RentalNumber = rentalNumber,
+                CustomerName = ReadString(reader, "CustomerName"),
+                Company = ReadString(reader, "Company"),
+                Phone = ReadString(reader, "Phone"),
+                TaxNumber = ReadString(reader, "TaxNumber"),
+                IdNumber = ReadString(reader, "IdNumber"),
+                DeviceType = ReadString(reader, "DeviceType"),
+                Brand = ReadString(reader, "Brand"),
+                Model = ReadString(reader, "Model"),
+                Serial = ReadString(reader, "Serial"),
+                Serial2 = ReadString(reader, "Serial2"),
+                StartDate = ReadDateTime(reader, "StartDate", DateTime.Today),
+                EndDate = ReadDateTime(reader, "EndDate", DateTime.Today.AddDays(1)),
+                RentalType = ReadString(reader, "RentalType"),
+                Price = ReadDecimal(reader, "Price"),
+                PaidAmount = ReadDecimal(reader, "PaidAmount"),
+                RemainingAmount = ReadDecimal(reader, "RemainingAmount"),
+                Status = ReadString(reader, "Status"),
+                Notes = ReadString(reader, "Notes"),
+                CreatedAt = ReadDateTime(reader, "CreatedAt", DateTime.Now)
+            });
+        }
+
+        return rentals;
+    }
+
+    static string BuildRentalCompositeKey(string? customerName, string? serial, DateTime startDate, DateTime endDate, decimal price)
+    {
+        return $"{(customerName ?? "").Trim().ToUpperInvariant()}|{(serial ?? "").Trim().ToUpperInvariant()}|{startDate:yyyy-MM-dd}|{endDate:yyyy-MM-dd}|{price:0.####}";
+    }
+
+    static string ReadString(SqliteDataReader reader, string column)
+    {
+        var value = reader[column];
+        return value == DBNull.Value ? "" : value?.ToString() ?? "";
+    }
+
+    static DateTime ReadDateTime(SqliteDataReader reader, string column, DateTime fallback)
+    {
+        var raw = ReadString(reader, column);
+        if (DateTime.TryParse(raw, out var parsed))
+            return parsed;
+        return fallback;
+    }
+
+    static decimal ReadDecimal(SqliteDataReader reader, string column)
+    {
+        var value = reader[column];
+        if (value == DBNull.Value)
+            return 0m;
+
+        if (value is decimal d)
+            return d;
+        if (value is double db)
+            return Convert.ToDecimal(db);
+        if (value is float f)
+            return Convert.ToDecimal(f);
+        if (value is long l)
+            return l;
+        if (value is int i)
+            return i;
+
+        var text = value.ToString();
+        return decimal.TryParse(text, out var parsed) ? parsed : 0m;
+    }
+
+    static string GenerateLegacyRentalNumber()
+    {
+        return $"MIG-{Guid.NewGuid():N}";
     }
 
     public ObservableCollection<RentalItem> Rentals { get; }
@@ -327,18 +521,7 @@ public sealed class RentalsViewModel : ViewModelBase
         try
         {
             using var db = CreateDbContext();
-            
-            // Force database recreation to ensure all tables exist
-            try
-            {
-                var _ = db.Rentals.Count();
-            }
-            catch
-            {
-                // Table doesn't exist, recreate database
-                db.Database.EnsureDeleted();
-                db.Database.EnsureCreated();
-            }
+            db.Database.EnsureCreated();
             
             if (_currentRentalId.HasValue)
             {
@@ -860,72 +1043,12 @@ public sealed class RentalsViewModel : ViewModelBase
             _ensureDbCreatedTask = Task.Run(() =>
             {
                 using var db = CreateDbContext();
-                // Use EnsureCreated to create the database and tables if they don't exist
                 db.Database.EnsureCreated();
-                
-                // If the database exists but Rentals table is missing, create it manually
-                try
-                {
-                    var rentalsCount = db.Rentals.Count();
-                }
-                catch
-                {
-                    // Table doesn't exist, try to create it using raw SQL
-                    try
-                    {
-                        var connection = db.Database.GetDbConnection();
-                        connection.Open();
-                        
-                        var createTableSql = @"
-                            CREATE TABLE IF NOT EXISTS ""Rentals"" (
-                                ""Id"" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-                                ""RentalNumber"" TEXT NOT NULL,
-                                ""CustomerName"" TEXT NOT NULL,
-                                ""Company"" TEXT,
-                                ""Phone"" TEXT,
-                                ""DeviceType"" TEXT NOT NULL,
-                                ""Brand"" TEXT,
-                                ""Model"" TEXT,
-                                ""Serial"" TEXT NOT NULL,
-                                ""Serial2"" TEXT,
-                                ""StartDate"" TEXT NOT NULL,
-                                ""EndDate"" TEXT NOT NULL,
-                                ""RentalType"" TEXT NOT NULL,
-                                ""Price"" REAL NOT NULL,
-                                ""PaidAmount"" REAL NOT NULL,
-                                ""RemainingAmount"" REAL NOT NULL,
-                                ""Status"" TEXT NOT NULL,
-                                ""Notes"" TEXT,
-                                ""CreatedAt"" TEXT NOT NULL
-                            );
-                            
-                            CREATE INDEX IF NOT EXISTS ""IX_Rentals_RentalNumber"" ON ""Rentals"" (""RentalNumber"");
-                            CREATE INDEX IF NOT EXISTS ""IX_Rentals_CustomerName"" ON ""Rentals"" (""CustomerName"");
-                            CREATE INDEX IF NOT EXISTS ""IX_Rentals_Phone"" ON ""Rentals"" (""Phone"");
-                            CREATE INDEX IF NOT EXISTS ""IX_Rentals_DeviceType"" ON ""Rentals"" (""DeviceType"");
-                            CREATE INDEX IF NOT EXISTS ""IX_Rentals_Brand"" ON ""Rentals"" (""Brand"");
-                            CREATE INDEX IF NOT EXISTS ""IX_Rentals_Serial"" ON ""Rentals"" (""Serial"");
-                            CREATE INDEX IF NOT EXISTS ""IX_Rentals_StartDate"" ON ""Rentals"" (""StartDate"");
-                            CREATE INDEX IF NOT EXISTS ""IX_Rentals_EndDate"" ON ""Rentals"" (""EndDate"");
-                            CREATE INDEX IF NOT EXISTS ""IX_Rentals_Status"" ON ""Rentals"" (""Status"");
-                        ";
-                        
-                        using var command = connection.CreateCommand();
-                        command.CommandText = createTableSql;
-                        command.ExecuteNonQuery();
-                        connection.Close();
-                    }
-                    catch (Exception ex)
-                    {
-                        // If manual creation fails, recreate the entire database
-                        System.Diagnostics.Debug.WriteLine($"Failed to create Rentals table: {ex.Message}");
-                        db.Database.EnsureDeleted();
-                        db.Database.EnsureCreated();
-                    }
-                }
+                TryMigrateLegacyRentals(db);
             });
-            await _ensureDbCreatedTask;
         }
+
+        await _ensureDbCreatedTask;
     }
 }
 
@@ -1090,5 +1213,6 @@ public sealed class RentalReceiptData
     public decimal Price { get; set; }
     public decimal PaidAmount { get; set; }
     public decimal RemainingAmount { get; set; }
+    public string Status { get; set; } = "";
     public string Notes { get; set; } = "";
 }

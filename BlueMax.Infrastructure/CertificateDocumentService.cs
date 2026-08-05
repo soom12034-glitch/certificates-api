@@ -60,7 +60,7 @@ public class CertificateDocumentService
             }).GeneratePdf(pdfPath);
         });
 
-        return pdfPath;
+        return docxPath;
     }
 
     private static Dictionary<string, object> BuildCertificateTokenData(Certificate cert, ReportDesignerSettings reportSettings, string verificationBaseUrl)
@@ -440,7 +440,7 @@ public class CertificateDocumentService
                         column.Item().Text($"Report Number: {documentNumber}").Bold();
                         column.Item().Text($"Work Order Number: {workOrder.Id}");
                         column.Item().Text($"Device Type: {workOrder.DeviceType}");
-                        column.Item().Text($"Brand: {workOrder.DeviceType}");
+                        column.Item().Text($"Brand: {workOrder.Brand}");
                         column.Item().Text($"Model: {workOrder.Model}");
                         column.Item().Text($"Serial Number: {workOrder.SerialNumber}");
                         column.Item().Text($"Issue Date: {workOrder.ReceivedDate:yyyy-MM-dd}");
@@ -494,7 +494,7 @@ public class CertificateDocumentService
                         column.Item().Text($"Document Number: {documentNumber}").Bold();
                         column.Item().Text($"Work Order Number: {workOrder.Id}");
                         column.Item().Text($"Device Type: {workOrder.DeviceType}");
-                        column.Item().Text($"Brand: {workOrder.DeviceType}");
+                        column.Item().Text($"Brand: {workOrder.Brand}");
                         column.Item().Text($"Model: {workOrder.Model}");
                         column.Item().Text($"Serial Number: {workOrder.SerialNumber}");
                         column.Item().Text($"Issue Date: {workOrder.ReceivedDate:yyyy-MM-dd}");
@@ -530,8 +530,8 @@ public class CertificateDocumentService
 
             ["DeviceType"] = workOrder.DeviceType ?? "",
             ["device_type"] = workOrder.DeviceType ?? "",
-            ["Brand"] = workOrder.DeviceType ?? "",
-            ["brand"] = workOrder.DeviceType ?? "",
+            ["Brand"] = workOrder.Brand ?? "",
+            ["brand"] = workOrder.Brand ?? "",
             ["Model"] = workOrder.Model ?? "",
             ["model"] = workOrder.Model ?? "",
             ["SerialNumber"] = workOrder.SerialNumber ?? "",
@@ -595,7 +595,7 @@ public class CertificateDocumentService
             }).GeneratePdf(pdfPath);
         });
 
-        return pdfPath;
+        return docxPath;
     }
 
     private static void GenerateRentalPdfContent(IContainer container, Rental rental)

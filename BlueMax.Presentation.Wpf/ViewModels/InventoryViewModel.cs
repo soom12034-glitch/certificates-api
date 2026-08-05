@@ -324,74 +324,122 @@ public sealed class InventoryViewModel : ViewModelBase
             const double dpi = 96.0;
             const double a4Width = 8.27 * dpi;
             const double a4Height = 11.69 * dpi;
+            const double pageMargin = 40;
+            const double rowHeight = 40;
+            const double firstPageHeaderHeight = 125;
+            const double continuationHeaderHeight = 30;
 
             var doc = new FixedDocument();
             doc.DocumentPaginator.PageSize = new Size(a4Width, a4Height);
 
-            var page = new FixedPage { Width = a4Width, Height = a4Height, FlowDirection = FlowDirection.RightToLeft, Background = Brushes.White };
-            
-            var stack = new StackPanel { Width = a4Width - 80, Margin = new Thickness(40) };
-            
-            stack.Children.Add(new TextBlock 
-            { 
-                Text = "تقرير المخزون وقطع الغيار", 
-                FontSize = 24, 
-                FontWeight = FontWeights.Bold, 
-                TextAlignment = TextAlignment.Center,
-                Margin = new Thickness(0, 0, 0, 20) 
-            });
-
-            var infoGrid = new Grid();
-            infoGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-            infoGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-            
-            infoGrid.Children.Add(new TextBlock { Text = $"تاريخ التقرير: {DateTime.Now:yyyy-MM-dd HH:mm}", FontSize = 14 });
-            var comp = new TextBlock { Text = $"إجمالي القطع: {Items.Count}", FontSize = 14, TextAlignment = TextAlignment.Right };
-            Grid.SetColumn(comp, 1);
-            infoGrid.Children.Add(comp);
-            
-            stack.Children.Add(infoGrid);
-            stack.Children.Add(new Border { BorderBrush = Brushes.Black, BorderThickness = new Thickness(0, 0, 0, 2), Margin = new Thickness(0, 10, 0, 20) });
-
-            var tableGrid = new Grid();
-            tableGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(100) }); // كود
-            tableGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) }); // اسم
-            tableGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(60) }); // كمية
-            tableGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(80) }); // تكلفة
-            tableGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(80) }); // بيع
-            tableGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(100) }); // رف
-
-            // Header row
-            AddReportCell(tableGrid, 0, 0, "الكود", true);
-            AddReportCell(tableGrid, 0, 1, "اسم القطعة", true);
-            AddReportCell(tableGrid, 0, 2, "الكمية", true);
-            AddReportCell(tableGrid, 0, 3, "التكلفة", true);
-            AddReportCell(tableGrid, 0, 4, "سعر البيع", true);
-            AddReportCell(tableGrid, 0, 5, "المكان", true);
-            tableGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-
-            int row = 1;
-            foreach (var item in Items)
+            var rows = Items.ToList();
+            var chunks = new List<int>();
+            double contentHeight = a4Height - 2 * pageMargin;
+            int firstPageRows = Math.Max(1, (int)Math.Floor((contentHeight - firstPageHeaderHeight) / rowHeight));
+            int nextPageRows = Math.Max(1, (int)Math.Floor((contentHeight - continuationHeaderHeight) / rowHeight));
+            int remaining = rows.Count;
+            if (remaining == 0)
             {
-                tableGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-                AddReportCell(tableGrid, row, 0, item.Code, false);
-                AddReportCell(tableGrid, row, 1, item.Name, false);
-                
-                var qtyCell = AddReportCell(tableGrid, row, 2, item.Quantity.ToString(), false);
-                if (item.IsLowStock) qtyCell.Foreground = Brushes.Red; // Highlight low stock
-                
-                AddReportCell(tableGrid, row, 3, item.CostPrice.ToString("0.00"), false);
-                AddReportCell(tableGrid, row, 4, item.SellingPrice.ToString("0.00"), false);
-                AddReportCell(tableGrid, row, 5, item.Location, false);
-                row++;
+                chunks.Add(0);
+            }
+            else
+            {
+                int first = Math.Min(firstPageRows, remaining);
+                chunks.Add(first);
+                remaining -= first;
+                while (remaining > 0)
+                {
+                    int chunk = Math.Min(nextPageRows, remaining);
+                    chunks.Add(chunk);
+                    remaining -= chunk;
+                }
             }
 
-            stack.Children.Add(tableGrid);
-            page.Children.Add(stack);
-            
-            var content = new PageContent();
-            ((IAddChild)content).AddChild(page);
-            doc.Pages.Add(content);
+            int start = 0;
+            for (int p = 0; p < chunks.Count; p++)
+            {
+                var page = new FixedPage { Width = a4Width, Height = a4Height, FlowDirection = FlowDirection.RightToLeft, Background = Brushes.White };
+
+                var stack = new StackPanel { Width = a4Width - 2 * pageMargin, Margin = new Thickness(pageMargin) };
+
+                if (p == 0)
+                {
+                    stack.Children.Add(new TextBlock
+                    {
+                        Text = "تقرير المخزون وقطع الغيار",
+                        FontSize = 24,
+                        FontWeight = FontWeights.Bold,
+                        TextAlignment = TextAlignment.Center,
+                        Margin = new Thickness(0, 0, 0, 20)
+                    });
+
+                    var infoGrid = new Grid();
+                    infoGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+                    infoGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+
+                    infoGrid.Children.Add(new TextBlock { Text = $"تاريخ التقرير: {DateTime.Now:yyyy-MM-dd HH:mm}", FontSize = 14 });
+                    var comp = new TextBlock { Text = $"إجمالي القطع: {rows.Count}", FontSize = 14, TextAlignment = TextAlignment.Right };
+                    Grid.SetColumn(comp, 1);
+                    infoGrid.Children.Add(comp);
+
+                    stack.Children.Add(infoGrid);
+                    stack.Children.Add(new Border { BorderBrush = Brushes.Black, BorderThickness = new Thickness(0, 0, 0, 2), Margin = new Thickness(0, 10, 0, 20) });
+                }
+
+                var tableGrid = new Grid();
+                tableGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(100) });
+                tableGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+                tableGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(60) });
+                tableGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(80) });
+                tableGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(80) });
+                tableGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(100) });
+
+                AddReportCell(tableGrid, 0, 0, "الكود", true);
+                AddReportCell(tableGrid, 0, 1, "اسم القطعة", true);
+                AddReportCell(tableGrid, 0, 2, "الكمية", true);
+                AddReportCell(tableGrid, 0, 3, "التكلفة", true);
+                AddReportCell(tableGrid, 0, 4, "سعر البيع", true);
+                AddReportCell(tableGrid, 0, 5, "المكان", true);
+                tableGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+
+                int r = 1;
+                for (int i = start; i < start + chunks[p] && i < rows.Count; i++)
+                {
+                    var item = rows[i];
+                    tableGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+                    AddReportCell(tableGrid, r, 0, item.Code, false);
+                    AddReportCell(tableGrid, r, 1, item.Name, false);
+
+                    var qtyCell = AddReportCell(tableGrid, r, 2, item.Quantity.ToString(), false);
+                    if (item.IsLowStock) qtyCell.Foreground = Brushes.Red;
+
+                    AddReportCell(tableGrid, r, 3, item.CostPrice.ToString("0.00"), false);
+                    AddReportCell(tableGrid, r, 4, item.SellingPrice.ToString("0.00"), false);
+                    AddReportCell(tableGrid, r, 5, item.Location, false);
+                    r++;
+                }
+                start += chunks[p];
+
+                stack.Children.Add(tableGrid);
+
+                if (chunks.Count > 1)
+                {
+                    stack.Children.Add(new TextBlock
+                    {
+                        Text = $"الصفحة {p + 1} من {chunks.Count}",
+                        FontSize = 12,
+                        TextAlignment = TextAlignment.Center,
+                        Margin = new Thickness(0, 16, 0, 0),
+                        Foreground = new SolidColorBrush(Color.FromRgb(120, 120, 120))
+                    });
+                }
+
+                page.Children.Add(stack);
+
+                var content = new PageContent();
+                ((IAddChild)content).AddChild(page);
+                doc.Pages.Add(content);
+            }
 
             dialog.PrintDocument(doc.DocumentPaginator, "تقرير المخزون");
         }

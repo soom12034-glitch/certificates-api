@@ -34,6 +34,7 @@ public static class Translations
         public const string HardwareFingerprint = "بصمة الجهاز (أرسل هذا الرمز للمسؤول):";
         public const string ActivationCode = "رمز التفعيل:";
         public const string Activate = "تفعيل";
+        public const string HardwareIdHint = "أرسل بصمة الجهاز أعلاه إلى المورّد لإنشاء رمز التفعيل";
         // Certificates View Fields
         public const string ClientData = "بيانات العميل";
         public const string ClientNameField = "اسم العميل *";
@@ -243,6 +244,18 @@ public static class Translations
         public const string TestPrint = "اختبار الطباعة";
         public const string QrLabel = "QR";
         public const string GenerateAndSaveQr = "توليد وحفظ QR";
+        public const string DetectStickerPrinter = "كشف طابعة الاستيكر";
+        public const string DetectedPrinters = "الطابعات المكتشفة";
+        public const string ApplySelectedPrinter = "تطبيق الطابعة المحددة";
+        public const string PrinterDriver = "الدرايفر";
+        public const string PrinterPort = "المنفذ";
+        public const string PrinterDpi = "الدقة (DPI)";
+        public const string PrinterProtocolHeader = "البروتوكول";
+        public const string ThermalPrinterType = "حرارية";
+        public const string StandardPrinterType = "عادية";
+        public const string NoPrinterSelected = "اختر طابعة أولاً.";
+        public const string PrinterDetectedMessage = "تم تحديد الطابعة: {0} ({1}, {2} DPI)";
+        public const string ThermalHint = "الطابعات الحرارية مميزة باللون الأزرق";
         // Sticker Designer Extra
         public const string SaveAsTemplate = "حفظ كقالب";
         public const string ContentHeaderCompanyName = "اسم الشركة:";
@@ -625,6 +638,7 @@ public static class Translations
         public const string HardwareFingerprint = "Hardware Fingerprint (Send this code to admin):";
         public const string ActivationCode = "Activation Code:";
         public const string Activate = "Activate";
+        public const string HardwareIdHint = "Send this fingerprint to your admin to generate the activation code";
         
         
         // Certificates View Fields
@@ -836,6 +850,18 @@ public static class Translations
         public const string TestPrint = "Test Print";
         public const string QrLabel = "QR";
         public const string GenerateAndSaveQr = "Generate & Save QR";
+        public const string DetectStickerPrinter = "Detect Sticker Printer";
+        public const string DetectedPrinters = "Detected Printers";
+        public const string ApplySelectedPrinter = "Apply Selected Printer";
+        public const string PrinterDriver = "Driver";
+        public const string PrinterPort = "Port";
+        public const string PrinterDpi = "Resolution (DPI)";
+        public const string PrinterProtocolHeader = "Protocol";
+        public const string ThermalPrinterType = "Thermal";
+        public const string StandardPrinterType = "Standard";
+        public const string NoPrinterSelected = "Select a printer first.";
+        public const string PrinterDetectedMessage = "Printer selected: {0} ({1}, {2} DPI)";
+        public const string ThermalHint = "Thermal printers are highlighted in blue";
         // Sticker Designer Extra
         public const string SaveAsTemplate = "Save as Template";
         public const string ContentHeaderCompanyName = "Company Name:";

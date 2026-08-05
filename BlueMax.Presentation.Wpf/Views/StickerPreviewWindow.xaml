@@ -25,23 +25,21 @@
         <DataTemplate x:Key="TextTemplate">
             <TextBlock Text="{Binding DisplayText}" 
                        FontSize="{Binding FontSize}" 
+                       TextAlignment="{Binding TextAlignment}"
                        TextWrapping="Wrap" 
                        VerticalAlignment="Top"
                        HorizontalAlignment="Stretch"
                        Visibility="{Binding IsVisible, Converter={StaticResource BoolToVis}}">
                 <TextBlock.Style>
                     <Style TargetType="TextBlock">
-                        <Setter Property="TextAlignment" Value="Left"/>
                         <Setter Property="FontWeight" Value="Normal"/>
                         <Setter Property="FlowDirection" Value="LeftToRight"/>
                         <Style.Triggers>
                             <DataTrigger Binding="{Binding Key}" Value="company">
-                                <Setter Property="TextAlignment" Value="Center"/>
                                 <Setter Property="FontWeight" Value="Bold"/>
                                 <Setter Property="FlowDirection" Value="RightToLeft"/>
                             </DataTrigger>
                             <DataTrigger Binding="{Binding Key}" Value="header">
-                                <Setter Property="TextAlignment" Value="Center"/>
                                 <Setter Property="FontWeight" Value="SemiBold"/>
                                 <Setter Property="FlowDirection" Value="RightToLeft"/>
                             </DataTrigger>
@@ -60,14 +58,11 @@
                             <DataTrigger Binding="{Binding Key}" Value="exp_label">
                                 <Setter Property="FontWeight" Value="Bold"/>
                                 <Setter Property="FlowDirection" Value="RightToLeft"/>
-                                <Setter Property="TextAlignment" Value="Right"/>
                             </DataTrigger>
                             <DataTrigger Binding="{Binding Key}" Value="address">
-                                <Setter Property="TextAlignment" Value="Center"/>
                                 <Setter Property="FlowDirection" Value="RightToLeft"/>
                             </DataTrigger>
                             <DataTrigger Binding="{Binding Key}" Value="phone">
-                                <Setter Property="TextAlignment" Value="Center"/>
                                 <Setter Property="FlowDirection" Value="LeftToRight"/>
                             </DataTrigger>
                         </Style.Triggers>

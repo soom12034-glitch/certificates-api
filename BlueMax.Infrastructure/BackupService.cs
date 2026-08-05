@@ -2,11 +2,12 @@ using Microsoft.Data.Sqlite;
 
 namespace BlueMax.Infrastructure;
 
-public class BackupService
+public class BackupService : IDisposable
 {
     private readonly string? _serverConnectionString;
     private readonly string _localDbPath;
     private Timer? _backupTimer;
+    private bool _disposed;
 
     public BackupService(string? serverConnectionString, string localDbPath)
     {
@@ -148,7 +149,8 @@ public class BackupService
                 var backupName = $"BlueMax_Backup_{DateTime.Now:yyyyMMdd_HHmmss}.bak";
                 var fullPath = Path.Combine(backupPath, backupName);
 
-                var query = $"BACKUP DATABASE MyAppDb TO DISK = '{fullPath}' WITH FORMAT, INIT, NAME = 'BlueMax Full Backup';";
+                var databaseName = GetDatabaseName(connectionString);
+                var query = $"BACKUP DATABASE [{databaseName}] TO DISK = '{fullPath}' WITH FORMAT, INIT, NAME = 'BlueMax Full Backup';";
 
                 using var connection = new Microsoft.Data.SqlClient.SqlConnection(connectionString);
                 await connection.OpenAsync();
@@ -291,6 +293,27 @@ public class BackupService
 
         var header = System.Text.Encoding.ASCII.GetString(data, 0, 16);
         return header.StartsWith("SQLite format 3");
+    }
+
+    private static string GetDatabaseName(string connectionString)
+    {
+        try
+        {
+            return new Microsoft.Data.SqlClient.SqlConnection(connectionString).Database;
+        }
+        catch
+        {
+            return "MyAppDb";
+        }
+    }
+
+    public void Dispose()
+    {
+        if (_disposed)
+            return;
+        _disposed = true;
+        _backupTimer?.Dispose();
+        _backupTimer = null;
     }
 
     public static void RestoreBackup(string backupPath, string targetDbPath, string? password = null)

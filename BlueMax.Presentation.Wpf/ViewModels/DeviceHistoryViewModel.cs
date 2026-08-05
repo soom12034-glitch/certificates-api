@@ -1,5 +1,6 @@
 using System;
 using System.Collections.ObjectModel;
+using System.Globalization;
 using System.Linq;
 using Microsoft.EntityFrameworkCore;
 using BlueMax.Infrastructure;
@@ -20,7 +21,7 @@ public sealed class DeviceHistoryViewModel : ViewModelBase
     public string SerialQuery
     {
         get => _serialQuery;
-        set => SetProperty(ref _serialQuery, value);
+        set => SetProperty(ref _serialQuery, NormalizeToEnglishDigits(value));
     }
  
     public RelayCommand SearchHistoryCommand { get; }
@@ -94,6 +95,24 @@ public sealed class DeviceHistoryViewModel : ViewModelBase
     {
         return DbContextFactory.CreateDbContext();
     }
+
+    static string NormalizeToEnglishDigits(string? value)
+    {
+        if (string.IsNullOrEmpty(value))
+            return value ?? "";
+
+        var chars = (value ?? "").ToCharArray();
+        for (var i = 0; i < chars.Length; i++)
+        {
+            var ch = chars[i];
+            if (ch >= '\u0660' && ch <= '\u0669')
+                chars[i] = (char)('0' + (ch - '\u0660'));
+            else if (ch >= '\u06F0' && ch <= '\u06F9')
+                chars[i] = (char)('0' + (ch - '\u06F0'));
+        }
+
+        return new string(chars);
+    }
 }
  
 public sealed class DeviceHistoryItem : ViewModelBase
@@ -107,8 +126,15 @@ public sealed class DeviceHistoryItem : ViewModelBase
     public DateTime Date
     {
         get => _date;
-        set => SetProperty(ref _date, value);
+        set
+        {
+            if (!SetProperty(ref _date, value))
+                return;
+            OnPropertyChanged(nameof(DateDisplay));
+        }
     }
+
+    public string DateDisplay => Date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
  
     public string Type
     {

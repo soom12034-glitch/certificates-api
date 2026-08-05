@@ -32,18 +32,26 @@ public class AppDbContext : DbContext
         {
             var sqlConnectionString = SecureConnectionStringStore.LoadConnectionString()
                 ?? System.Configuration.ConfigurationManager.ConnectionStrings["MyDb"]?.ConnectionString;
-            if (!string.IsNullOrWhiteSpace(sqlConnectionString) && CanUseSqlServer(sqlConnectionString))
-            {
-                optionsBuilder.UseSqlServer(sqlConnectionString);
-                return;
-            }
-
-            var localDbPath = GetLocalDbPath();
-
-            Directory.CreateDirectory(Path.GetDirectoryName(localDbPath)!);
-            var localCs = $"Data Source={localDbPath}";
-            optionsBuilder.UseSqlite(localCs);
+            ConfigureProvider(optionsBuilder, sqlConnectionString);
         }
+    }
+
+    internal static void ConfigureProvider(DbContextOptionsBuilder optionsBuilder, string? sqlConnectionString)
+    {
+        if (!string.IsNullOrWhiteSpace(sqlConnectionString))
+        {
+            if (!CanUseSqlServer(sqlConnectionString))
+                throw new InvalidOperationException(
+                    "تم تكوين SQL Server لكن لا يمكن الوصول إلى الخادم. تحقق من الاتصال، أو أزل إعدادات SQL Server لاستخدام قاعدة البيانات المحلية.");
+            optionsBuilder.UseSqlServer(sqlConnectionString);
+            return;
+        }
+
+        var localDbPath = GetLocalDbPath();
+
+        Directory.CreateDirectory(Path.GetDirectoryName(localDbPath)!);
+        var localCs = $"Data Source={localDbPath}";
+        optionsBuilder.UseSqlite(localCs);
     }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -104,7 +112,11 @@ public class AppDbContext : DbContext
     {
         try
         {
-            using var connection = new Microsoft.Data.SqlClient.SqlConnection(connectionString);
+            var builder = new Microsoft.Data.SqlClient.SqlConnectionStringBuilder(connectionString)
+            {
+                ConnectTimeout = 3
+            };
+            using var connection = new Microsoft.Data.SqlClient.SqlConnection(builder.ConnectionString);
             connection.Open();
             return true;
         }

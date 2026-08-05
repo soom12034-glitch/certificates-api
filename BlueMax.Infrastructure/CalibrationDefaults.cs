@@ -86,6 +86,33 @@ public class CalibrationDefaultsStore
         }
     }
 
+    public List<CalibrationDefaultsRow> LoadRows(string deviceType)
+    {
+        var settingsDir = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "BlueMax",
+            "CertSystem",
+            "Settings");
+
+        Directory.CreateDirectory(settingsDir);
+
+        var settingsPath = Path.Combine(settingsDir, $"CalibrationDefaults_{deviceType}.json");
+
+        if (!File.Exists(settingsPath))
+            return new List<CalibrationDefaultsRow>();
+
+        try
+        {
+            var json = File.ReadAllText(settingsPath);
+            return JsonSerializer.Deserialize<List<CalibrationDefaultsRow>>(json) ?? new List<CalibrationDefaultsRow>();
+        }
+        catch (Exception ex)
+        {
+            LogService.LogException(ex);
+            return new List<CalibrationDefaultsRow>();
+        }
+    }
+
     public void Save(string deviceType, List<CalibrationDefaultsRow> rows)
     {
         var settingsDir = Path.Combine(

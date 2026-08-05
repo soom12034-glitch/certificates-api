@@ -35,6 +35,9 @@ public sealed class AsyncRelayCommand : ICommand
         {
             await _execute(parameter);
         }
+        catch (Exception)
+        {
+        }
         finally
         {
             _isExecuting = false;

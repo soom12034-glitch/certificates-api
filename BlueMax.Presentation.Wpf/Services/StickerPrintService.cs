@@ -43,14 +43,64 @@ namespace BlueMax.Presentation.Wpf.Services
             }
             else if (string.Equals(printerSettings.Protocol, "TSPL", StringComparison.OrdinalIgnoreCase))
             {
-                var tspl = GenerateTspl(viewModel, printerSettings);
-                // TODO: Implement TSPL printing
+                await SendRawAsync(viewModel, printerSettings, isTspl: true);
             }
             else
             {
-                var zpl = GenerateZpl(viewModel, printerSettings);
-                // TODO: Implement ZPL printing
+                await SendRawAsync(viewModel, printerSettings, isTspl: false);
             }
+        }
+
+        async Task SendRawAsync(StickerDesignerViewModel viewModel, PrinterSettings settings, bool isTspl)
+        {
+            var printerName = settings.PrinterName ?? "";
+            if (string.IsNullOrWhiteSpace(printerName))
+                throw new InvalidOperationException("Printer name is required.");
+
+            var payload = isTspl ? GenerateTspl(viewModel, settings) : GenerateZpl(viewModel, settings);
+            var encoding = isTspl ? TsplEncoding(settings) : Encoding.UTF8;
+
+            await Task.Run(() =>
+            {
+                if (!isTspl)
+                    ApplyThermalSettingsIfNeeded(printerName, settings);
+                if (settings.ThermalSafeMode)
+                    Thread.Sleep(500);
+
+                var sent = RawPrinterHelper.SendBytesToPrinter(printerName, encoding.GetBytes(payload));
+                if (!sent)
+                    throw new InvalidOperationException($"Failed to send {settings.Protocol} data to printer '{printerName}'.");
+
+                if (settings.ThermalSafeMode)
+                {
+                    var delayMs = (int)Math.Max(0, settings.ThermalCoolingDelaySeconds * 1000);
+                    Thread.Sleep(Math.Max(300, delayMs));
+                }
+            });
+        }
+
+        static Encoding TsplEncoding(PrinterSettings settings)
+        {
+            try
+            {
+                Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+            }
+            catch
+            {
+            }
+
+            var codePage = string.IsNullOrWhiteSpace(settings.TsplCodepage) ? "65001" : settings.TsplCodepage;
+            if (int.TryParse(codePage, out var cp))
+            {
+                try
+                {
+                    return Encoding.GetEncoding(cp);
+                }
+                catch
+                {
+                }
+            }
+            return Encoding.UTF8;
         }
 
         async Task PrintStickerWithWindowsDriverAsync(StickerDesignerViewModel viewModel, PrinterSettings settings)
@@ -151,7 +201,7 @@ namespace BlueMax.Presentation.Wpf.Services
                         using var brush = new SolidBrush(Color.Black);
                         var format = new StringFormat
                         {
-                            Alignment = StringAlignment.Near,
+                            Alignment = ToGdiAlignment(item.TextAlignment),
                             LineAlignment = StringAlignment.Near,
                             FormatFlags = StringFormatFlags.DirectionRightToLeft
                         };
@@ -198,6 +248,31 @@ namespace BlueMax.Presentation.Wpf.Services
             };
             return writer.Write(content);
         }
+
+        // TextAlignment values ("Right", "Center", "Left") map to GDI StringAlignment
+        // in a RightToLeft context: Near = right edge, Far = left edge.
+        static StringAlignment ToGdiAlignment(string alignment) => alignment switch
+        {
+            "Center" => StringAlignment.Center,
+            "Left" => StringAlignment.Far,
+            _ => StringAlignment.Near
+        };
+
+        // TSPL BLOCK alignment: 0 = Left, 1 = Center, 2 = Right.
+        static string ToTsplAlignment(string alignment) => alignment switch
+        {
+            "Center" => "1",
+            "Left" => "0",
+            _ => "2"
+        };
+
+        // ZPL ^FB justification: 0 = Left, 1 = Center, 2 = Right.
+        static int ToZplJustify(string alignment) => alignment switch
+        {
+            "Center" => 1,
+            "Left" => 0,
+            _ => 2
+        };
 
         static double ResolveBodyFontSize(StickerDesignerViewModel viewModel)
         {
@@ -263,6 +338,11 @@ namespace BlueMax.Presentation.Wpf.Services
                 commands.Add($"REFERENCE {settings.TsplReferenceX},{settings.TsplReferenceY}");
             if (!string.IsNullOrWhiteSpace(settings.TsplCodepage))
                 commands.Add($"CODEPAGE {settings.TsplCodepage}");
+            var tsplSpeed = settings.SpeedIps <= 0 ? 2 : settings.SpeedIps;
+            tsplSpeed = Math.Max(1, Math.Min(8, tsplSpeed));
+            var tsplDarkness = Math.Max(0, Math.Min(30, settings.Darkness));
+            commands.Add($"SPEED {tsplSpeed}");
+            commands.Add($"DENSITY {tsplDarkness}");
             commands.Add("CLS");
 
             foreach (var item in viewModel.StickerItems.Where(x => x.IsVisible))
@@ -315,12 +395,13 @@ namespace BlueMax.Presentation.Wpf.Services
 
                 if (string.IsNullOrWhiteSpace(content)) continue;
 
-                // TEXT x,y,"font",rotation,x-mul,y-mul,"content"
+                // BLOCK x,y,width,height,"font",rotation,x-mul,y-mul,space,alignment,"content"
                 // Scale based on printer resolution: base char height ~ 3mm at given dpmm
                 int baseCharHeight = Math.Max(8, (int)Math.Round(dpmm * 3.0));
                 int mul = Math.Max(1, Math.Min(10, (int)Math.Round(h / (double)baseCharHeight)));
-                
-                commands.Add($"TEXT {x},{y},\"0\",0,{mul},{mul},\"{TsplEscape(content)}\"");
+                int blockWidth = Math.Max(1, ToDots(item.Width));
+                int blockHeight = Math.Max(1, ToDots(item.Height));
+                commands.Add($"BLOCK {x},{y},{blockWidth},{blockHeight},\"0\",0,{mul},{mul},0,{ToTsplAlignment(item.TextAlignment)},\"{TsplEscape(content)}\"");
             }
 
             commands.Add($"PRINT {Math.Max(1, settings.TsplCopies)},1");
@@ -431,15 +512,16 @@ namespace BlueMax.Presentation.Wpf.Services
                      // Let's try passing widthDots - x.
                      
                      int availableWidth = Math.Max(10, widthDots - x);
-                     var alignment = (item.Key is "company" or "header" or "address" or "phone") ? StringAlignment.Center : StringAlignment.Far;
+                     var alignment = ToGdiAlignment(item.TextAlignment);
                      var imgZpl = StickerImageHelper.GenerateTextAsZplImage(content, availableWidth, x, y, h, (int)item.FontSize, isBold, alignment);
                      zplCommands.Add(imgZpl);
                 }
                 else
                 {
-                    // Standard ZPL Text
+                    // Standard ZPL Text with field block justification
                     var enc = RawPrintEngine.ZplHexEncodeUtf8(content);
-                    zplCommands.Add($"^FO{x},{y}^A0N,{h},{w}^FH\\^FD{enc}^FS");
+                    int blockWidth = Math.Max(1, ToDots(item.Width));
+                    zplCommands.Add($"^FO{x},{y}^A0N,{h},{w}^FB{blockWidth},{h},0,{ToZplJustify(item.TextAlignment)},0^FH\\^FD{enc}^FS");
                 }
             }
 
@@ -450,7 +532,7 @@ namespace BlueMax.Presentation.Wpf.Services
             var header = settings.ThermalSafeMode
                 ? $"^XA^PR{zplSpeed},4,4^MD{zplDarkness}\n"
                 : "^XA\n";
-            header += $"~SD{settings.Darkness}\n^PW{widthDots}^LL{heightDots}^PR{settings.SpeedIps}\n";
+            header += $"~SD{zplDarkness}\n^PW{widthDots}^LL{heightDots}^PR{zplSpeed}\n";
             return $"{header}{body}\n^XZ";
         }
 

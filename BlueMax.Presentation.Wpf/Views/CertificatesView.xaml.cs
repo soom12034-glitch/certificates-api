@@ -54,6 +54,15 @@ public partial class CertificatesView : UserControl
             cmd.Execute(null);
     }
 
+    void ArchiveGridRow_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is not DataGridRow row)
+            return;
+
+        row.IsSelected = true;
+        row.Focus();
+    }
+
     void ClientNameBox_PreviewKeyDown(object sender, KeyEventArgs e)
     {
         if (e.Key == Key.Down)

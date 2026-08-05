@@ -1,14 +1,14 @@
 using System;
 using System.Collections.ObjectModel;
 using System.Configuration;
-using System.IO;
 using System.Printing;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
+using System.Windows.Markup;
+using System.Windows.Media;
 using BlueMax.Presentation.Wpf.ViewModels;
 using BlueMax.Infrastructure;
-using Microsoft.EntityFrameworkCore;
 
 namespace BlueMax.Presentation.Wpf.Views;
 
@@ -33,6 +33,7 @@ public partial class RentalReceiptWindow : Window
         const string ReceiptFrameColorKey = "RentalReceiptFrameColor";
 
         readonly RentalReceiptData _data;
+        readonly BlueMax.Infrastructure.ReportDesignerSettings _companySettings;
         readonly ObservableCollection<string> _installedPrinters = new();
         string _selectedPrinterName = "";
         string _selectedFrameColor = "رمادي داكن";
@@ -42,11 +43,11 @@ public partial class RentalReceiptWindow : Window
         double _topMargin = 90.0;
         double _bottomMargin = 80.0;
         bool _isLetterhead = false;
-        string? _generatedPdfPath;
 
         public RentalReceiptViewModel(RentalReceiptData data)
         {
             _data = data;
+            _companySettings = new ReportDesignerSettingsStore().Load();
             LoadInstalledPrinters();
             LoadSavedPrinterName();
             LoadLayoutSettings();
@@ -207,137 +208,313 @@ public partial class RentalReceiptWindow : Window
             }
         }
 
-        async void RefreshPreview()
+        void RefreshPreview()
         {
-            try
+            PreviewDocument = BuildDocument();
+        }
+
+        FixedDocument BuildDocument()
+        {
+            const double dpi = 96.0;
+            const double a4Width = 8.27 * dpi;
+            const double a4Height = 11.69 * dpi;
+            const double pageMarginLeftRight = 40;
+            double headerSpace = IsLetterhead ? TopMargin : 40;
+            double footerSpace = BottomMargin;
+            const double tableWidth = 600;
+            const double labelColumnWidth = 140;
+
+            var doc = new FixedDocument();
+            doc.DocumentPaginator.PageSize = new Size(a4Width, a4Height);
+
+            var page = new FixedPage
             {
-                var templatePath = await LoadTemplatePathAsync("rental_receipt");
-                
-                if (string.IsNullOrWhiteSpace(templatePath))
+                Width = a4Width,
+                Height = a4Height,
+                FlowDirection = FlowDirection.RightToLeft,
+                Background = Brushes.White
+            };
+
+            var bottomGuideline = new System.Windows.Shapes.Line
+            {
+                X1 = 0, Y1 = a4Height - footerSpace, X2 = a4Width, Y2 = a4Height - footerSpace,
+                Stroke = new SolidColorBrush(Color.FromArgb(80, 255, 0, 0)),
+                StrokeThickness = 1,
+                StrokeDashArray = new DoubleCollection(new double[] { 4, 4 })
+            };
+            page.Children.Add(bottomGuideline);
+
+            var transformContainer = new Grid
+            {
+                Width = a4Width,
+                Height = a4Height
+            };
+            var transform = new TransformGroup();
+            transform.Children.Add(new TranslateTransform(ContentOffsetX, ContentOffsetY));
+            transformContainer.RenderTransform = transform;
+
+            var viewbox = new Viewbox
+            {
+                Width = a4Width - (pageMarginLeftRight * 2),
+                Height = a4Height - footerSpace - headerSpace,
+                Margin = new Thickness(pageMarginLeftRight, headerSpace, pageMarginLeftRight, footerSpace),
+                StretchDirection = StretchDirection.DownOnly,
+                Stretch = Stretch.Uniform,
+                VerticalAlignment = VerticalAlignment.Top
+            };
+
+            var outerBorder = new Border
+            {
+                BorderBrush = GetFrameBrush(),
+                BorderThickness = new Thickness(SelectedFrameColor == "بدون برواز" ? 0 : 2),
+                CornerRadius = new CornerRadius(12),
+                Padding = new Thickness(24, 24, 24, 24),
+                Background = Brushes.White
+            };
+
+            var root = new StackPanel
+            {
+                Width = a4Width - (pageMarginLeftRight * 2) - 48
+            };
+
+            outerBorder.Child = root;
+            viewbox.Child = outerBorder;
+
+            if (!IsLetterhead && !string.IsNullOrWhiteSpace(_companySettings.CompanyName))
+            {
+                var companyHeader = new TextBlock
                 {
-                    MessageBox.Show(
-                        "يرجى تحديد قالب Word لإيصال الإيجار (rental_receipt) من شاشة إدارة القوالب أولاً",
-                        "Missing template",
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Warning);
-                    return;
-                }
-
-                var outputDir = Path.Combine(AppContext.BaseDirectory, "Reports_Output");
-                if (!Directory.Exists(outputDir))
-                    Directory.CreateDirectory(outputDir);
-
-                // Build token data directly from _data (no database needed)
-                var data = new Dictionary<string, object>
-                {
-                    ["RentalNumber"] = _data.ReceiptNumber,
-                    ["rental_number"] = _data.ReceiptNumber,
-                    ["ReceiptNumber"] = _data.ReceiptNumber,
-                    ["receipt_number"] = _data.ReceiptNumber,
-
-                    ["CustomerName"] = _data.CustomerName,
-                    ["customer_name"] = _data.CustomerName,
-                    ["ClientName"] = _data.CustomerName,
-                    ["client_name"] = _data.CustomerName,
-
-                    ["Company"] = _data.Company ?? "",
-                    ["company"] = _data.Company ?? "",
-
-                    ["Phone"] = _data.Phone ?? "",
-                    ["phone"] = _data.Phone ?? "",
-
-                    ["DeviceType"] = _data.DeviceType,
-                    ["device_type"] = _data.DeviceType,
-
-                    ["Brand"] = _data.Brand ?? "",
-                    ["brand"] = _data.Brand ?? "",
-
-                    ["Model"] = _data.Model ?? "",
-                    ["model"] = _data.Model ?? "",
-
-                    ["Serial"] = _data.Serial,
-                    ["serial"] = _data.Serial,
-                    ["SerialNumber"] = _data.Serial,
-                    ["serial_number"] = _data.Serial,
-
-                    ["Serial2"] = _data.Serial2 ?? "",
-                    ["serial2"] = _data.Serial2 ?? "",
-                    ["SerialNumber2"] = _data.Serial2 ?? "",
-                    ["serial_number_2"] = _data.Serial2 ?? "",
-
-                    ["StartDate"] = _data.StartDate.ToString("yyyy-MM-dd"),
-                    ["start_date"] = _data.StartDate.ToString("yyyy-MM-dd"),
-
-                    ["EndDate"] = _data.EndDate.ToString("yyyy-MM-dd"),
-                    ["end_date"] = _data.EndDate.ToString("yyyy-MM-dd"),
-
-                    ["RentalType"] = _data.RentalType,
-                    ["rental_type"] = _data.RentalType,
-
-                    ["Price"] = _data.Price.ToString("0.##"),
-                    ["price"] = _data.Price.ToString("0.##"),
-
-                    ["PaidAmount"] = _data.PaidAmount.ToString("0.##"),
-                    ["paid_amount"] = _data.PaidAmount.ToString("0.##"),
-
-                    ["RemainingAmount"] = _data.RemainingAmount.ToString("0.##"),
-                    ["remaining_amount"] = _data.RemainingAmount.ToString("0.##"),
-
-                    ["Status"] = "Active",
-                    ["status"] = "Active",
-
-                    ["Notes"] = _data.Notes ?? "",
-                    ["notes"] = _data.Notes ?? "",
-
-                    ["IssueDate"] = DateTime.Now.ToString("yyyy-MM-dd"),
-                    ["issue_date"] = DateTime.Now.ToString("yyyy-MM-dd"),
-                    ["created_date"] = DateTime.Now.ToString("yyyy-MM-dd"),
-
-                    ["company_logo_img"] = "",
-                    ["qr_code_img"] = ""
+                    FlowDirection = FlowDirection.RightToLeft,
+                    FontFamily = new FontFamily("Cairo"),
+                    FontSize = 26,
+                    FontWeight = FontWeights.Bold,
+                    Foreground = new SolidColorBrush(Color.FromRgb(30, 30, 30)),
+                    Text = _companySettings.CompanyName,
+                    TextAlignment = TextAlignment.Center,
+                    Margin = new Thickness(0, 0, 0, 8)
                 };
+                root.Children.Add(companyHeader);
 
-                var engine = new WordTemplateEngine("", outputDir);
-                var docxPath = await Task.Run(() => engine.GenerateDocumentFromPath(templatePath, data));
-                
-                _generatedPdfPath = docxPath;
-
-                if (!string.IsNullOrWhiteSpace(docxPath) && File.Exists(docxPath))
+                if (!string.IsNullOrWhiteSpace(_companySettings.CompanyHeader))
                 {
-                    LoadPdfIntoViewer(docxPath);
+                    var companySubHeader = new TextBlock
+                    {
+                        FlowDirection = FlowDirection.RightToLeft,
+                        FontFamily = new FontFamily("Tahoma"),
+                        FontSize = 14,
+                        Foreground = new SolidColorBrush(Color.FromRgb(80, 80, 80)),
+                        Text = _companySettings.CompanyHeader,
+                        TextAlignment = TextAlignment.Center,
+                        Margin = new Thickness(0, 0, 0, 20)
+                    };
+                    root.Children.Add(companySubHeader);
                 }
             }
-            catch (Exception ex)
+
+            var metaStack = new StackPanel
             {
-                MessageBox.Show($"خطأ في إنشاء المعاينة: {ex.Message}\n\nInner: {ex.InnerException?.Message}", "خطأ", MessageBoxButton.OK, MessageBoxImage.Error);
+                HorizontalAlignment = HorizontalAlignment.Right,
+                Margin = new Thickness(0, 0, 0, 10)
+            };
+            metaStack.Children.Add(new TextBlock
+            {
+                FlowDirection = FlowDirection.RightToLeft,
+                FontFamily = new FontFamily("Tahoma"),
+                FontSize = 14,
+                Foreground = new SolidColorBrush(Color.FromRgb(50, 50, 50)),
+                Text = $"التاريخ: {DateTime.Now:yyyy-MM-dd}",
+                Margin = new Thickness(0, 0, 0, 4)
+            });
+            metaStack.Children.Add(new TextBlock
+            {
+                FlowDirection = FlowDirection.RightToLeft,
+                FontFamily = new FontFamily("Tahoma"),
+                FontSize = 14,
+                Foreground = new SolidColorBrush(Color.FromRgb(50, 50, 50)),
+                Text = $"رقم الإيصال: {Safe(_data.ReceiptNumber)}"
+            });
+            root.Children.Add(metaStack);
+
+            var title = new TextBlock
+            {
+                FlowDirection = FlowDirection.RightToLeft,
+                FontFamily = new FontFamily("Cairo"),
+                FontSize = 32,
+                FontWeight = FontWeights.Bold,
+                Foreground = new SolidColorBrush(Color.FromRgb(20, 20, 20)),
+                Text = "إيصال استلام جهاز إيجار",
+                TextAlignment = TextAlignment.Center,
+                Margin = new Thickness(0, 10, 0, 30)
+            };
+            root.Children.Add(title);
+
+            var customerBorder = new Border
+            {
+                BorderBrush = new SolidColorBrush(Color.FromRgb(200, 200, 200)),
+                BorderThickness = new Thickness(1),
+                CornerRadius = new CornerRadius(8),
+                Width = tableWidth,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                Background = Brushes.White,
+                Margin = new Thickness(0, 0, 0, 20)
+            };
+
+            var customerGrid = new Grid();
+            customerGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(labelColumnWidth) });
+            customerGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+
+            AddRow(customerGrid, 0, "اسم العميل", Safe(_data.CustomerName), true);
+            AddRow(customerGrid, 1, "الشركة", Safe(_data.Company));
+            AddRow(customerGrid, 2, "رقم الهاتف", Safe(_data.Phone), false, true);
+
+            customerBorder.Child = customerGrid;
+            root.Children.Add(customerBorder);
+
+            var deviceBorder = new Border
+            {
+                BorderBrush = new SolidColorBrush(Color.FromRgb(200, 200, 200)),
+                BorderThickness = new Thickness(1),
+                CornerRadius = new CornerRadius(8),
+                Width = tableWidth,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                Background = Brushes.White,
+                Margin = new Thickness(0, 0, 0, 20)
+            };
+
+            var deviceGrid = new Grid();
+            deviceGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(labelColumnWidth) });
+            deviceGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+
+            AddRow(deviceGrid, 0, "نوع الجهاز", Safe(_data.DeviceType), true);
+            AddRow(deviceGrid, 1, "الماركة", Safe(_data.Brand));
+            AddRow(deviceGrid, 2, "الموديل", Safe(_data.Model));
+            AddRow(deviceGrid, 3, "السيريال", Safe(_data.Serial));
+            AddRow(deviceGrid, 4, "السيريال الثاني", Safe(_data.Serial2), false, true);
+
+            deviceBorder.Child = deviceGrid;
+            root.Children.Add(deviceBorder);
+
+            var rentalBorder = new Border
+            {
+                BorderBrush = new SolidColorBrush(Color.FromRgb(200, 200, 200)),
+                BorderThickness = new Thickness(1),
+                CornerRadius = new CornerRadius(8),
+                Width = tableWidth,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                Background = Brushes.White,
+                Margin = new Thickness(0, 0, 0, 20)
+            };
+
+            var rentalGrid = new Grid();
+            rentalGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(labelColumnWidth) });
+            rentalGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+
+            AddRow(rentalGrid, 0, "نوع الإيجار", Safe(_data.RentalType), true);
+            AddRow(rentalGrid, 1, "تاريخ البدء", _data.StartDate == default ? "-" : _data.StartDate.ToString("yyyy-MM-dd"));
+            AddRow(rentalGrid, 2, "تاريخ الانتهاء", _data.EndDate == default ? "-" : _data.EndDate.ToString("yyyy-MM-dd"));
+            AddRow(rentalGrid, 3, "السعر", _data.Price.ToString("0.##"));
+            AddRow(rentalGrid, 4, "المبلغ المدفوع", _data.PaidAmount.ToString("0.##"));
+            AddRow(rentalGrid, 5, "المبلغ المتبقي", _data.RemainingAmount.ToString("0.##"));
+            AddRow(rentalGrid, 6, "الحالة", Safe(_data.Status), false, true);
+
+            rentalBorder.Child = rentalGrid;
+            root.Children.Add(rentalBorder);
+
+            if (!string.IsNullOrWhiteSpace(_data.Notes))
+            {
+                var notesBorder = new Border
+                {
+                    BorderBrush = new SolidColorBrush(Color.FromRgb(200, 200, 200)),
+                    BorderThickness = new Thickness(1),
+                    CornerRadius = new CornerRadius(8),
+                    Width = tableWidth,
+                    HorizontalAlignment = HorizontalAlignment.Center,
+                    Background = Brushes.White,
+                    Padding = new Thickness(12)
+                };
+                notesBorder.Child = new TextBlock
+                {
+                    FlowDirection = FlowDirection.RightToLeft,
+                    FontFamily = new FontFamily("Tahoma"),
+                    FontSize = 14,
+                    Foreground = new SolidColorBrush(Color.FromRgb(20, 20, 20)),
+                    Text = $"ملاحظات: {_data.Notes}",
+                    TextWrapping = TextWrapping.Wrap
+                };
+                root.Children.Add(notesBorder);
             }
+
+            transformContainer.Children.Add(viewbox);
+            page.Children.Add(transformContainer);
+
+            var content = new PageContent();
+            ((IAddChild)content).AddChild(page);
+            doc.Pages.Add(content);
+
+            return doc;
         }
 
-        async Task<string> LoadTemplatePathAsync(string docKey)
+        static void AddRow(Grid grid, int rowIndex, string label, string value, bool isFirst = false, bool isLast = false)
         {
-            try
+            grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+
+            var borderBrush = new SolidColorBrush(Color.FromRgb(220, 220, 220));
+            var labelBackground = new SolidColorBrush(Color.FromRgb(245, 245, 245));
+
+            var labelCell = new Border
             {
-                var raw = await Task.Run(() => new DocumentPathMappingStore().GetPath(docKey)) ?? "";
-                var path = raw.Trim();
-                if (string.IsNullOrWhiteSpace(path))
-                    return "";
-                if (Path.IsPathRooted(path) && File.Exists(path))
-                    return path;
-                var fallback = Path.Combine(AppContext.BaseDirectory, path);
-                if (File.Exists(fallback))
-                    return fallback;
-                return "";
-            }
-            catch
+                Background = labelBackground,
+                BorderBrush = borderBrush,
+                BorderThickness = new Thickness(0, 0, 1, isLast ? 0 : 1),
+                Padding = new Thickness(12, 10, 12, 10),
+                CornerRadius = new CornerRadius(isFirst ? 8 : 0, 0, 0, isLast ? 8 : 0)
+            };
+            labelCell.Child = new TextBlock
             {
-                return "";
-            }
+                FlowDirection = FlowDirection.RightToLeft,
+                FontFamily = new FontFamily("Tahoma"),
+                FontSize = 14,
+                FontWeight = FontWeights.SemiBold,
+                Foreground = new SolidColorBrush(Color.FromRgb(50, 50, 50)),
+                Text = label,
+                VerticalAlignment = VerticalAlignment.Center,
+                TextAlignment = TextAlignment.Right,
+                HorizontalAlignment = HorizontalAlignment.Stretch
+            };
+            Grid.SetRow(labelCell, rowIndex);
+            Grid.SetColumn(labelCell, 0);
+            grid.Children.Add(labelCell);
+
+            var valueCell = new Border
+            {
+                Background = Brushes.White,
+                BorderBrush = borderBrush,
+                BorderThickness = new Thickness(0, 0, 0, isLast ? 0 : 1),
+                Padding = new Thickness(12, 10, 12, 10),
+                CornerRadius = new CornerRadius(0, isFirst ? 8 : 0, isLast ? 8 : 0, 0)
+            };
+            valueCell.Child = new TextBlock
+            {
+                FlowDirection = FlowDirection.RightToLeft,
+                FontFamily = new FontFamily("Tahoma"),
+                FontSize = 14,
+                Foreground = new SolidColorBrush(Color.FromRgb(20, 20, 20)),
+                Text = value,
+                TextWrapping = TextWrapping.Wrap,
+                LineHeight = 22,
+                VerticalAlignment = VerticalAlignment.Center,
+                TextAlignment = TextAlignment.Center,
+                HorizontalAlignment = HorizontalAlignment.Stretch
+            };
+            Grid.SetRow(valueCell, rowIndex);
+            Grid.SetColumn(valueCell, 1);
+            grid.Children.Add(valueCell);
         }
 
-        void LoadPdfIntoViewer(string pdfPath)
+        static string Safe(string? value)
         {
-            // Simply show message with PDF path like certificates do
-            MessageBox.Show($"تم إنشاء ملف PDF بنجاح في:\n{pdfPath}\n\nيمكنك فتح الملف لطباعته.", "تم الإنشاء", MessageBoxButton.OK, MessageBoxImage.Information);
+            var v = (value ?? "").Trim();
+            return string.IsNullOrWhiteSpace(v) ? "-" : v;
         }
 
         void ChoosePrinter()
@@ -396,34 +573,21 @@ public partial class RentalReceiptWindow : Window
             }
         }
 
-        static string ResolveTemplatePath(string rawPath)
+        Brush GetFrameBrush()
         {
-            var path = (rawPath ?? "").Trim();
-            if (string.IsNullOrWhiteSpace(path))
-                return "";
-            if (Path.IsPathRooted(path) && File.Exists(path))
-                return path;
-            var fallback = Path.Combine(AppContext.BaseDirectory, path);
-            if (File.Exists(fallback))
-                return fallback;
-            return "";
+            return SelectedFrameColor switch
+            {
+                "أسود" => Brushes.Black,
+                "أزرق كحلي" => new SolidColorBrush(Color.FromRgb(0, 51, 102)),
+                "أزرق فاتح" => new SolidColorBrush(Color.FromRgb(0, 120, 215)),
+                "بدون برواز" => Brushes.Transparent,
+                _ => new SolidColorBrush(Color.FromRgb(80, 80, 80))
+            };
         }
 
         static void SaveAppSetting(string key, string value)
         {
-            try
-            {
-                var config = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
-                if (config.AppSettings.Settings[key] == null)
-                    config.AppSettings.Settings.Add(key, value ?? "");
-                else
-                    config.AppSettings.Settings[key].Value = value ?? "";
-                config.Save(ConfigurationSaveMode.Modified);
-                ConfigurationManager.RefreshSection("appSettings");
-            }
-            catch
-            {
-            }
+            Services.AppSettingHelper.Save(key, value);
         }
 
         static double Clamp(double value, double min, double max)

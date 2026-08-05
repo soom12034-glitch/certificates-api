@@ -120,7 +120,6 @@ public partial class StickerDesignerView : UserControl
 
         // Clamp within canvas bounds
         var vm = DataContext as StickerDesignerViewModel;
-        var scale = vm?.PreviewScale ?? 1.0;
         var canvasW = Math.Max(0.0, vm?.CanvasWidthPx ?? StickerCanvas.ActualWidth);
         var canvasH = Math.Max(0.0, vm?.CanvasHeightPx ?? StickerCanvas.ActualHeight);
         
@@ -132,9 +131,9 @@ public partial class StickerDesignerView : UserControl
         var maxX = Math.Max(0, canvasW - itemW);
         var maxY = Math.Max(0, canvasH - itemH);
         
-        // Calculate new position
-        var deltaX = e.HorizontalChange / Math.Max(0.01, scale);
-        var deltaY = e.VerticalChange / Math.Max(0.01, scale);
+        // Calculate new position (DragDelta is already in the canvas logical coordinate space)
+        var deltaX = e.HorizontalChange;
+        var deltaY = e.VerticalChange;
         var proposedX = item.X + deltaX;
         var proposedY = item.Y + deltaY;
         
@@ -155,44 +154,18 @@ public partial class StickerDesignerView : UserControl
         item.Y = proposedY;
     }
 
-    void StickerThumb_OnSizeChanged(object sender, System.Windows.SizeChangedEventArgs e)
-    {
-        if (sender is not Thumb thumb || thumb.Tag is not StickerItem item)
-            return;
-
-        var canvasW = StickerCanvas.ActualWidth;
-        var canvasH = StickerCanvas.ActualHeight;
-
-        // Clamp new width and height within canvas bounds
-        var newWidth = Math.Min(e.NewSize.Width, canvasW > 0 ? canvasW : e.NewSize.Width);
-        var newHeight = Math.Min(e.NewSize.Height, canvasH > 0 ? canvasH : e.NewSize.Height);
-
-        item.Width = newWidth;
-        item.Height = newHeight;
-
-        // Clamp position if it goes out of bounds due to size change
-        if (canvasW > 0 && canvasH > 0)
-        {
-             var maxX = Math.Max(0, canvasW - item.Width);
-             var maxY = Math.Max(0, canvasH - item.Height);
-             
-             if (item.X > maxX) item.X = maxX;
-             if (item.Y > maxY) item.Y = maxY;
-        }
-    }
-
     void StickerResizeThumb_OnDragDelta(object sender, DragDeltaEventArgs e)
     {
         if (sender is not Thumb thumb || thumb.Tag is not StickerItem item)
             return;
 
         var vm = DataContext as StickerDesignerViewModel;
-        var scale = vm?.PreviewScale ?? 1.0;
         var canvasW = Math.Max(0.0, vm?.CanvasWidthPx ?? StickerCanvas.ActualWidth);
         var canvasH = Math.Max(0.0, vm?.CanvasHeightPx ?? StickerCanvas.ActualHeight);
 
-        var deltaX = e.HorizontalChange / Math.Max(0.01, scale);
-        var deltaY = e.VerticalChange / Math.Max(0.01, scale);
+        // DragDelta is already in the canvas logical coordinate space
+        var deltaX = e.HorizontalChange;
+        var deltaY = e.VerticalChange;
         var proposedW = item.Width + deltaX;
         var proposedH = item.Height + deltaY;
 

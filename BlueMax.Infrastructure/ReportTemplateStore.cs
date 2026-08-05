@@ -54,7 +54,7 @@ public class ReportTemplateStore
             var templates = JsonSerializer.Deserialize<List<ReportTemplate>>(json) ?? new List<ReportTemplate>();
             if (string.IsNullOrWhiteSpace(templateName))
                 return templates;
-            return templates.Where(t => t.Name == templateName).ToList();
+            return templates.Where(t => string.Equals(t.Name, templateName, StringComparison.OrdinalIgnoreCase)).ToList();
         }
         catch (Exception ex)
         {
@@ -63,28 +63,25 @@ public class ReportTemplateStore
         }
     }
 
-    public ReportTemplate? Load(string deviceType, string templateName)
+    public ReportTemplateXml? Load(string deviceType, string templateName)
     {
-        var settingsDir = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "BlueMax",
-            "CertSystem",
-            "Settings");
-
-        Directory.CreateDirectory(settingsDir);
-
-        var settingsPath = Path.Combine(settingsDir, SettingsPath);
-
-        if (!File.Exists(settingsPath))
+        var deviceDir = GetDeviceDir(deviceType ?? "");
+        if (!Directory.Exists(deviceDir) || string.IsNullOrWhiteSpace(templateName))
             return null;
 
         try
         {
-            var json = File.ReadAllText(settingsPath);
-            var templates = JsonSerializer.Deserialize<List<ReportTemplate>>(json) ?? new List<ReportTemplate>();
-            if (string.IsNullOrWhiteSpace(templateName))
-                return templates.FirstOrDefault();
-            return templates.FirstOrDefault(t => t.Name == templateName);
+            var filePath = Directory.GetFiles(deviceDir, "*.json")
+                .FirstOrDefault(f => string.Equals(
+                    Path.GetFileNameWithoutExtension(f),
+                    templateName,
+                    StringComparison.OrdinalIgnoreCase));
+
+            if (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath))
+                return null;
+
+            var json = File.ReadAllText(filePath);
+            return JsonSerializer.Deserialize<ReportTemplateXml>(json);
         }
         catch (Exception ex)
         {
@@ -154,7 +151,17 @@ public class ReportTemplateStore
 
     public int? FindTemplateId(string deviceType, string templateName)
     {
-        var template = Load(deviceType, templateName);
-        return template?.CreatedAt.GetHashCode();
+        if (string.IsNullOrWhiteSpace(templateName))
+            return null;
+        if (Load(deviceType, templateName) == null)
+            return null;
+        return StableHash($"{deviceType ?? ""}|{templateName.Trim()}".ToLowerInvariant());
+    }
+
+    private static int StableHash(string input)
+    {
+        using var sha256 = System.Security.Cryptography.SHA256.Create();
+        var bytes = sha256.ComputeHash(System.Text.Encoding.UTF8.GetBytes(input));
+        return BitConverter.ToInt32(bytes, 0) & int.MaxValue;
     }
 }

@@ -1152,13 +1152,7 @@ public sealed class SettingsViewModel : ViewModelBase
 
     void SaveVerification()
     {
-        var config = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
-        if (config.AppSettings.Settings["VerificationBaseUrl"] == null)
-            config.AppSettings.Settings.Add("VerificationBaseUrl", VerificationBaseUrl ?? "");
-        else
-            config.AppSettings.Settings["VerificationBaseUrl"].Value = VerificationBaseUrl ?? "";
-        config.Save(ConfigurationSaveMode.Modified);
-        ConfigurationManager.RefreshSection("appSettings");
+        BlueMax.Presentation.Wpf.Services.AppSettingHelper.Save("VerificationBaseUrl", VerificationBaseUrl ?? "");
         Status = "تم حفظ رابط التحقق.";
     }
 
@@ -1169,13 +1163,7 @@ public sealed class SettingsViewModel : ViewModelBase
 
     static void SaveAppSetting(string key, string value)
     {
-        var config = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
-        if (config.AppSettings.Settings[key] == null)
-            config.AppSettings.Settings.Add(key, value ?? "");
-        else
-            config.AppSettings.Settings[key].Value = value ?? "";
-        config.Save(ConfigurationSaveMode.Modified);
-        ConfigurationManager.RefreshSection("appSettings");
+        BlueMax.Presentation.Wpf.Services.AppSettingHelper.Save(key, value);
     }
 
     public sealed class ChoiceItem

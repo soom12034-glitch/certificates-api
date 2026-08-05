@@ -22,6 +22,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\BlueMax.Domain\BlueMax.Domain.csproj" />
+    <ProjectReference Include="..\BlueMax.Infrastructure\BlueMax.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

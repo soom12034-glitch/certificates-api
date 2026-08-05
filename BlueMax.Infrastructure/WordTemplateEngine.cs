@@ -224,7 +224,7 @@ public class WordTemplateEngine
     private static void ApplyTableTemplate(Table table, Dictionary<string, object> data)
     {
         // Check if table has a template marker
-        foreach (var row in table.Elements<TableRow>())
+        foreach (var row in table.Elements<TableRow>().ToList())
         {
             var firstCell = row.Elements<TableCell>().FirstOrDefault();
             if (firstCell == null) continue;
@@ -360,7 +360,7 @@ public class WordTemplateEngine
         if (bookmark == null)
             throw new InvalidOperationException($"Bookmark '{bookmarkName}' not found");
 
-        var imagePart = mainPart.AddImagePart(ImagePartType.Jpeg);
+        var imagePart = mainPart.AddImagePart(DetectImagePartType(imagePath));
         using var stream = File.OpenRead(imagePath);
         imagePart.FeedData(stream);
 
@@ -374,6 +374,20 @@ public class WordTemplateEngine
         }
 
         doc.Save();
+    }
+
+    private static DocumentFormat.OpenXml.Packaging.PartTypeInfo DetectImagePartType(string imagePath)
+    {
+        var ext = Path.GetExtension(imagePath).ToLowerInvariant();
+        return ext switch
+        {
+            ".png" => ImagePartType.Png,
+            ".gif" => ImagePartType.Gif,
+            ".bmp" => ImagePartType.Bmp,
+            ".tiff" or ".tif" => ImagePartType.Tiff,
+            ".emf" => ImagePartType.Emf,
+            _ => ImagePartType.Jpeg
+        };
     }
 
     private static DW.Inline CreateImageElement(string relationshipId)

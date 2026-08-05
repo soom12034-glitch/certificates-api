@@ -11,12 +11,12 @@
     <ApplicationIcon>Calibration2.ico</ApplicationIcon>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <RollForward>LatestPatch</RollForward>
-    <Version>8.2.0</Version>
-    <AssemblyVersion>8.2.0.0</AssemblyVersion>
-    <FileVersion>8.2.0.0</FileVersion>
+    <Version>11.3.0</Version>
+    <AssemblyVersion>11.3.0.0</AssemblyVersion>
+    <FileVersion>11.3.0.0</FileVersion>
     <Product>Calibration Certificates</Product>
     <AssemblyTitle>Calibration Certificates</AssemblyTitle>
-    <AssemblyInformationalVersion>V8.2</AssemblyInformationalVersion>
+    <AssemblyInformationalVersion>V11.3</AssemblyInformationalVersion>
   </PropertyGroup>
 
   <ItemGroup>

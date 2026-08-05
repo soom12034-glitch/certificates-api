@@ -18,6 +18,7 @@
         <converters:BooleanToFontWeightConverter x:Key="BooleanToFontWeightConverter"/>
         <converters:BooleanToFontStyleConverter x:Key="BooleanToFontStyleConverter"/>
         <converters:BooleanToTextDecorationsConverter x:Key="BooleanToTextDecorationsConverter"/>
+        <converters:QrCodeConverter x:Key="QrCodeConverter"/>
 
         <DataTemplate x:Key="LogoTemplate">
             <Image Source="{Binding DisplayText, Converter={StaticResource ImagePathToBitmapConverter}, IsAsync=True}" Stretch="Uniform"/>
@@ -37,10 +38,10 @@
             <Rectangle Width="{Binding Width}" Height="{Binding Height}" Fill="Black"/>
         </DataTemplate>
         <DataTemplate x:Key="QrTemplate">
-            <Border Background="#F1F5F9" BorderBrush="#94A3B8" BorderThickness="1" CornerRadius="4">
-                <TextBlock Text="QR" FontSize="12" FontWeight="Bold" Foreground="#475569"
-                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
-            </Border>
+            <Image Source="{Binding DisplayText, Converter={StaticResource QrCodeConverter}}"
+                   Stretch="Uniform"
+                   Margin="2"
+                   SnapsToDevicePixels="True"/>
         </DataTemplate>
 
         <views:StickerItemTemplateSelector x:Key="StickerTemplateSelector"
@@ -119,7 +120,7 @@
                         <Border.Effect>
                             <DropShadowEffect Color="#000000" Opacity="0.08" BlurRadius="15" ShadowDepth="0"/>
                         </Border.Effect>
-                        <Grid Width="{Binding CanvasWidthPx}" Height="{Binding CanvasHeightPx}" Background="White" FlowDirection="RightToLeft">
+                        <Grid Width="{Binding CanvasWidthPx}" Height="{Binding CanvasHeightPx}" Background="White" FlowDirection="LeftToRight">
                             <Grid.LayoutTransform>
                                 <ScaleTransform ScaleX="{Binding Zoom}" ScaleY="{Binding Zoom}"/>
                             </Grid.LayoutTransform>
@@ -135,7 +136,7 @@
                             <ItemsControl ItemsSource="{Binding StickerItems}" Width="{Binding CanvasWidthPx}" Height="{Binding CanvasHeightPx}">
                                 <ItemsControl.ItemsPanel>
                                     <ItemsPanelTemplate>
-                                        <Canvas ClipToBounds="False"/>
+                                        <Canvas ClipToBounds="False" FlowDirection="LeftToRight"/>
                                     </ItemsPanelTemplate>
                                 </ItemsControl.ItemsPanel>
                                 <ItemsControl.ItemContainerStyle>
@@ -233,14 +234,14 @@
                                         <Grid Margin="0,0,0,8">
                                             <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=WidthMm}" 
                                                        FontSize="12" Foreground="#6B7280" VerticalAlignment="Center"/>
-                                            <TextBox Text="{Binding StickerWidthMm, UpdateSourceTrigger=PropertyChanged}" 
+                                            <TextBox Text="{Binding StickerWidthMm, UpdateSourceTrigger=LostFocus}" 
                                                      Height="36" Padding="10,8" FontSize="13" BorderBrush="#D1D5DB" BorderThickness="1" 
                                                      Background="White" HorizontalAlignment="Right" Width="120"/>
                                         </Grid>
                                         <Grid>
                                             <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=HeightMm}" 
                                                        FontSize="12" Foreground="#6B7280" VerticalAlignment="Center"/>
-                                            <TextBox Text="{Binding StickerHeightMm, UpdateSourceTrigger=PropertyChanged}" 
+                                            <TextBox Text="{Binding StickerHeightMm, UpdateSourceTrigger=LostFocus}" 
                                                      Height="36" Padding="10,8" FontSize="13" BorderBrush="#D1D5DB" BorderThickness="1" 
                                                      Background="White" HorizontalAlignment="Right" Width="120"/>
                                         </Grid>
@@ -407,7 +408,7 @@
                                                      BorderBrush="#D1D5DB" BorderThickness="1" Background="White" Margin="0,0,0,8"/>
                                             
                                             <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=FontFamilyLabel}" FontSize="12" Foreground="#6B7280" Margin="0,0,0,4"/>
-                                            <ComboBox Text="{Binding SelectedStickerItem.FontFamily, UpdateSourceTrigger=PropertyChanged}" Height="32" Padding="8" FontSize="12" 
+                                            <ComboBox SelectedValue="{Binding SelectedStickerItem.FontFamily, UpdateSourceTrigger=PropertyChanged}" SelectedValuePath="Content" Height="32" Padding="8" FontSize="12" 
                                                       BorderBrush="#D1D5DB" BorderThickness="1" Background="White" Margin="0,0,0,8">
                                                 <ComboBoxItem Content="Segoe UI"/>
                                                 <ComboBoxItem Content="Arial"/>
@@ -425,7 +426,7 @@
                                             </Grid>
                                             
                                             <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=AlignmentLabel}" FontSize="12" Foreground="#6B7280" Margin="0,0,0,4"/>
-                                            <ComboBox SelectedItem="{Binding SelectedStickerItem.TextAlignment, UpdateSourceTrigger=PropertyChanged}" Height="32" Padding="8" FontSize="12" 
+                                            <ComboBox SelectedValue="{Binding SelectedStickerItem.TextAlignment, UpdateSourceTrigger=PropertyChanged}" SelectedValuePath="Content" Height="32" Padding="8" FontSize="12" 
                                                       BorderBrush="#D1D5DB" BorderThickness="1" Background="White" Margin="0,0,0,8">
                                                 <ComboBoxItem Content="Right"/>
                                                 <ComboBoxItem Content="Center"/>
@@ -443,7 +444,7 @@
                                                      BorderBrush="#D1D5DB" BorderThickness="1" Background="White" Margin="0,0,0,8"/>
                                             
                                             <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=BindToVariableLabel}" FontSize="12" Foreground="#6B7280" Margin="0,0,0,4"/>
-                                            <ComboBox Text="{Binding SelectedStickerItem.VariableBinding, UpdateSourceTrigger=PropertyChanged}" Height="32" Padding="8" FontSize="12" 
+                                            <ComboBox SelectedValue="{Binding SelectedStickerItem.VariableBinding, UpdateSourceTrigger=PropertyChanged}" SelectedValuePath="Content" Height="32" Padding="8" FontSize="12" 
                                                       BorderBrush="#D1D5DB" BorderThickness="1" Background="White" Margin="0,0,0,8">
                                                 <ComboBoxItem Content=""/>
                                                 <ComboBoxItem Content="brand"/>
@@ -540,6 +541,31 @@
                                             <Style.Triggers>
                                                 <Trigger Property="IsMouseOver" Value="True">
                                                     <Setter Property="Background" Value="#D97706"/>
+                                                </Trigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Button.Style>
+                                </Button>
+                                <Button Content="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=DetectStickerPrinter}" 
+                                        Command="{Binding DetectPrintersCommand}" 
+                                        Background="#6366F1" Foreground="White" Height="44" FontSize="14" FontWeight="SemiBold" 
+                                        BorderThickness="0" Margin="0,8,0,0" Cursor="Hand">
+                                    <Button.Style>
+                                        <Style TargetType="Button">
+                                            <Setter Property="Template">
+                                                <Setter.Value>
+                                                    <ControlTemplate TargetType="Button">
+                                                        <Border Background="{TemplateBinding Background}" 
+                                                                CornerRadius="8" 
+                                                                Padding="{TemplateBinding Padding}">
+                                                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                        </Border>
+                                                    </ControlTemplate>
+                                                </Setter.Value>
+                                            </Setter>
+                                            <Style.Triggers>
+                                                <Trigger Property="IsMouseOver" Value="True">
+                                                    <Setter Property="Background" Value="#4F46E5"/>
                                                 </Trigger>
                                             </Style.Triggers>
                                         </Style>

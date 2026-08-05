@@ -39,8 +39,10 @@ public sealed class CertificatesViewModel : ViewModelBase
     const int SearchDelayMs = 200;
     const int AutoFillDelayMs = 250;
     const int DeviceDefaultsDelayMs = 200;
-    const string CloudApiBase = "https://vnumera.cashierpro-cloud.com";
-    const string CloudApiKey = "fb3a9c12d7e54a8f309b2c6de1457f90c3ab8d6e1f2c4b5a7689e0f1d2c3b4a5";
+    static string CloudApiBase =>
+        System.Configuration.ConfigurationManager.AppSettings["CloudApiBase"] ?? "https://vnumera.cashierpro-cloud.com";
+    static string CloudApiKey =>
+        System.Configuration.ConfigurationManager.AppSettings["CloudApiKey"] ?? "fb3a9c12d7e54a8f309b2c6de1457f90c3ab8d6e1f2c4b5a7689e0f1d2c3b4a5";
     readonly Dictionary<string, CalibrationTemplate> _templates;
     readonly Dictionary<string, List<TemplateHubTagItem>> _templateHubTagsByDocumentType;
     CancellationTokenSource? _clientOptionsCts;
@@ -156,7 +158,7 @@ public sealed class CertificatesViewModel : ViewModelBase
         SaveTemplateHubConfigurationCommand = new RelayCommand(_ => SaveTemplateHubConfiguration());
         SelectedTemplateHubDocumentType = TemplateHubDocumentTypes.FirstOrDefault();
         UploadTemplateCommand = new RelayCommand(_ => UploadTemplate());
-        PreviewTemplateCommand = new RelayCommand(_ => PreviewTemplate());
+        PreviewTemplateCommand = new AsyncRelayCommand(_ => PreviewTemplateAsync());
         SaveTemplateCommand = new RelayCommand(_ => SaveTemplate());
         NewTemplateCommand = new RelayCommand(_ => NewTemplate());
         AddLayoutBoxCommand = new RelayCommand(AddLayoutBox);
@@ -1033,7 +1035,7 @@ public sealed class CertificatesViewModel : ViewModelBase
     public AsyncRelayCommand PreviewStickerZplCommand { get; }
     public AsyncRelayCommand PrintA4Command { get; }
     public RelayCommand ArrangeLayoutBoxesCommand { get; }
-    public RelayCommand PreviewTemplateCommand { get; }
+    public AsyncRelayCommand PreviewTemplateCommand { get; }
     public RelayCommand SaveTemplateCommand { get; }
     public RelayCommand NewTemplateCommand { get; }
     public RelayCommand ChooseBackgroundImageCommand { get; }
@@ -1743,7 +1745,7 @@ public sealed class CertificatesViewModel : ViewModelBase
         encoder.Save(outFs);
     }
 
-    async void PreviewTemplate()
+    async Task PreviewTemplateAsync()
     {
         var path = (LayoutTemplatePdfPath ?? "") != "" ? LayoutTemplatePdfPath : (LayoutTemplatePath ?? "");
         if (string.IsNullOrWhiteSpace(path))
@@ -1825,13 +1827,13 @@ public sealed class CertificatesViewModel : ViewModelBase
             {
                 return new List<string>();
             }
-        }).ContinueWith(t =>
+        }).ContinueWith(async t =>
         {
             if (version != _templateOptionsVersion)
                 return;
             if (!t.IsCompletedSuccessfully)
                 return;
-            var names = t.Result ?? new List<string>();
+            var names = await t ?? new List<string>();
             try
             {
                 System.Windows.Application.Current?.Dispatcher?.Invoke(() =>
@@ -2621,8 +2623,10 @@ public sealed class CertificatesViewModel : ViewModelBase
                     template = _templates.Values.FirstOrDefault() ?? new CalibrationTemplate(0.5, new List<CalibrationTemplateRow>());
 
                 var store = new CalibrationDefaultsStore();
-                var lastRows = store.Load(dt);
-                var lastMap = lastRows.ToDictionary();
+                var lastRows = store.LoadRows(dt);
+                var lastMap = lastRows
+                    .Where(r => !string.IsNullOrWhiteSpace(r.Item) && r.MeasuredValue.HasValue)
+                    .ToDictionary(r => r.Item!, r => (object)r.MeasuredValue!.Value);
                 var rnd = new Random();
                 var rows = new List<CalibrationRow>();
                 foreach (var row in template.Rows)
@@ -2649,13 +2653,13 @@ public sealed class CertificatesViewModel : ViewModelBase
             {
                 return new List<CalibrationRow>();
             }
-        }).ContinueWith(t =>
+        }).ContinueWith(async t =>
         {
             if (version != _applyTemplateVersion)
                 return;
             if (!t.IsCompletedSuccessfully)
                 return;
-            var rows = t.Result ?? new List<CalibrationRow>();
+            var rows = await t ?? new List<CalibrationRow>();
             try
             {
                 System.Windows.Application.Current?.Dispatcher?.Invoke(() =>

@@ -1,5 +1,5 @@
 #define MyAppName "Calibration Certificates"
-#define MyAppVersion "6.1.0"
+#define MyAppVersion "11.3.0"
 #define MyAppPublisher "BlueMax"
 #define MyAppURL "https://"
 #define MyAppExeName "BlueMax.Presentation.Wpf.exe"
@@ -14,14 +14,14 @@ AppPublisherURL={#MyAppURL}
 DefaultDirName={autopf}\{#MyAppName}
 DefaultGroupName={#MyAppName}
 DisableProgramGroupPage=no
-OutputDir=d:\BlueMax pro 7.0\Installer\Output
+OutputDir=g:\BlueMax pro 7.0\Installer\Output
 OutputBaseFilename=CalibrationCertificates-Setup-x86
 Compression=lzma2
 SolidCompression=yes
 WizardStyle=modern
 PrivilegesRequired=admin
 ArchitecturesAllowed=x86
-SetupIconFile=d:\\BlueMax pro 7.0\\BlueMax.Presentation.Wpf\\Calibration2.ico
+SetupIconFile=g:\\BlueMax pro 7.0\\BlueMax.Presentation.Wpf\\Calibration2.ico
 UninstallDisplayIcon={app}\{#MyAppExeName}
 
 [Languages]
@@ -33,9 +33,9 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 
 [Files]
 ; Only x86 payload
-Source: "d:\\BlueMax pro 7.0\\BlueMax.Presentation.Wpf\\dist\\win-x86\\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "g:\\BlueMax pro 7.0\\BlueMax.Presentation.Wpf\\dist\\win-x86\\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 ; App icon (used by shortcuts)
-Source: "d:\\BlueMax pro 7.0\\BlueMax.Presentation.Wpf\\Calibration2.ico"; DestDir: "{app}"; Flags: ignoreversion
+Source: "g:\\BlueMax pro 7.0\\BlueMax.Presentation.Wpf\\Calibration2.ico"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
 Name: "{group}\\{#MyAppName}"; Filename: "{app}\\{#MyAppExeName}"; IconFilename: "{app}\\Calibration2.ico"

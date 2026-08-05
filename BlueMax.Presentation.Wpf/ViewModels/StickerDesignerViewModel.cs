@@ -61,6 +61,7 @@ public class StickerDesignerViewModel : ViewModelBase
         AutoLayoutCommand = new RelayCommand(_ => AutoLayout());
         PreviewCommand = new RelayCommand(_ => ShowPreview());
         GenerateAndSaveQrCodeCommand = new RelayCommand(_ => GenerateAndSaveQrCode());
+        DetectPrintersCommand = new RelayCommand(_ => DetectPrinters());
         ZoomInCommand = new RelayCommand(_ => ZoomIn());
         ZoomOutCommand = new RelayCommand(_ => ZoomOut());
         AddTextItemCommand = new RelayCommand(_ => AddTextItem());
@@ -78,11 +79,15 @@ public class StickerDesignerViewModel : ViewModelBase
         get => _stickerWidthMm;
         set
         {
+            var old = _stickerWidthMm;
             var clamped = Math.Max(10, Math.Min(200, value));
-            // Always recalc canvas even if value did not change to avoid zero-size canvas on first load
+            var changed = Math.Abs(old - clamped) > 0.0001;
             SetProperty(ref _stickerWidthMm, clamped);
             CanvasWidthPx = clamped / PixelToMm;
-            ClampAllItems();
+            if (changed)
+                RescaleItems(old, _stickerHeightMm, clamped, _stickerHeightMm);
+            else
+                ClampAllItems();
         }
     }
 
@@ -91,12 +96,59 @@ public class StickerDesignerViewModel : ViewModelBase
         get => _stickerHeightMm;
         set
         {
+            var old = _stickerHeightMm;
             var clamped = Math.Max(10, Math.Min(200, value));
-            // Always recalc canvas even if value did not change to avoid zero-size canvas on first load
+            var changed = Math.Abs(old - clamped) > 0.0001;
             SetProperty(ref _stickerHeightMm, clamped);
             CanvasHeightPx = clamped / PixelToMm;
-            ClampAllItems();
+            if (changed)
+                RescaleItems(_stickerWidthMm, old, _stickerWidthMm, clamped);
+            else
+                ClampAllItems();
         }
+    }
+
+    void RescaleItems(double oldWidthMm, double oldHeightMm, double newWidthMm, double newHeightMm)
+    {
+        if (_stickerItems.Count == 0)
+        {
+            ClampAllItems();
+            return;
+        }
+        if (oldWidthMm <= 0 || oldHeightMm <= 0)
+        {
+            ClampAllItems();
+            return;
+        }
+
+        var sx = newWidthMm / oldWidthMm;
+        var sy = newHeightMm / oldHeightMm;
+        var minScale = Math.Min(sx, sy);
+
+        foreach (var item in _stickerItems)
+        {
+            if (string.Equals(item.Key, "qr", StringComparison.OrdinalIgnoreCase))
+            {
+                item.X *= minScale;
+                item.Y *= minScale;
+                item.Width = Math.Max(0, item.Width * minScale);
+                item.Height = item.Width;
+                continue;
+            }
+            if (item.Key is "line_top" or "line_bottom")
+            {
+                item.X *= sx;
+                item.Y *= sy;
+                item.Width *= sx;
+                continue;
+            }
+            item.X *= sx;
+            item.Y *= sy;
+            item.Width *= sx;
+            item.Height *= sy;
+        }
+        ClampAllItems();
+        OnPropertyChanged(nameof(StickerItems));
     }
 
     public double CanvasWidthPx
@@ -897,6 +949,50 @@ public class StickerDesignerViewModel : ViewModelBase
     }
 
     public RelayCommand GenerateAndSaveQrCodeCommand { get; }
+
+    public RelayCommand DetectPrintersCommand { get; }
+
+    async void DetectPrinters()
+    {
+        try
+        {
+            var printers = await Task.Run(() => Services.StickerPrinterDetector.DetectAll());
+            if (printers.Count == 0)
+            {
+                System.Windows.MessageBox.Show("No printers detected.", "Detect", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
+                return;
+            }
+
+            var picker = new BlueMax.Presentation.Wpf.Views.StickerPrinterPickerWindow(printers)
+            {
+                Owner = System.Windows.Application.Current?.MainWindow
+            };
+            if (picker.ShowDialog() == true && picker.SelectedPrinter != null)
+            {
+                var store = new PrinterSettingsStore();
+                var settings = store.Load();
+                settings.PrinterName = picker.SelectedPrinter.Name;
+                if (!string.IsNullOrWhiteSpace(picker.SelectedPrinter.Protocol))
+                    settings.Protocol = picker.SelectedPrinter.Protocol;
+                if (picker.SelectedPrinter.DotsPerMm > 0)
+                    settings.DotsPerMm = picker.SelectedPrinter.DotsPerMm;
+                store.Save(settings);
+
+                System.Windows.MessageBox.Show(
+                    string.Format(BlueMax.Presentation.Wpf.Resources.Translations.Get("PrinterDetectedMessage"),
+                        picker.SelectedPrinter.Name,
+                        picker.SelectedPrinter.Protocol,
+                        picker.SelectedPrinter.Dpi),
+                    "Detect",
+                    System.Windows.MessageBoxButton.OK,
+                    System.Windows.MessageBoxImage.Information);
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Windows.MessageBox.Show($"Printer detection failed: {ex.Message}", "Error", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+        }
+    }
 
     private void GenerateAndSaveQrCode()
     {

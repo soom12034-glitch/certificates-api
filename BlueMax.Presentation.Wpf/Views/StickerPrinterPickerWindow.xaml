@@ -1,0 +1,63 @@
+<Window x:Class="BlueMax.Presentation.Wpf.Views.StickerPrinterPickerWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:viewmodels="clr-namespace:BlueMax.Presentation.Wpf.ViewModels"
+        Title="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=DetectStickerPrinter}"
+        Width="780" Height="500"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="CanResize"
+        Background="#F5F5F5"
+        FlowDirection="RightToLeft">
+    <Grid Margin="14">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0" Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=DetectedPrinters}"
+                   FontSize="16" FontWeight="SemiBold" Foreground="#111827" Margin="0,0,0,6"/>
+
+        <TextBlock Grid.Row="1" Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=ThermalHint}"
+                   FontSize="12" Foreground="#6B7280" Margin="0,0,0,10"/>
+
+        <DataGrid Grid.Row="2"
+                  ItemsSource="{Binding Printers}"
+                  SelectedItem="{Binding SelectedRow}"
+                  AutoGenerateColumns="False"
+                  IsReadOnly="True"
+                  CanUserAddRows="False"
+                  SelectionMode="Single"
+                  SelectionUnit="FullRow"
+                  HeadersVisibility="Column"
+                  GridLinesVisibility="Horizontal"
+                  BorderBrush="#E5E7EB" BorderThickness="1"
+                  Background="White"
+                  RowHeight="30">
+            <DataGrid.RowStyle>
+                <Style TargetType="DataGridRow">
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding IsThermal}" Value="True">
+                            <Setter Property="Background" Value="#EFF6FF"/>
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </DataGrid.RowStyle>
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=PrinterName}" Binding="{Binding Name}" Width="*"/>
+                <DataGridTextColumn Header="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=PrinterDriver}" Binding="{Binding DriverName}" Width="*"/>
+                <DataGridTextColumn Header="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=PrinterPort}" Binding="{Binding PortName}" Width="90"/>
+                <DataGridTextColumn Header="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=PrinterProtocolHeader}" Binding="{Binding Protocol}" Width="80"/>
+                <DataGridTextColumn Header="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=PrinterDpi}" Binding="{Binding Dpi}" Width="90"/>
+            </DataGrid.Columns>
+        </DataGrid>
+
+        <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,14,0,0">
+            <Button Content="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=ApplySelectedPrinter}"
+                    Command="{Binding ApplyCommand}" Width="190" Height="36" Margin="0,0,10,0" Cursor="Hand"/>
+            <Button Content="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=Close}"
+                    Command="{Binding CloseCommand}" Width="120" Height="36" Cursor="Hand"/>
+        </StackPanel>
+    </Grid>
+</Window>

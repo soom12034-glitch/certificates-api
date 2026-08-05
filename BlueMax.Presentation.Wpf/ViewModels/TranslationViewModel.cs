@@ -55,6 +55,7 @@ public class TranslationViewModel : INotifyPropertyChanged
                 OnPropertyChanged(nameof(ActivationTitle));
                 OnPropertyChanged(nameof(ProductActivation));
                 OnPropertyChanged(nameof(HardwareFingerprint));
+                OnPropertyChanged(nameof(HardwareIdHint));
                 OnPropertyChanged(nameof(ActivationCode));
                 OnPropertyChanged(nameof(Activate));
                 OnPropertyChanged(nameof(ClientData));
@@ -256,6 +257,18 @@ public class TranslationViewModel : INotifyPropertyChanged
                 OnPropertyChanged(nameof(TestPrint));
                 OnPropertyChanged(nameof(QrLabel));
                 OnPropertyChanged(nameof(GenerateAndSaveQr));
+                OnPropertyChanged(nameof(DetectStickerPrinter));
+                OnPropertyChanged(nameof(DetectedPrinters));
+                OnPropertyChanged(nameof(ApplySelectedPrinter));
+                OnPropertyChanged(nameof(PrinterDriver));
+                OnPropertyChanged(nameof(PrinterPort));
+                OnPropertyChanged(nameof(PrinterDpi));
+                OnPropertyChanged(nameof(PrinterProtocolHeader));
+                OnPropertyChanged(nameof(ThermalPrinterType));
+                OnPropertyChanged(nameof(StandardPrinterType));
+                OnPropertyChanged(nameof(NoPrinterSelected));
+                OnPropertyChanged(nameof(PrinterDetectedMessage));
+                OnPropertyChanged(nameof(ThermalHint));
                 OnPropertyChanged(nameof(Backup));
                 OnPropertyChanged(nameof(BackupSettings));
                 OnPropertyChanged(nameof(BackupPath));
@@ -529,6 +542,7 @@ public class TranslationViewModel : INotifyPropertyChanged
     public string LicenseExpiryLabel => Translations.Get("LicenseExpiryLabel");
     public string HardwareIdLabel => Translations.Get("HardwareIdLabel");
     public string CopyButton => Translations.Get("CopyButton");
+    public string HardwareIdHint => Translations.Get("HardwareIdHint");
     public string LicenseUpdate => Translations.Get("LicenseUpdate");
     public string EnterNewKey => Translations.Get("EnterNewKey");
     public string ActivateLicense => Translations.Get("ActivateLicense");
@@ -756,6 +770,18 @@ public class TranslationViewModel : INotifyPropertyChanged
     public string TestPrint => Translations.Get("TestPrint");
     public string QrLabel => Translations.Get("QrLabel");
     public string GenerateAndSaveQr => Translations.Get("GenerateAndSaveQr");
+    public string DetectStickerPrinter => Translations.Get("DetectStickerPrinter");
+    public string DetectedPrinters => Translations.Get("DetectedPrinters");
+    public string ApplySelectedPrinter => Translations.Get("ApplySelectedPrinter");
+    public string PrinterDriver => Translations.Get("PrinterDriver");
+    public string PrinterPort => Translations.Get("PrinterPort");
+    public string PrinterDpi => Translations.Get("PrinterDpi");
+    public string PrinterProtocolHeader => Translations.Get("PrinterProtocolHeader");
+    public string ThermalPrinterType => Translations.Get("ThermalPrinterType");
+    public string StandardPrinterType => Translations.Get("StandardPrinterType");
+    public string NoPrinterSelected => Translations.Get("NoPrinterSelected");
+    public string PrinterDetectedMessage => Translations.Get("PrinterDetectedMessage");
+    public string ThermalHint => Translations.Get("ThermalHint");
 
     // Backup Settings Fields
     public string Backup => Translations.Get("Backup");

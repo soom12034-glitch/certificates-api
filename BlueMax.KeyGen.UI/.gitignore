@@ -1,0 +1,6 @@
+bin/
+obj/
+_obj/
+dist/
+PublishedApp/
+*.user

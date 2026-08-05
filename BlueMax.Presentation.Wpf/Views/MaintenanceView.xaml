@@ -1,4 +1,4 @@
-<UserControl x:Class="BlueMax.Presentation.Wpf.Views.MaintenanceView"
+﻿<UserControl x:Class="BlueMax.Presentation.Wpf.Views.MaintenanceView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:viewmodels="clr-namespace:BlueMax.Presentation.Wpf.ViewModels"
@@ -54,20 +54,20 @@
 
                             <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Margin="0,0,0,10">
                                 <StackPanel>
-                                    <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=ClientNameField}" Foreground="#333333" Margin="0,0,0,8" FontSize="14" FontWeight="Bold" FontFamily="Cairo 2026, Segoe UI" />
-                                    <TextBox Text="{Binding CustomerName, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="{Binding IsInputsLocked}" FontSize="14" Height="40" Padding="10,10" VerticalContentAlignment="Center" Foreground="Black" Background="White" BorderBrush="#E5E7EB" BorderThickness="1" FontFamily="Cairo 2026, Segoe UI" />
+                                    <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=ClientNameField}" Foreground="#333333" Margin="0,0,0,8" FontSize="14" FontWeight="Bold" FontFamily="Cairo, Segoe UI" />
+                                    <TextBox Text="{Binding CustomerName, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="{Binding IsInputsLocked}" FontSize="14" Height="40" Padding="10,10" VerticalContentAlignment="Center" Foreground="Black" Background="White" BorderBrush="#E5E7EB" BorderThickness="1" FontFamily="Cairo, Segoe UI" />
 
-                                    <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=PhoneNumber}" Foreground="#333333" Margin="0,12,0,8" FontSize="14" FontWeight="Bold" FontFamily="Cairo 2026, Segoe UI" />
-                                    <TextBox Text="{Binding CustomerPhone, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="{Binding IsInputsLocked}" FontSize="14" Height="40" Padding="10,10" VerticalContentAlignment="Center" Foreground="Black" Background="White" BorderBrush="#E5E7EB" BorderThickness="1" FontFamily="Cairo 2026, Segoe UI" />
+                                    <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=PhoneNumber}" Foreground="#333333" Margin="0,12,0,8" FontSize="14" FontWeight="Bold" FontFamily="Cairo, Segoe UI" />
+                                    <TextBox Text="{Binding CustomerPhone, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="{Binding IsInputsLocked}" FontSize="14" Height="40" Padding="10,10" VerticalContentAlignment="Center" Foreground="Black" Background="White" BorderBrush="#E5E7EB" BorderThickness="1" FontFamily="Cairo, Segoe UI" />
 
-                                    <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=DeviceType}" Foreground="#333333" Margin="0,12,0,8" FontSize="14" FontWeight="Bold" FontFamily="Cairo 2026, Segoe UI" />
-                                    <ComboBox ItemsSource="{Binding DeviceTypes}" SelectedItem="{Binding DeviceType}" IsEnabled="{Binding IsInputsEditable}" FontSize="14" Height="40" Padding="10,10" Foreground="Black" Background="White" BorderBrush="#E5E7EB" BorderThickness="1" FontFamily="Cairo 2026, Segoe UI" />
+                                    <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=DeviceType}" Foreground="#333333" Margin="0,12,0,8" FontSize="14" FontWeight="Bold" FontFamily="Cairo, Segoe UI" />
+                                    <ComboBox ItemsSource="{Binding DeviceTypes}" SelectedItem="{Binding DeviceType}" IsEnabled="{Binding IsInputsEditable}" FontSize="14" Height="40" Padding="10,10" Foreground="Black" Background="White" BorderBrush="#E5E7EB" BorderThickness="1" FontFamily="Cairo, Segoe UI" />
 
-                                    <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=Brand}" Foreground="#333333" Margin="0,12,0,8" FontSize="14" FontWeight="Bold" FontFamily="Cairo 2026, Segoe UI" />
-                                    <ComboBox ItemsSource="{Binding BrandOptions}" SelectedItem="{Binding Brand}" IsEditable="True" IsEnabled="{Binding IsInputsEditable}" FontSize="14" Height="40" Padding="10,10" Foreground="Black" Background="White" BorderBrush="#E5E7EB" BorderThickness="1" FontFamily="Cairo 2026, Segoe UI" />
+                                    <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=Brand}" Foreground="#333333" Margin="0,12,0,8" FontSize="14" FontWeight="Bold" FontFamily="Cairo, Segoe UI" />
+                                    <ComboBox ItemsSource="{Binding BrandOptions}" SelectedItem="{Binding Brand}" IsEditable="True" IsEnabled="{Binding IsInputsEditable}" FontSize="14" Height="40" Padding="10,10" Foreground="Black" Background="White" BorderBrush="#E5E7EB" BorderThickness="1" FontFamily="Cairo, Segoe UI" />
 
-                                    <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=Model}" Foreground="#333333" Margin="0,12,0,8" FontSize="14" FontWeight="Bold" FontFamily="Cairo 2026, Segoe UI" />
-                                    <TextBox Text="{Binding Model, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="{Binding IsInputsLocked}" FontSize="14" Height="40" Padding="10,10" VerticalContentAlignment="Center" Foreground="Black" Background="White" BorderBrush="#E5E7EB" BorderThickness="1" FontFamily="Cairo 2026, Segoe UI" />
+                                    <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=Model}" Foreground="#333333" Margin="0,12,0,8" FontSize="14" FontWeight="Bold" FontFamily="Cairo, Segoe UI" />
+                                    <TextBox Text="{Binding Model, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="{Binding IsInputsLocked}" FontSize="14" Height="40" Padding="10,10" VerticalContentAlignment="Center" Foreground="Black" Background="White" BorderBrush="#E5E7EB" BorderThickness="1" FontFamily="Cairo, Segoe UI" />
 
                                     <Grid Margin="0,12,0,0">
                                         <Grid.ColumnDefinitions>
@@ -75,26 +75,26 @@
                                             <ColumnDefinition Width="*" />
                                         </Grid.ColumnDefinitions>
                                         <StackPanel Grid.Column="0">
-                                            <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=SerialNumber1}" Foreground="#333333" Margin="0,0,0,8" FontSize="14" FontWeight="Bold" FontFamily="Cairo 2026, Segoe UI" />
-                                            <TextBox Text="{Binding SerialNumber, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="{Binding IsInputsLocked}" FontSize="14" Height="40" Padding="10,10" VerticalContentAlignment="Center" Foreground="Black" Background="White" BorderBrush="#E5E7EB" BorderThickness="1" FontFamily="Cairo 2026, Segoe UI" />
+                                            <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=SerialNumber1}" Foreground="#333333" Margin="0,0,0,8" FontSize="14" FontWeight="Bold" FontFamily="Cairo, Segoe UI" />
+                                            <TextBox Text="{Binding SerialNumber, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="{Binding IsInputsLocked}" FontSize="14" Height="40" Padding="10,10" VerticalContentAlignment="Center" Foreground="Black" Background="White" BorderBrush="#E5E7EB" BorderThickness="1" FontFamily="Cairo, Segoe UI" />
                                         </StackPanel>
                                         <StackPanel Grid.Column="1" Margin="8,0,0,0">
-                                            <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=Serial2Optional}" Foreground="#333333" Margin="0,0,0,8" FontSize="14" FontWeight="Bold" FontFamily="Cairo 2026, Segoe UI" />
-                                            <TextBox Text="{Binding SerialNumber2, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="{Binding IsInputsLocked}" IsEnabled="{Binding IsGpsDevice}" FontSize="14" Height="40" Padding="10,10" VerticalContentAlignment="Center" Foreground="Black" Background="White" BorderBrush="#E5E7EB" BorderThickness="1" FontFamily="Cairo 2026, Segoe UI" />
+                                            <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=Serial2Optional}" Foreground="#333333" Margin="0,0,0,8" FontSize="14" FontWeight="Bold" FontFamily="Cairo, Segoe UI" />
+                                            <TextBox Text="{Binding SerialNumber2, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="{Binding IsInputsLocked}" IsEnabled="{Binding IsGpsDevice}" FontSize="14" Height="40" Padding="10,10" VerticalContentAlignment="Center" Foreground="Black" Background="White" BorderBrush="#E5E7EB" BorderThickness="1" FontFamily="Cairo, Segoe UI" />
                                         </StackPanel>
                                     </Grid>
 
-                                    <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=Accessories}" Foreground="#333333" Margin="0,12,0,8" FontSize="14" FontWeight="Bold" FontFamily="Cairo 2026, Segoe UI" />
-                                    <TextBox Text="{Binding Accessories, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="{Binding IsInputsLocked}" FontSize="14" Height="40" Padding="10,10" VerticalContentAlignment="Center" Foreground="Black" Background="White" BorderBrush="#E5E7EB" BorderThickness="1" FontFamily="Cairo 2026, Segoe UI" />
+                                    <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=Accessories}" Foreground="#333333" Margin="0,12,0,8" FontSize="14" FontWeight="Bold" FontFamily="Cairo, Segoe UI" />
+                                    <TextBox Text="{Binding Accessories, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="{Binding IsInputsLocked}" FontSize="14" Height="40" Padding="10,10" VerticalContentAlignment="Center" Foreground="Black" Background="White" BorderBrush="#E5E7EB" BorderThickness="1" FontFamily="Cairo, Segoe UI" />
 
-                                    <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=Complaint}" Foreground="#333333" Margin="0,12,0,8" FontSize="14" FontWeight="Bold" FontFamily="Cairo 2026, Segoe UI" />
-                                    <TextBox Text="{Binding Complaint, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="{Binding IsInputsLocked}" Height="70" AcceptsReturn="True" TextWrapping="Wrap" VerticalContentAlignment="Top" FontSize="14" Padding="10,10" Foreground="Black" Background="White" BorderBrush="#E5E7EB" BorderThickness="1" FontFamily="Cairo 2026, Segoe UI" />
+                                    <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=Complaint}" Foreground="#333333" Margin="0,12,0,8" FontSize="14" FontWeight="Bold" FontFamily="Cairo, Segoe UI" />
+                                    <TextBox Text="{Binding Complaint, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="{Binding IsInputsLocked}" Height="70" AcceptsReturn="True" TextWrapping="Wrap" VerticalContentAlignment="Top" FontSize="14" Padding="10,10" Foreground="Black" Background="White" BorderBrush="#E5E7EB" BorderThickness="1" FontFamily="Cairo, Segoe UI" />
 
-                                    <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=TechnicalReport}" Foreground="#333333" Margin="0,12,0,8" FontSize="14" FontWeight="Bold" FontFamily="Cairo 2026, Segoe UI" />
-                                    <TextBox Text="{Binding TechnicalReport, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="{Binding IsInputsLocked}" Height="70" AcceptsReturn="True" TextWrapping="Wrap" VerticalContentAlignment="Top" FontSize="14" Padding="10,10" Foreground="Black" Background="White" BorderBrush="#E5E7EB" BorderThickness="1" FontFamily="Cairo 2026, Segoe UI" />
+                                    <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=TechnicalReport}" Foreground="#333333" Margin="0,12,0,8" FontSize="14" FontWeight="Bold" FontFamily="Cairo, Segoe UI" />
+                                    <TextBox Text="{Binding TechnicalReport, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="{Binding IsInputsLocked}" Height="70" AcceptsReturn="True" TextWrapping="Wrap" VerticalContentAlignment="Top" FontSize="14" Padding="10,10" Foreground="Black" Background="White" BorderBrush="#E5E7EB" BorderThickness="1" FontFamily="Cairo, Segoe UI" />
 
-                                    <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=StatusField}" Foreground="#333333" Margin="0,12,0,8" FontSize="14" FontWeight="Bold" FontFamily="Cairo 2026, Segoe UI" />
-                                    <ComboBox ItemsSource="{Binding StatusOptions}" SelectedItem="{Binding Status}" FontSize="14" Height="40" Padding="10,10" Foreground="Black" Background="White" BorderBrush="#E5E7EB" BorderThickness="1" FontFamily="Cairo 2026, Segoe UI" />
+                                    <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=StatusField}" Foreground="#333333" Margin="0,12,0,8" FontSize="14" FontWeight="Bold" FontFamily="Cairo, Segoe UI" />
+                                    <ComboBox ItemsSource="{Binding StatusOptions}" SelectedItem="{Binding Status}" FontSize="14" Height="40" Padding="10,10" Foreground="Black" Background="White" BorderBrush="#E5E7EB" BorderThickness="1" FontFamily="Cairo, Segoe UI" />
 
                                     <Grid Margin="0,12,0,0">
                                         <Grid.ColumnDefinitions>
@@ -102,17 +102,17 @@
                                             <ColumnDefinition Width="*" />
                                         </Grid.ColumnDefinitions>
                                         <StackPanel Grid.Column="0">
-                                            <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=PartsCost}" Foreground="#333333" Margin="0,0,0,8" FontSize="14" FontWeight="Bold" FontFamily="Cairo 2026, Segoe UI" />
-                                            <TextBox Text="{Binding PartsCost, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="{Binding IsInputsLocked}" FontSize="14" Height="40" Padding="10,10" VerticalContentAlignment="Center" Foreground="Black" Background="White" BorderBrush="#E5E7EB" BorderThickness="1" FontFamily="Cairo 2026, Segoe UI" />
+                                            <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=PartsCost}" Foreground="#333333" Margin="0,0,0,8" FontSize="14" FontWeight="Bold" FontFamily="Cairo, Segoe UI" />
+                                            <TextBox Text="{Binding PartsCost, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="{Binding IsInputsLocked}" FontSize="14" Height="40" Padding="10,10" VerticalContentAlignment="Center" Foreground="Black" Background="White" BorderBrush="#E5E7EB" BorderThickness="1" FontFamily="Cairo, Segoe UI" />
                                         </StackPanel>
                                         <StackPanel Grid.Column="1" Margin="8,0,0,0">
-                                            <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=LaborCost}" Foreground="#333333" Margin="0,0,0,8" FontSize="14" FontWeight="Bold" FontFamily="Cairo 2026, Segoe UI" />
-                                            <TextBox Text="{Binding LaborCost, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="{Binding IsInputsLocked}" FontSize="14" Height="40" Padding="10,10" VerticalContentAlignment="Center" Foreground="Black" Background="White" BorderBrush="#E5E7EB" BorderThickness="1" FontFamily="Cairo 2026, Segoe UI" />
+                                            <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=LaborCost}" Foreground="#333333" Margin="0,0,0,8" FontSize="14" FontWeight="Bold" FontFamily="Cairo, Segoe UI" />
+                                            <TextBox Text="{Binding LaborCost, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="{Binding IsInputsLocked}" FontSize="14" Height="40" Padding="10,10" VerticalContentAlignment="Center" Foreground="Black" Background="White" BorderBrush="#E5E7EB" BorderThickness="1" FontFamily="Cairo, Segoe UI" />
                                         </StackPanel>
                                     </Grid>
 
-                                    <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=Total}" Foreground="#333333" Margin="0,12,0,8" FontSize="14" FontWeight="Bold" FontFamily="Cairo 2026, Segoe UI" />
-                                    <TextBox Text="{Binding TotalCost, Mode=OneWay}" IsReadOnly="True" FontSize="14" Height="40" Padding="10,10" VerticalContentAlignment="Center" Foreground="Black" Background="White" BorderBrush="#E5E7EB" BorderThickness="1" FontFamily="Cairo 2026, Segoe UI" />
+                                    <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=Total}" Foreground="#333333" Margin="0,12,0,8" FontSize="14" FontWeight="Bold" FontFamily="Cairo, Segoe UI" />
+                                    <TextBox Text="{Binding TotalCost, Mode=OneWay}" IsReadOnly="True" FontSize="14" Height="40" Padding="10,10" VerticalContentAlignment="Center" Foreground="Black" Background="White" BorderBrush="#E5E7EB" BorderThickness="1" FontFamily="Cairo, Segoe UI" />
 
                                     <Grid Margin="0,12,0,0">
                                         <Grid.ColumnDefinitions>
@@ -120,12 +120,12 @@
                                             <ColumnDefinition Width="*" />
                                         </Grid.ColumnDefinitions>
                                         <StackPanel Grid.Column="0">
-                                            <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=ReceiptDate}" Foreground="#333333" Margin="0,0,0,8" FontSize="14" FontWeight="Bold" FontFamily="Cairo 2026, Segoe UI" />
-                                            <DatePicker SelectedDate="{Binding ReceivedDate}" IsEnabled="{Binding IsInputsEditable}" FontSize="14" Height="40" Foreground="Black" Background="White" BorderBrush="#E5E7EB" BorderThickness="1" FontFamily="Cairo 2026, Segoe UI" />
+                                            <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=ReceiptDate}" Foreground="#333333" Margin="0,0,0,8" FontSize="14" FontWeight="Bold" FontFamily="Cairo, Segoe UI" />
+                                            <DatePicker SelectedDate="{Binding ReceivedDate}" IsEnabled="{Binding IsInputsEditable}" FontSize="14" Height="40" Foreground="Black" Background="White" BorderBrush="#E5E7EB" BorderThickness="1" FontFamily="Cairo, Segoe UI" />
                                         </StackPanel>
                                         <StackPanel Grid.Column="1" Margin="8,0,0,0">
-                                            <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=UpdateDate}" Foreground="#333333" Margin="0,0,0,8" FontSize="14" FontWeight="Bold" FontFamily="Cairo 2026, Segoe UI" />
-                                            <DatePicker SelectedDate="{Binding UpdatedDate}" IsEnabled="{Binding IsInputsEditable}" FontSize="14" Height="40" Foreground="Black" Background="White" BorderBrush="#E5E7EB" BorderThickness="1" FontFamily="Cairo 2026, Segoe UI" />
+                                            <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=UpdateDate}" Foreground="#333333" Margin="0,0,0,8" FontSize="14" FontWeight="Bold" FontFamily="Cairo, Segoe UI" />
+                                            <DatePicker SelectedDate="{Binding UpdatedDate}" IsEnabled="{Binding IsInputsEditable}" FontSize="14" Height="40" Foreground="Black" Background="White" BorderBrush="#E5E7EB" BorderThickness="1" FontFamily="Cairo, Segoe UI" />
                                         </StackPanel>
                                     </Grid>
                                 </StackPanel>

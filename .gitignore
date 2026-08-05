@@ -24,6 +24,11 @@ Installer/Output/
 *.tmp
 *.cache
 
+## Runtime data (customers' certificates, DB backups, agent memory)
+Certificates_Output/
+Backups/
+.memory/
+
 ## OS files
 Thumbs.db
 Desktop.ini

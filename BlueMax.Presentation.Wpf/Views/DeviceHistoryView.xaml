@@ -36,7 +36,7 @@
                           IsReadOnly="True"
                           CanUserAddRows="False">
                     <DataGrid.Columns>
-                        <DataGridTextColumn Header="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=DateField}" Binding="{Binding Date, StringFormat=yyyy-MM-dd}" Width="120" />
+                        <DataGridTextColumn Header="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=DateField}" Binding="{Binding DateDisplay}" Width="120" />
                         <DataGridTextColumn Header="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=HistoryType}" Binding="{Binding Type}" Width="140" />
                         <DataGridTextColumn Header="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=HistoryTitle}" Binding="{Binding Title}" Width="*" />
                         <DataGridTextColumn Header="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=ClientNotes}" Binding="{Binding Notes}" Width="2*" />

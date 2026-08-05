@@ -123,6 +123,7 @@ public sealed class MaintenanceViewModel : ViewModelBase
         {
             using var db = CreateDbContext();
             db.Database.EnsureCreated();
+            EnsureWorkOrderCertificateLinkTable(db);
             
             try
             {
@@ -155,8 +156,94 @@ public sealed class MaintenanceViewModel : ViewModelBase
             {
                 // Column probably already exists or not supported, ignore
             }
+
+            TryBackfillGpsCertificateFields(db);
         });
         return _ensureDbCreatedTask;
+    }
+
+    static void TryBackfillGpsCertificateFields(AppDbContext db)
+    {
+        try
+        {
+            var gpsWorkOrders = db.WorkOrders
+                .Where(w => w.DeviceType == "GPS")
+                .Select(w => new
+                {
+                    w.Id,
+                    w.Brand,
+                    w.SerialNumber,
+                    w.SerialNumber2
+                })
+                .ToList();
+
+            if (gpsWorkOrders.Count == 0)
+                return;
+
+            var updatedCount = 0;
+            foreach (var workOrder in gpsWorkOrders)
+            {
+                Certificate? certificate = null;
+
+                var linkedCertificateId = TryGetLinkedCertificateId(db, workOrder.Id);
+                if (linkedCertificateId.HasValue)
+                {
+                    certificate = db.Certificates.FirstOrDefault(c => c.Id == linkedCertificateId.Value);
+                }
+
+                if (certificate == null)
+                {
+                    var tempMarker = $"TEMP-WO-{workOrder.Id:D6}";
+                    certificate = db.Certificates.FirstOrDefault(c => c.CertificateNumber == tempMarker);
+                    if (certificate != null)
+                        TryUpsertWorkOrderCertificateLink(db, workOrder.Id, certificate.Id);
+                }
+
+                if (certificate == null)
+                    continue;
+
+                var changed = false;
+
+                if (string.IsNullOrWhiteSpace(certificate.DeviceType))
+                {
+                    certificate.DeviceType = "GPS";
+                    changed = true;
+                }
+
+                if (string.IsNullOrWhiteSpace(certificate.Brand) && !string.IsNullOrWhiteSpace(workOrder.Brand))
+                {
+                    certificate.Brand = workOrder.Brand;
+                    changed = true;
+                }
+
+                if (string.IsNullOrWhiteSpace(certificate.SerialText) && !string.IsNullOrWhiteSpace(workOrder.SerialNumber))
+                {
+                    certificate.SerialText = workOrder.SerialNumber;
+                    changed = true;
+                }
+
+                if (string.IsNullOrWhiteSpace(certificate.SerialText2) && !string.IsNullOrWhiteSpace(workOrder.SerialNumber2))
+                {
+                    certificate.SerialText2 = workOrder.SerialNumber2;
+                    changed = true;
+                }
+
+                if (!changed)
+                    continue;
+
+                updatedCount++;
+            }
+
+            if (updatedCount > 0)
+            {
+                db.SaveChanges();
+                LogService.LogInfo($"Backfilled GPS certificate fields for {updatedCount} records.");
+            }
+        }
+        catch (Exception ex)
+        {
+            LogService.LogException(ex);
+        }
     }
 
     static string NormalizePhone(string? value)
@@ -418,8 +505,12 @@ public sealed class MaintenanceViewModel : ViewModelBase
 
         db.SaveChanges();
 
-        SyncWorkOrderToCertificate(db, workOrder);
+        var syncedCertificate = SyncWorkOrderToCertificate(db, workOrder);
         db.SaveChanges();
+        if (syncedCertificate != null && syncedCertificate.Id > 0)
+        {
+            TryUpsertWorkOrderCertificateLink(db, workOrder.Id, syncedCertificate.Id);
+        }
 
         var savedId = workOrder.Id;
         RefreshWorkOrders();
@@ -484,12 +575,24 @@ public sealed class MaintenanceViewModel : ViewModelBase
         System.Windows.MessageBox.Show("تم استنساخ البيانات! قم بتغيير (الجهاز/الموديل/السيريال) حسب الحاجة، ثم اضغط على زر [حفظ] ليتم إضافته كجهاز جديد لنفس الإيصال.", "جهاز جديد لنفس العميل", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
     }
 
-    static void SyncWorkOrderToCertificate(AppDbContext db, WorkOrder workOrder)
+    static Certificate? SyncWorkOrderToCertificate(AppDbContext db, WorkOrder workOrder)
     {
-        // Use a unique temporary marker to find if this work order already has a certificate
-        // but don't use WO- prefix to decouple from work order after initial export
+        EnsureWorkOrderCertificateLinkTable(db);
+
+        Certificate? certificate = null;
+        var linkedCertificateId = TryGetLinkedCertificateId(db, workOrder.Id);
+        if (linkedCertificateId.HasValue)
+        {
+            certificate = db.Certificates.FirstOrDefault(c => c.Id == linkedCertificateId.Value);
+        }
+
+        // Legacy fallback for existing data that used TEMP-WO marker only
         var tempMarker = $"TEMP-WO-{workOrder.Id:D6}";
-        var certificate = db.Certificates.FirstOrDefault(c => c.CertificateNumber == tempMarker);
+        if (certificate == null)
+        {
+            certificate = db.Certificates.FirstOrDefault(c => c.CertificateNumber == tempMarker);
+        }
+
         var isNew = certificate == null;
 
         if (certificate == null)
@@ -507,8 +610,10 @@ public sealed class MaintenanceViewModel : ViewModelBase
         certificate.ClientName = workOrder.CustomerName ?? "";
         certificate.Phone = workOrder.CustomerPhone ?? "";
         certificate.DeviceType = workOrder.DeviceType ?? "";
+        certificate.Brand = workOrder.Brand ?? "";
         certificate.Model = workOrder.Model ?? "";
         certificate.SerialText = workOrder.SerialNumber ?? "";
+        certificate.SerialText2 = workOrder.SerialNumber2 ?? "";
         
         // Always set SpecValue to a proper default, never leave status text like 'In Progress'
         if (string.Equals(workOrder.DeviceType, "Total Station", StringComparison.OrdinalIgnoreCase))
@@ -516,12 +621,150 @@ public sealed class MaintenanceViewModel : ViewModelBase
         else
             certificate.SpecValue = "";
 
-        // Always use Today's date when syncing so it reflects the actual printing/finishing date
-        certificate.IssueDate = DateTime.Today;
-        certificate.ExpiryDate = DateTime.Today.AddMonths(6);
-
         if (isNew)
+        {
             certificate.CreatedAt = DateTime.Now;
+            certificate.IssueDate = DateTime.Today;
+            certificate.ExpiryDate = DateTime.Today.AddMonths(6);
+        }
+
+        return certificate;
+    }
+
+    static void EnsureWorkOrderCertificateLinkTable(AppDbContext db)
+    {
+        try
+        {
+            var provider = db.Database.ProviderName ?? "";
+            if (provider.Contains("Sqlite", StringComparison.OrdinalIgnoreCase))
+            {
+                db.Database.ExecuteSqlRaw(@"
+                    CREATE TABLE IF NOT EXISTS WorkOrderCertificateLinks (
+                        WorkOrderId INTEGER NOT NULL PRIMARY KEY,
+                        CertificateId INTEGER NOT NULL
+                    );
+                    CREATE UNIQUE INDEX IF NOT EXISTS IX_WorkOrderCertificateLinks_CertificateId ON WorkOrderCertificateLinks (CertificateId);
+                ");
+            }
+            else if (provider.Contains("SqlServer", StringComparison.OrdinalIgnoreCase))
+            {
+                db.Database.ExecuteSqlRaw(@"
+                    IF OBJECT_ID(N'WorkOrderCertificateLinks', N'U') IS NULL
+                    BEGIN
+                        CREATE TABLE WorkOrderCertificateLinks (
+                            WorkOrderId INT NOT NULL PRIMARY KEY,
+                            CertificateId INT NOT NULL UNIQUE
+                        );
+                    END
+                ");
+            }
+        }
+        catch (Exception ex)
+        {
+            LogService.LogException(ex);
+        }
+    }
+
+    static int? TryGetLinkedCertificateId(AppDbContext db, int workOrderId)
+    {
+        try
+        {
+            var connection = db.Database.GetDbConnection();
+            if (connection.State != System.Data.ConnectionState.Open)
+                connection.Open();
+
+            using var command = connection.CreateCommand();
+            command.CommandText = "SELECT CertificateId FROM WorkOrderCertificateLinks WHERE WorkOrderId = @WorkOrderId";
+            var workOrderParam = command.CreateParameter();
+            workOrderParam.ParameterName = "@WorkOrderId";
+            workOrderParam.Value = workOrderId;
+            command.Parameters.Add(workOrderParam);
+
+            var result = command.ExecuteScalar();
+            if (result == null || result == DBNull.Value)
+                return null;
+
+            return Convert.ToInt32(result);
+        }
+        catch (Exception ex)
+        {
+            LogService.LogException(ex);
+            return null;
+        }
+    }
+
+    static void TryUpsertWorkOrderCertificateLink(AppDbContext db, int workOrderId, int certificateId)
+    {
+        try
+        {
+            EnsureWorkOrderCertificateLinkTable(db);
+
+            var provider = db.Database.ProviderName ?? "";
+            var connection = db.Database.GetDbConnection();
+            if (connection.State != System.Data.ConnectionState.Open)
+                connection.Open();
+
+            using var command = connection.CreateCommand();
+            if (provider.Contains("Sqlite", StringComparison.OrdinalIgnoreCase))
+            {
+                command.CommandText = @"
+                    INSERT INTO WorkOrderCertificateLinks (WorkOrderId, CertificateId)
+                    VALUES (@WorkOrderId, @CertificateId)
+                    ON CONFLICT(WorkOrderId) DO UPDATE SET CertificateId = excluded.CertificateId;";
+            }
+            else if (provider.Contains("SqlServer", StringComparison.OrdinalIgnoreCase))
+            {
+                command.CommandText = @"
+                    MERGE WorkOrderCertificateLinks AS target
+                    USING (SELECT @WorkOrderId AS WorkOrderId, @CertificateId AS CertificateId) AS source
+                    ON target.WorkOrderId = source.WorkOrderId
+                    WHEN MATCHED THEN UPDATE SET CertificateId = source.CertificateId
+                    WHEN NOT MATCHED THEN INSERT (WorkOrderId, CertificateId)
+                    VALUES (source.WorkOrderId, source.CertificateId);";
+            }
+            else
+            {
+                return;
+            }
+
+            var workOrderParam = command.CreateParameter();
+            workOrderParam.ParameterName = "@WorkOrderId";
+            workOrderParam.Value = workOrderId;
+            command.Parameters.Add(workOrderParam);
+
+            var certificateParam = command.CreateParameter();
+            certificateParam.ParameterName = "@CertificateId";
+            certificateParam.Value = certificateId;
+            command.Parameters.Add(certificateParam);
+
+            command.ExecuteNonQuery();
+        }
+        catch (Exception ex)
+        {
+            LogService.LogException(ex);
+        }
+    }
+
+    static void TryDeleteWorkOrderCertificateLink(AppDbContext db, int workOrderId)
+    {
+        try
+        {
+            var connection = db.Database.GetDbConnection();
+            if (connection.State != System.Data.ConnectionState.Open)
+                connection.Open();
+
+            using var command = connection.CreateCommand();
+            command.CommandText = "DELETE FROM WorkOrderCertificateLinks WHERE WorkOrderId = @WorkOrderId";
+            var workOrderParam = command.CreateParameter();
+            workOrderParam.ParameterName = "@WorkOrderId";
+            workOrderParam.Value = workOrderId;
+            command.Parameters.Add(workOrderParam);
+            command.ExecuteNonQuery();
+        }
+        catch (Exception ex)
+        {
+            LogService.LogException(ex);
+        }
     }
 
     void DeleteWorkOrder()
@@ -533,6 +776,7 @@ public sealed class MaintenanceViewModel : ViewModelBase
         var entity = db.WorkOrders.FirstOrDefault(w => w.Id == SelectedWorkOrder.Id);
         if (entity != null)
         {
+            TryDeleteWorkOrderCertificateLink(db, entity.Id);
             db.WorkOrders.Remove(entity);
             db.SaveChanges();
         }

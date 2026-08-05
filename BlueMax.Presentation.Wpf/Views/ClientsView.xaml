@@ -1,4 +1,4 @@
-<UserControl x:Class="BlueMax.Presentation.Wpf.Views.ClientsView"
+﻿<UserControl x:Class="BlueMax.Presentation.Wpf.Views.ClientsView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:viewmodels="clr-namespace:BlueMax.Presentation.Wpf.ViewModels"
@@ -43,19 +43,19 @@
 
                     <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
                         <StackPanel>
-                            <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=Name}" Foreground="#333333" Margin="0,0,0,8" FontSize="14" FontWeight="Bold" FontFamily="Cairo 2026, Segoe UI" />
-                            <TextBox Text="{Binding CustomerNameInput, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource ModernTextBox}" FontSize="14" Height="40" Padding="10,10" VerticalContentAlignment="Center" Foreground="Black" FontFamily="Cairo 2026, Segoe UI" />
+                            <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=Name}" Foreground="#333333" Margin="0,0,0,8" FontSize="14" FontWeight="Bold" FontFamily="Cairo, Segoe UI" />
+                            <TextBox Text="{Binding CustomerNameInput, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource ModernTextBox}" FontSize="14" Height="40" Padding="10,10" VerticalContentAlignment="Center" Foreground="Black" FontFamily="Cairo, Segoe UI" />
 
-                            <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=PhoneNumber}" Foreground="#333333" Margin="0,12,0,8" FontSize="14" FontWeight="Bold" FontFamily="Cairo 2026, Segoe UI" />
-                            <TextBox Text="{Binding CustomerPhoneInput, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource ModernTextBox}" FontSize="14" Height="40" Padding="10,10" VerticalContentAlignment="Center" Foreground="Black" FontFamily="Cairo 2026, Segoe UI" />
+                            <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=PhoneNumber}" Foreground="#333333" Margin="0,12,0,8" FontSize="14" FontWeight="Bold" FontFamily="Cairo, Segoe UI" />
+                            <TextBox Text="{Binding CustomerPhoneInput, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource ModernTextBox}" FontSize="14" Height="40" Padding="10,10" VerticalContentAlignment="Center" Foreground="Black" FontFamily="Cairo, Segoe UI" />
 
-                            <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=Address}" Foreground="#333333" Margin="0,12,0,8" FontSize="14" FontWeight="Bold" FontFamily="Cairo 2026, Segoe UI" />
-                            <TextBox Text="{Binding CustomerAddressInput, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource ModernTextBox}" FontSize="14" Height="40" Padding="10,10" VerticalContentAlignment="Center" Foreground="Black" FontFamily="Cairo 2026, Segoe UI" />
+                            <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=Address}" Foreground="#333333" Margin="0,12,0,8" FontSize="14" FontWeight="Bold" FontFamily="Cairo, Segoe UI" />
+                            <TextBox Text="{Binding CustomerAddressInput, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource ModernTextBox}" FontSize="14" Height="40" Padding="10,10" VerticalContentAlignment="Center" Foreground="Black" FontFamily="Cairo, Segoe UI" />
 
-                            <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=ClientNotes}" Foreground="#333333" Margin="0,12,0,8" FontSize="14" FontWeight="Bold" FontFamily="Cairo 2026, Segoe UI" />
+                            <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=ClientNotes}" Foreground="#333333" Margin="0,12,0,8" FontSize="14" FontWeight="Bold" FontFamily="Cairo, Segoe UI" />
                             <TextBox Text="{Binding CustomerNotesInput, UpdateSourceTrigger=PropertyChanged}" 
                                      Height="70" AcceptsReturn="True" TextWrapping="Wrap" 
-                                     Style="{StaticResource ModernTextBox}" VerticalContentAlignment="Top" FontSize="14" Padding="10,10" Foreground="Black" FontFamily="Cairo 2026, Segoe UI" />
+                                     Style="{StaticResource ModernTextBox}" VerticalContentAlignment="Top" FontSize="14" Padding="10,10" Foreground="Black" FontFamily="Cairo, Segoe UI" />
                         </StackPanel>
                     </ScrollViewer>
 
