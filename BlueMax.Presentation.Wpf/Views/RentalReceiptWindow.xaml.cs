@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Configuration;
 using System.Printing;
@@ -17,6 +18,7 @@ public partial class RentalReceiptWindow : Window
     public RentalReceiptWindow(RentalReceiptData data)
     {
         InitializeComponent();
+        BlueMax.Presentation.Wpf.Services.LanguageService.Instance.ApplyFlowDirection(this);
         var vm = new RentalReceiptViewModel(data);
         DataContext = vm;
         Loaded += (_, __) => vm.RefreshPreviewCommand.Execute(null);
@@ -309,6 +311,26 @@ public partial class RentalReceiptWindow : Window
                     };
                     root.Children.Add(companySubHeader);
                 }
+
+                var companyContact = new TextBlock
+                {
+                    FlowDirection = FlowDirection.RightToLeft,
+                    FontFamily = new FontFamily("Tahoma"),
+                    FontSize = 12,
+                    Foreground = new SolidColorBrush(Color.FromRgb(100, 100, 100)),
+                    TextAlignment = TextAlignment.Center,
+                    Margin = new Thickness(0, 0, 0, 20)
+                };
+                var contactParts = new List<string>();
+                if (!string.IsNullOrWhiteSpace(_companySettings.CompanyPhone))
+                    contactParts.Add($"هاتف: {_companySettings.CompanyPhone}");
+                if (!string.IsNullOrWhiteSpace(_companySettings.CompanyAddress))
+                    contactParts.Add(_companySettings.CompanyAddress);
+                if (contactParts.Count > 0)
+                {
+                    companyContact.Text = string.Join("  |  ", contactParts);
+                    root.Children.Add(companyContact);
+                }
             }
 
             var metaStack = new StackPanel
@@ -364,7 +386,7 @@ public partial class RentalReceiptWindow : Window
             customerGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
 
             AddRow(customerGrid, 0, "اسم العميل", Safe(_data.CustomerName), true);
-            AddRow(customerGrid, 1, "الشركة", Safe(_data.Company));
+            AddRow(customerGrid, 1, "المنشأة", Safe(_data.Company));
             AddRow(customerGrid, 2, "رقم الهاتف", Safe(_data.Phone), false, true);
 
             customerBorder.Child = customerGrid;

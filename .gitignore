@@ -17,6 +17,7 @@ BlueMax.Presentation.Wpf/bin/Debug/
 BlueMax.Presentation.Wpf/bin/*
 BlueMax.Presentation.Wpf/Properties/PublishProfiles/
 Installer/Output/
+Installer/Redist/
 
 ## Logs and temp
 *.log

@@ -46,7 +46,9 @@ public class CalibrationDefaultsStore
 
         Directory.CreateDirectory(settingsDir);
 
-        var settingsPath = Path.Combine(settingsDir, SettingsPath);
+        var settingsPath = string.IsNullOrWhiteSpace(deviceType)
+            ? Path.Combine(settingsDir, SettingsPath)
+            : Path.Combine(settingsDir, $"CalibrationDefaults_{PathSanitizer.Segment(deviceType)}.json");
 
         if (!File.Exists(settingsPath))
             return new CalibrationDefaults();
@@ -96,7 +98,7 @@ public class CalibrationDefaultsStore
 
         Directory.CreateDirectory(settingsDir);
 
-        var settingsPath = Path.Combine(settingsDir, $"CalibrationDefaults_{deviceType}.json");
+        var settingsPath = Path.Combine(settingsDir, $"CalibrationDefaults_{PathSanitizer.Segment(deviceType)}.json");
 
         if (!File.Exists(settingsPath))
             return new List<CalibrationDefaultsRow>();
@@ -123,7 +125,7 @@ public class CalibrationDefaultsStore
 
         Directory.CreateDirectory(settingsDir);
 
-        var settingsPath = Path.Combine(settingsDir, $"CalibrationDefaults_{deviceType}.json");
+        var settingsPath = Path.Combine(settingsDir, $"CalibrationDefaults_{PathSanitizer.Segment(deviceType)}.json");
 
         try
         {

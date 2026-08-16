@@ -4,6 +4,9 @@
              xmlns:local="clr-namespace:BlueMax.KeyGen.UI"
              StartupUri="MainWindow.xaml">
     <Application.Resources>
-         
+        <SolidColorBrush x:Key="SurfaceWindowBrush" Color="#F5F5F5"/>
+        <SolidColorBrush x:Key="TextBodyBrush" Color="#333333"/>
+        <SolidColorBrush x:Key="SurfaceMutedBrush" Color="#EEEEEE"/>
+        <SolidColorBrush x:Key="BrandBlueBrush" Color="#007ACC"/>
     </Application.Resources>
 </Application>

@@ -20,26 +20,26 @@
             <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
 
-        <Border Grid.Column="0" Background="#1F2937" CornerRadius="10" Padding="12">
+        <Border Grid.Column="0" Background="{DynamicResource TextPrimaryBrush}" CornerRadius="10" Padding="12">
             <ScrollViewer VerticalScrollBarVisibility="Auto">
                 <StackPanel>
                     <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=MaintenanceStickerSettings}" Foreground="White" FontSize="18" FontWeight="Bold" Margin="0,0,0,12" />
 
                     <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=MaintenanceStickerData}" Foreground="White" FontWeight="SemiBold" Margin="0,0,0,6" />
 
-                    <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=ClientNamePreview}" Foreground="#D1D5DB" FontSize="13" />
+                    <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=ClientNamePreview}" Foreground="{DynamicResource TextOnDarkBrush}" FontSize="13" />
                     <TextBox Text="{Binding StickerCustomerName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" MinHeight="30" Margin="0,2,0,8" />
 
-                    <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=DeviceTypePreview}" Foreground="#D1D5DB" FontSize="13" />
+                    <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=DeviceTypePreview}" Foreground="{DynamicResource TextOnDarkBrush}" FontSize="13" />
                     <TextBox Text="{Binding StickerDeviceType, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" MinHeight="30" Margin="0,2,0,8" />
 
-                    <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=ModelPreview}" Foreground="#D1D5DB" FontSize="13" />
+                    <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=ModelPreview}" Foreground="{DynamicResource TextOnDarkBrush}" FontSize="13" />
                     <TextBox Text="{Binding StickerModel, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" MinHeight="30" Margin="0,2,0,8" />
 
-                    <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=DeviceSerial}" Foreground="#D1D5DB" FontSize="13" />
+                    <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=DeviceSerial}" Foreground="{DynamicResource TextOnDarkBrush}" FontSize="13" />
                     <TextBox Text="{Binding StickerSerialNumber, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" MinHeight="30" Margin="0,2,0,8" />
 
-                    <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=ReceivedDatePreview}" Foreground="#D1D5DB" FontSize="13" />
+                    <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=ReceivedDatePreview}" Foreground="{DynamicResource TextOnDarkBrush}" FontSize="13" />
                     <DatePicker SelectedDate="{Binding StickerReceivedDate, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Margin="0,2,0,12" />
 
                     <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=RealDimensions}" Foreground="White" FontWeight="SemiBold" Margin="0,0,0,6" />
@@ -50,16 +50,16 @@
                         </Grid.ColumnDefinitions>
 
                         <StackPanel Grid.Column="0" Margin="0,0,6,0">
-                            <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=StickerWidthMm}" Foreground="#D1D5DB" FontSize="13" />
+                            <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=StickerWidthMm}" Foreground="{DynamicResource TextOnDarkBrush}" FontSize="13" />
                             <TextBox Text="{Binding StickerWidthMm, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, StringFormat=F1}" MinHeight="30" Margin="0,2,0,0" />
                         </StackPanel>
 
                         <StackPanel Grid.Column="1" Margin="6,0,0,0">
-                            <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=StickerHeightMm}" Foreground="#D1D5DB" FontSize="13" />
+                            <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=StickerHeightMm}" Foreground="{DynamicResource TextOnDarkBrush}" FontSize="13" />
                             <TextBox Text="{Binding StickerHeightMm, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, StringFormat=F1}" MinHeight="30" Margin="0,2,0,0" />
                         </StackPanel>
                     </Grid>
-                    <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=DefaultSize}" Foreground="#9CA3AF" FontSize="12" Margin="0,0,0,12" />
+                    <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=DefaultSize}" Foreground="{DynamicResource TextDisabledBrush}" FontSize="12" Margin="0,0,0,12" />
 
                     <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=StickerPrinter}" Foreground="White" Margin="0,0,0,4" />
                     <ComboBox ItemsSource="{Binding InstalledPrinters}"
@@ -75,17 +75,17 @@
                     <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=ScaleContent}" Foreground="White" Margin="0,0,0,4" />
                     <Slider Minimum="0.8" Maximum="1.3" TickFrequency="0.01" IsSnapToTickEnabled="True"
                             Value="{Binding ContentScale, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                    <TextBlock Text="{Binding ContentScale, StringFormat=F2}" Foreground="#D1D5DB" Margin="0,2,0,12" />
+                    <TextBlock Text="{Binding ContentScale, StringFormat=F2}" Foreground="{DynamicResource TextOnDarkBrush}" Margin="0,2,0,12" />
 
                     <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=HorizontalOffsetSticker}" Foreground="White" Margin="0,0,0,4" />
                     <Slider Minimum="-30" Maximum="30" TickFrequency="1" IsSnapToTickEnabled="True"
                             Value="{Binding ContentOffsetX, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                    <TextBlock Text="{Binding ContentOffsetX, StringFormat=F0}" Foreground="#D1D5DB" Margin="0,2,0,12" />
+                    <TextBlock Text="{Binding ContentOffsetX, StringFormat=F0}" Foreground="{DynamicResource TextOnDarkBrush}" Margin="0,2,0,12" />
 
                     <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=VerticalOffsetValue}" Foreground="White" Margin="0,0,0,4" />
                     <Slider Minimum="-30" Maximum="30" TickFrequency="1" IsSnapToTickEnabled="True"
                             Value="{Binding ContentOffsetY, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                    <TextBlock Text="{Binding ContentOffsetY, StringFormat=F0}" Foreground="#D1D5DB" Margin="0,2,0,14" />
+                    <TextBlock Text="{Binding ContentOffsetY, StringFormat=F0}" Foreground="{DynamicResource TextOnDarkBrush}" Margin="0,2,0,14" />
 
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
                         <Button Content="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=RealPreview}" Command="{Binding RefreshPreviewCommand}" Width="130" Height="32" Margin="0,0,8,0" />
@@ -95,7 +95,7 @@
             </ScrollViewer>
         </Border>
 
-        <Border Grid.Column="2" BorderBrush="#E5E7EB" BorderThickness="1" CornerRadius="10" Padding="8" Background="White">
+        <Border Grid.Column="2" BorderBrush="{DynamicResource BorderLightBrush}" BorderThickness="1" CornerRadius="10" Padding="8" Background="White">
             <DockPanel>
                 <StackPanel Orientation="Horizontal" DockPanel.Dock="Top" Margin="0,0,0,8">
                     <Button Content="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=RefreshPreview}"

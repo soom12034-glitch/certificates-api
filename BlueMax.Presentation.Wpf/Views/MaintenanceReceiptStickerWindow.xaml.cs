@@ -1,6 +1,8 @@
 using System;
 using System.Collections.ObjectModel;
 using System.Configuration;
+using System.Drawing.Imaging;
+using System.IO;
 using System.Printing;
 using System.Windows;
 using System.Windows.Controls;
@@ -8,6 +10,7 @@ using System.Windows.Documents;
 using System.Windows.Controls.Primitives;
 using System.Windows.Markup;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using BlueMax.Presentation.Wpf.ViewModels;
 
 namespace BlueMax.Presentation.Wpf.Views;
@@ -17,6 +20,7 @@ public partial class MaintenanceReceiptStickerWindow : Window
     public MaintenanceReceiptStickerWindow(MaintenanceViewModel.MaintenanceReceiptData data)
     {
         InitializeComponent();
+        BlueMax.Presentation.Wpf.Services.LanguageService.Instance.ApplyFlowDirection(this);
         var vm = new ReceiptStickerViewModel(data);
         DataContext = vm;
         Loaded += (_, __) => vm.RefreshPreviewCommand.Execute(null);
@@ -403,12 +407,33 @@ public partial class MaintenanceReceiptStickerWindow : Window
             var header = new Border
             {
                 Background = new SolidColorBrush(Color.FromRgb(229, 231, 235)),
-                Padding = new Thickness(3, 1, 3, 1),
+                Padding = new Thickness(3, 2, 3, 2),
                 CornerRadius = new CornerRadius(2, 2, 0, 0)
             };
 
-            var headerGrid = new Grid { FlowDirection = FlowDirection.RightToLeft };
-            headerGrid.Children.Add(new TextBlock
+            var headerStack = new StackPanel
+            {
+                Orientation = Orientation.Horizontal,
+                FlowDirection = FlowDirection.RightToLeft,
+                VerticalAlignment = VerticalAlignment.Center,
+                HorizontalAlignment = HorizontalAlignment.Center
+            };
+
+            var qrSize = Math.Min(Math.Max(18.0, pageHeight * 0.4), 48.0);
+            var qrSource = BuildQrSource(BuildQrPayload());
+            if (qrSource != null)
+            {
+                headerStack.Children.Add(new Image
+                {
+                    Source = qrSource,
+                    Width = qrSize,
+                    Height = qrSize,
+                    Stretch = Stretch.Uniform,
+                    Margin = new Thickness(2, 0, 0, 0)
+                });
+            }
+
+            headerStack.Children.Add(new TextBlock
             {
                 Text = $"رقم: {WrapLtr(Safe(_data.ReceiptNumber))}",
                 FontFamily = new FontFamily("Tahoma"),
@@ -417,9 +442,10 @@ public partial class MaintenanceReceiptStickerWindow : Window
                 Foreground = Brushes.Black,
                 VerticalAlignment = VerticalAlignment.Center,
                 HorizontalAlignment = HorizontalAlignment.Center,
-                TextAlignment = TextAlignment.Center
+                Margin = new Thickness(4, 0, 4, 0)
             });
-            header.Child = headerGrid;
+
+            header.Child = headerStack;
             Grid.SetRow(header, 0);
             root.Children.Add(header);
 
@@ -431,6 +457,7 @@ public partial class MaintenanceReceiptStickerWindow : Window
             };
 
             details.Children.Add(MakeCenteredLine("الاسم: ", Safe(StickerCustomerName), bodyFont));
+            details.Children.Add(MakeCenteredLine("نوع الجهاز: ", Safe(StickerDeviceType), bodyFont));
             details.Children.Add(MakeCenteredLine("موديل الجهاز: ", Safe(StickerModel), bodyFont));
             details.Children.Add(MakeCenteredLine("السيريال: ", Safe(StickerSerialNumber), bodyFont));
             details.Children.Add(MakeCenteredLine("التاريخ: ", StickerReceivedDate.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture), smallFont));
@@ -452,6 +479,39 @@ public partial class MaintenanceReceiptStickerWindow : Window
         {
             var v = (value ?? "").Trim();
             return string.IsNullOrWhiteSpace(v) ? "-" : v;
+        }
+
+        string BuildQrPayload()
+        {
+            return "استلام جهاز صيانة" + Environment.NewLine +
+                   $"رقم: {Safe(_data.ReceiptNumber)}" + Environment.NewLine +
+                   $"العميل: {Safe(StickerCustomerName)}" + Environment.NewLine +
+                   $"الجهاز: {Safe(StickerDeviceType)}" + Environment.NewLine +
+                   $"الموديل: {Safe(StickerModel)}" + Environment.NewLine +
+                   $"السيريال: {Safe(StickerSerialNumber)}";
+        }
+
+        static BitmapSource? BuildQrSource(string content)
+        {
+            try
+            {
+                using var bitmap = BlueMax.Infrastructure.BarcodeGenerator.GenerateQrCode(content, 200);
+                using var stream = new MemoryStream();
+                bitmap.Save(stream, ImageFormat.Png);
+                stream.Position = 0;
+
+                var image = new BitmapImage();
+                image.BeginInit();
+                image.CacheOption = BitmapCacheOption.OnLoad;
+                image.StreamSource = stream;
+                image.EndInit();
+                image.Freeze();
+                return image;
+            }
+            catch
+            {
+                return null;
+            }
         }
 
         static string WrapLtr(string value)

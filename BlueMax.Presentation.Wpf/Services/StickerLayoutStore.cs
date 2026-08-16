@@ -5,6 +5,17 @@ using System.Text.Json;
 
 namespace BlueMax.Presentation.Wpf.Services;
 
+/// <summary>
+/// Defines which sticker data a designer instance works with. Each kind uses its
+/// OWN storage files (layout + templates) so no variable, setting or layout is
+/// ever shared between the certificate sticker and the maintenance receipt sticker.
+/// </summary>
+public enum StickerKind
+{
+    Certificate = 0,
+    Receipt = 1
+}
+
 public class StickerLayoutSettings
 {
     public double WidthMm { get; set; } = 60;
@@ -36,11 +47,37 @@ public class StickerItemSettings
     public int ZIndex { get; set; } = 0;
 }
 
+public class StickerTemplateInfo
+{
+    public string Name { get; set; } = "";
+    public double WidthMm { get; set; }
+    public double HeightMm { get; set; }
+    public StickerLayoutSettings? Layout { get; set; }
+}
+
 public class StickerLayoutStore
 {
-    private readonly string _filePath;
+    readonly string _filePath;
+    readonly StickerKind _kind;
 
-    public StickerLayoutStore()
+    public StickerKind Kind => _kind;
+
+    public bool HasSavedLayout => File.Exists(_filePath);
+
+    public StickerLayoutStore(StickerKind kind = StickerKind.Certificate)
+    {
+        _kind = kind;
+        var overrideDir = Environment.GetEnvironmentVariable("BLUEMAX_CONFIG_DIR");
+        var dir = string.IsNullOrWhiteSpace(overrideDir)
+            ? BuildDefaultDir()
+            : overrideDir;
+
+        Directory.CreateDirectory(dir);
+        var layoutFile = kind == StickerKind.Certificate ? "sticker_layout.json" : "receipt_sticker_layout.json";
+        _filePath = Path.Combine(dir, layoutFile);
+    }
+
+    static string BuildDefaultDir()
     {
         var appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
         var dir = string.IsNullOrWhiteSpace(appData)
@@ -52,8 +89,7 @@ public class StickerLayoutStore
             dir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Config");
         }
 
-        Directory.CreateDirectory(dir);
-        _filePath = Path.Combine(dir, "sticker_layout.json");
+        return dir;
     }
 
     public void Save(StickerLayoutSettings settings)
@@ -82,7 +118,53 @@ public class StickerLayoutStore
         }
     }
 
+    string TemplatesFilePath
+    {
+        get
+        {
+            var templatesFile = _kind == StickerKind.Certificate ? "sticker_templates.json" : "receipt_sticker_templates.json";
+            return Path.Combine(Path.GetDirectoryName(_filePath) ?? ".", templatesFile);
+        }
+    }
+
+    public List<StickerTemplateInfo> LoadCustomTemplates()
+    {
+        try
+        {
+            if (!File.Exists(TemplatesFilePath))
+                return new List<StickerTemplateInfo>();
+            var json = File.ReadAllText(TemplatesFilePath);
+            return JsonSerializer.Deserialize<List<StickerTemplateInfo>>(json) ?? new List<StickerTemplateInfo>();
+        }
+        catch
+        {
+            return new List<StickerTemplateInfo>();
+        }
+    }
+
+    public void SaveCustomTemplates(List<StickerTemplateInfo> templates)
+    {
+        try
+        {
+            var json = JsonSerializer.Serialize(templates, new JsonSerializerOptions { WriteIndented = true });
+            File.WriteAllText(TemplatesFilePath, json);
+        }
+        catch
+        {
+        }
+    }
+
     public StickerLayoutSettings CreateDefaultSettings()
+    {
+        return _kind == StickerKind.Certificate ? CreateCertificateDefaultSettings() : CreateReceiptDefaultSettings();
+    }
+
+    public StickerLayoutSettings CreateDefaultSettings(StickerKind kind)
+    {
+        return kind == StickerKind.Certificate ? CreateCertificateDefaultSettings() : CreateReceiptDefaultSettings();
+    }
+
+    StickerLayoutSettings CreateCertificateDefaultSettings()
     {
         // Default layout tuned for 60x40 mm (≈ 226x151 px at 96DPI)
         // Arabic-friendly defaults
@@ -100,19 +182,19 @@ public class StickerLayoutStore
 
                 // Middle section labels in English
                 new StickerItemSettings { Key = "brand_label", X = 15, Y = 45, Width = 60, Height = 18, FontSize = 10, DisplayText = "Brand:" },
-                new StickerItemSettings { Key = "brand_value", X = 80, Y = 45, Width = 100, Height = 18, FontSize = 10, DisplayText = "Brand" },
+                new StickerItemSettings { Key = "brand_value", X = 80, Y = 45, Width = 100, Height = 18, FontSize = 10, DisplayText = "Brand", VariableBinding = "brand" },
 
                 new StickerItemSettings { Key = "model_label", X = 15, Y = 63, Width = 60, Height = 18, FontSize = 10, DisplayText = "Model:" },
-                new StickerItemSettings { Key = "model_value", X = 80, Y = 63, Width = 100, Height = 18, FontSize = 10, DisplayText = "B20" },
+                new StickerItemSettings { Key = "model_value", X = 80, Y = 63, Width = 100, Height = 18, FontSize = 10, DisplayText = "B20", VariableBinding = "model" },
 
                 new StickerItemSettings { Key = "serial_label", X = 15, Y = 81, Width = 60, Height = 18, FontSize = 10, DisplayText = "Serial:" },
-                new StickerItemSettings { Key = "serial_value", X = 80, Y = 81, Width = 100, Height = 18, FontSize = 10, DisplayText = "345676543" },
+                new StickerItemSettings { Key = "serial_value", X = 80, Y = 81, Width = 100, Height = 18, FontSize = 10, DisplayText = "345676543", VariableBinding = "serial" },
 
                 new StickerItemSettings { Key = "cal_label", X = 15, Y = 99, Width = 60, Height = 18, FontSize = 10, DisplayText = "Cal Date:" },
-                new StickerItemSettings { Key = "cal_value", X = 80, Y = 99, Width = 100, Height = 18, FontSize = 10, DisplayText = "20-02-2026" },
+                new StickerItemSettings { Key = "cal_value", X = 80, Y = 99, Width = 100, Height = 18, FontSize = 10, DisplayText = "20-02-2026", VariableBinding = "cal_value" },
 
                 new StickerItemSettings { Key = "exp_label", X = 15, Y = 117, Width = 60, Height = 18, FontSize = 10, DisplayText = "Valid until:" },
-                new StickerItemSettings { Key = "exp_value", X = 80, Y = 117, Width = 100, Height = 18, FontSize = 10, DisplayText = "20-08-2026" },
+                new StickerItemSettings { Key = "exp_value", X = 80, Y = 117, Width = 100, Height = 18, FontSize = 10, DisplayText = "20-08-2026", VariableBinding = "exp_value" },
 
                 // QR code on the right of the middle block
                 new StickerItemSettings { Key = "qr", X = 175, Y = 55, Width = 45, Height = 45, FontSize = 60, DisplayText = "QR" },
@@ -127,6 +209,59 @@ public class StickerLayoutStore
                 new StickerItemSettings { Key = "logo", X = 10, Y = 10, Width = 30, Height = 30, FontSize = 10, DisplayText = "Logo", IsVisible = false },
                 new StickerItemSettings { Key = "cert_label", X = 10, Y = 10, Width = 100, Height = 10, FontSize = 10, DisplayText = "CERT:", IsVisible = false },
                 new StickerItemSettings { Key = "cert_value", X = 10, Y = 10, Width = 100, Height = 10, FontSize = 10, DisplayText = "Cert001", IsVisible = false }
+            }
+        };
+    }
+
+    StickerLayoutSettings CreateReceiptDefaultSettings()
+    {
+        // Default layout tuned for 60x40 mm (≈ 226x151 px at 96DPI).
+        // The receipt sticker contains ONLY: company name (top), abbreviation (header),
+        // receipt number, customer name, brand, model, serial number, receipt date.
+        // NO certificate data (cert/cal/exp) and NO device type row are ever included.
+        // All item keys are receipt-specific and are never shared with the certificate sticker.
+        return new StickerLayoutSettings
+        {
+            WidthMm = 60,
+            HeightMm = 40,
+            HeaderFontSize = 14,
+            BodyFontSize = 10,
+            Items = new List<StickerItemSettings>
+            {
+                // Top: company name (prominent) then abbreviation
+                new StickerItemSettings { Key = "company", X = 0, Y = 4, Width = 226, Height = 24, FontSize = 14, DisplayText = "Company", TextAlignment = "Center", IsVisible = true },
+                new StickerItemSettings { Key = "header", X = 0, Y = 28, Width = 226, Height = 16, FontSize = 11, DisplayText = "Abbreviation", TextAlignment = "Center", IsVisible = true },
+                new StickerItemSettings { Key = "line_top", X = 10, Y = 46, Width = 206, Height = 1.5, FontSize = 1, DisplayText = "" },
+
+                // Middle section: receipt data rows
+                new StickerItemSettings { Key = "receipt_number_label", X = 15, Y = 50, Width = 60, Height = 13, FontSize = 10, DisplayText = "Receipt No.:" },
+                new StickerItemSettings { Key = "receipt_number_value", X = 80, Y = 50, Width = 85, Height = 13, FontSize = 10, DisplayText = "0001", VariableBinding = "receipt_number" },
+
+                new StickerItemSettings { Key = "customer_label", X = 15, Y = 65, Width = 60, Height = 13, FontSize = 10, DisplayText = "Customer:" },
+                new StickerItemSettings { Key = "customer_value", X = 80, Y = 65, Width = 85, Height = 13, FontSize = 10, DisplayText = "Customer", VariableBinding = "customer" },
+
+                new StickerItemSettings { Key = "brand_label", X = 15, Y = 80, Width = 60, Height = 13, FontSize = 10, DisplayText = "Brand:" },
+                new StickerItemSettings { Key = "brand_value", X = 80, Y = 80, Width = 85, Height = 13, FontSize = 10, DisplayText = "Brand", VariableBinding = "brand" },
+
+                new StickerItemSettings { Key = "model_label", X = 15, Y = 95, Width = 60, Height = 13, FontSize = 10, DisplayText = "Model:" },
+                new StickerItemSettings { Key = "model_value", X = 80, Y = 95, Width = 85, Height = 13, FontSize = 10, DisplayText = "Model", VariableBinding = "model" },
+
+                new StickerItemSettings { Key = "serial_label", X = 15, Y = 110, Width = 60, Height = 13, FontSize = 10, DisplayText = "Serial No.:" },
+                new StickerItemSettings { Key = "serial_value", X = 80, Y = 110, Width = 85, Height = 13, FontSize = 10, DisplayText = "Serial", VariableBinding = "serial" },
+
+                new StickerItemSettings { Key = "date_label", X = 15, Y = 125, Width = 60, Height = 13, FontSize = 10, DisplayText = "Date:" },
+                new StickerItemSettings { Key = "date_value", X = 80, Y = 125, Width = 85, Height = 13, FontSize = 10, DisplayText = "20-02-2026", VariableBinding = "date" },
+
+                // No QR code on the receipt sticker by design; the receipt number is
+                // shown in large bold text in a badge area on the right of the rows.
+
+                // Bottom line and optional footer (kept available but hidden by default)
+                new StickerItemSettings { Key = "line_bottom", X = 10, Y = 141, Width = 206, Height = 1.5, FontSize = 1, DisplayText = "" },
+                new StickerItemSettings { Key = "address", X = 0, Y = 145, Width = 226, Height = 13, FontSize = 9, DisplayText = "", IsVisible = false },
+                new StickerItemSettings { Key = "phone", X = 0, Y = 158, Width = 226, Height = 13, FontSize = 9, DisplayText = "", IsVisible = false },
+
+                // Logo is available but hidden by default
+                new StickerItemSettings { Key = "logo", X = 10, Y = 10, Width = 30, Height = 30, FontSize = 10, DisplayText = "Logo", IsVisible = false }
             }
         };
     }

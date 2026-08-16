@@ -241,7 +241,7 @@
                             <Button Content="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=StickerPreview}" 
                                     Command="{Binding PreviewStickerZplCommand}" 
                                     Style="{StaticResource ModernButtonStyle}" 
-                                    Background="#9CA3AF"
+                                    Background="{DynamicResource TextDisabledBrush}"
                                     Margin="0,0,0,8"/>
                             
                             <Button Content="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=PrintStickerButton}"
@@ -252,7 +252,7 @@
                         </ScrollViewer>
                     </Border>
 
-                    <Grid Background="#66000000"
+                    <Grid Background="{DynamicResource OverlayDarkBrush}"
                           Visibility="{Binding IsBusy, Converter={StaticResource BoolToVis}}"
                           Panel.ZIndex="100" Grid.ColumnSpan="5">
                         <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
@@ -282,12 +282,28 @@
                                      Style="{StaticResource ModernTextBox}"
                                      KeyDown="ArchiveSearchBox_KeyDown"
                                      ToolTip="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=Search}" />
-                            <Button Grid.Column="1" 
-                                    Content="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=Refresh}" 
-                                    Command="{Binding RefreshCertificatesCommand}" 
-                                    Style="{StaticResource ModernButtonStyle}" 
-                                    Width="100" 
-                                    Margin="8,0,0,0"/>
+                            <StackPanel Grid.Column="1" Orientation="Horizontal">
+                                <Button Content="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=Preview}"
+                                        Command="{Binding OpenSelectedCertificateFileCommand}"
+                                        Style="{StaticResource ModernButtonStyle}"
+                                        Width="100"
+                                        Margin="8,0,0,0"/>
+                                <Button Content="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=Reprint}"
+                                        Command="{Binding ReprintSelectedCertificateCommand}"
+                                        Style="{StaticResource ModernButtonStyle}"
+                                        Width="100"
+                                        Margin="8,0,0,0"/>
+                                <Button Content="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=Delete}"
+                                        Command="{Binding DeleteCertificateCommand}"
+                                        Style="{StaticResource ModernButtonStyle}"
+                                        Width="100"
+                                        Margin="8,0,0,0"/>
+                                <Button Content="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=Refresh}"
+                                        Command="{Binding RefreshCertificatesCommand}"
+                                        Style="{StaticResource ModernButtonStyle}"
+                                        Width="100"
+                                        Margin="8,0,0,0"/>
+                            </StackPanel>
                         </Grid>
 
                         <!-- جدول الشهادات -->
@@ -306,15 +322,26 @@
                                   ScrollViewer.CanContentScroll="True">
                             <DataGrid.RowStyle>
                                 <Style TargetType="DataGridRow">
+                                    <Setter Property="Background" Value="Transparent"/>
                                     <EventSetter Event="PreviewMouseRightButtonDown" Handler="ArchiveGridRow_PreviewMouseRightButtonDown"/>
+                                    <Style.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter Property="Background" Value="{StaticResource SurfaceSelectedBrush}"/>
+                                        </Trigger>
+                                        <Trigger Property="IsSelected" Value="True">
+                                            <Setter Property="Background" Value="{StaticResource SurfaceSelectedBrush}"/>
+                                            <Setter Property="Foreground" Value="{StaticResource TextStrongBrush}"/>
+                                        </Trigger>
+                                    </Style.Triggers>
                                 </Style>
                             </DataGrid.RowStyle>
                             <DataGrid.ContextMenu>
                                 <ContextMenu>
-                                    <MenuItem Header="تعديل / إعادة تسمية" Command="{Binding EditOldCertificateCommand}" />
-                                    <MenuItem Header="حذف" Command="{Binding DeleteCertificateCommand}" />
+                                    <MenuItem Header="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=EditRename}" Command="{Binding EditOldCertificateCommand}" />
+                                    <MenuItem Header="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=Preview}" Command="{Binding OpenSelectedCertificateFileCommand}" />
+                                    <MenuItem Header="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=Reprint}" Command="{Binding ReprintSelectedCertificateCommand}" />
                                     <Separator />
-                                    <MenuItem Header="فتح" Command="{Binding OpenSelectedCertificateFileCommand}" />
+                                    <MenuItem Header="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=Delete}" Command="{Binding DeleteCertificateCommand}" />
                                 </ContextMenu>
                             </DataGrid.ContextMenu>
                             <DataGrid.Columns>
@@ -328,6 +355,18 @@
                                 <DataGridTextColumn Header="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=ExpiryDate}" Binding="{Binding ExpiryDate, StringFormat=dd-MM-yyyy}" Width="*" />
                             </DataGrid.Columns>
                         </DataGrid>
+
+                        <!-- Empty state -->
+                        <TextBlock Grid.Row="1" Panel.ZIndex="50"
+                                   Style="{StaticResource EmptyStateTextStyle}"
+                                   Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=[NoDataAvailable]}">
+                            <TextBlock.Visibility>
+                                <MultiBinding Converter="{StaticResource EmptyStateVisibilityConverter}">
+                                    <Binding Path="Certificates.Count"/>
+                                    <Binding Path="IsBusy"/>
+                                </MultiBinding>
+                            </TextBlock.Visibility>
+                        </TextBlock>
                     </Grid>
                 </Border>
             </TabItem>
@@ -382,7 +421,7 @@
                                 <DataGrid.Columns>
                                     <DataGridTextColumn Header="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=DescriptionLabel}" Binding="{Binding Description}" Width="2*" />
                                     <DataGridTextColumn Header="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=TagLabel}" Binding="{Binding Tag}" Width="2*" />
-                                    <DataGridTemplateColumn Header="" Width="120">
+                                    <DataGridTemplateColumn Header="" Width="*" MinWidth="120">
                                         <DataGridTemplateColumn.CellTemplate>
                                             <DataTemplate>
                                                 <Button Content="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=Copy}"

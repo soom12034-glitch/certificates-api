@@ -14,6 +14,7 @@ public sealed class MainViewModel : ViewModelBase
     const string InventorySection = "Inventory";
     const string DeviceHistorySection = "DeviceHistory";
     const string StickerDesignerSection = "StickerDesigner";
+    const string ReceiptStickerDesignerSection = "ReceiptStickerDesigner";
     const string SettingsSection = "Settings";
     const string RentalsSection = "Rentals";
 
@@ -25,6 +26,7 @@ public sealed class MainViewModel : ViewModelBase
     readonly SettingsViewModel _settingsViewModel;
     readonly DeviceHistoryViewModel _deviceHistoryViewModel;
     readonly StickerDesignerViewModel _stickerDesignerViewModel;
+    readonly ReceiptStickerDesignerViewModel _receiptStickerDesignerViewModel;
     readonly RentalsViewModel _rentalsViewModel;
 
     ViewModelBase? _currentView;
@@ -33,13 +35,16 @@ public sealed class MainViewModel : ViewModelBase
     public MainViewModel()
     {
         _homeViewModel = new HomeViewModel();
-        _certificatesViewModel = new CertificatesViewModel();
+        _stickerDesignerViewModel = new StickerDesignerViewModel();
+        _receiptStickerDesignerViewModel = new ReceiptStickerDesignerViewModel();
+        _certificatesViewModel = new CertificatesViewModel(_stickerDesignerViewModel);
         _clientsViewModel = new ClientsViewModel();
-        _maintenanceViewModel = new MaintenanceViewModel();
+        _maintenanceViewModel = new MaintenanceViewModel(
+            _receiptStickerDesignerViewModel,
+            () => TrySetCurrentView(ReceiptStickerDesignerSection, _receiptStickerDesignerViewModel, LocalTitle(ReceiptStickerDesignerSection)));
         _inventoryViewModel = new InventoryViewModel();
         _settingsViewModel = new SettingsViewModel();
         _deviceHistoryViewModel = new DeviceHistoryViewModel();
-        _stickerDesignerViewModel = new StickerDesignerViewModel();
         _rentalsViewModel = new RentalsViewModel();
 
         ShowHomeCommand = new RelayCommand(_ => TrySetCurrentView(HomeSection, _homeViewModel, LocalTitle(HomeSection)), _ => BlueMax.Presentation.Wpf.App.AccessControl.CanAccess(HomeSection));
@@ -49,7 +54,16 @@ public sealed class MainViewModel : ViewModelBase
         ShowInventoryCommand = new RelayCommand(_ => TrySetCurrentView(InventorySection, _inventoryViewModel, LocalTitle(InventorySection)), _ => BlueMax.Presentation.Wpf.App.AccessControl.CanAccess(InventorySection));
         ShowSettingsCommand = new RelayCommand(_ => TrySetCurrentView(SettingsSection, _settingsViewModel, LocalTitle(SettingsSection)));
         ShowDeviceHistoryCommand = new RelayCommand(_ => TrySetCurrentView(DeviceHistorySection, _deviceHistoryViewModel, LocalTitle(DeviceHistorySection)), _ => BlueMax.Presentation.Wpf.App.AccessControl.CanAccess(DeviceHistorySection));
-        ShowStickerDesignerCommand = new RelayCommand(_ => TrySetCurrentView(StickerDesignerSection, _stickerDesignerViewModel, LocalTitle(StickerDesignerSection)), _ => BlueMax.Presentation.Wpf.App.AccessControl.CanAccess(StickerDesignerSection));
+        ShowStickerDesignerCommand = new RelayCommand(_ =>
+        {
+            _certificatesViewModel.ApplyCurrentCertificateDataToSticker();
+            TrySetCurrentView(StickerDesignerSection, _stickerDesignerViewModel, LocalTitle(StickerDesignerSection));
+        }, _ => BlueMax.Presentation.Wpf.App.AccessControl.CanAccess(StickerDesignerSection));
+        ShowReceiptStickerDesignerCommand = new RelayCommand(_ =>
+        {
+            _maintenanceViewModel.RefreshReceiptStickerDesigner();
+            TrySetCurrentView(ReceiptStickerDesignerSection, _receiptStickerDesignerViewModel, LocalTitle(ReceiptStickerDesignerSection));
+        }, _ => BlueMax.Presentation.Wpf.App.AccessControl.CanAccess(ReceiptStickerDesignerSection));
         ShowRentalsCommand = new RelayCommand(_ => TrySetCurrentView(RentalsSection, _rentalsViewModel, LocalTitle(RentalsSection)), _ => BlueMax.Presentation.Wpf.App.AccessControl.CanAccess(RentalsSection));
 
         SearchCertificateCommand = new RelayCommand(_ => NavigateToCertificates(QuickActionMode.Search), _ => BlueMax.Presentation.Wpf.App.AccessControl.CanAccess(CertificatesSection));
@@ -65,11 +79,13 @@ public sealed class MainViewModel : ViewModelBase
             ShowInventoryCommand.RaiseCanExecuteChanged();
             ShowDeviceHistoryCommand.RaiseCanExecuteChanged();
             ShowStickerDesignerCommand.RaiseCanExecuteChanged();
+            ShowReceiptStickerDesignerCommand.RaiseCanExecuteChanged();
             ShowRentalsCommand.RaiseCanExecuteChanged();
             SearchCertificateCommand.RaiseCanExecuteChanged();
             PrintStickerCommand.RaiseCanExecuteChanged();
             ExpiredDevicesCommand.RaiseCanExecuteChanged();
             OnPropertyChanged(nameof(CanAccessStickerDesigner));
+            OnPropertyChanged(nameof(CanAccessReceiptStickerDesigner));
         };
 
         LanguageService.Instance.PropertyChanged += (s, e) =>
@@ -109,12 +125,14 @@ public sealed class MainViewModel : ViewModelBase
     public RelayCommand ShowSettingsCommand { get; }
     public RelayCommand ShowDeviceHistoryCommand { get; }
     public RelayCommand ShowStickerDesignerCommand { get; }
+    public RelayCommand ShowReceiptStickerDesignerCommand { get; }
     public RelayCommand ShowRentalsCommand { get; }
     public RelayCommand SearchCertificateCommand { get; }
     public RelayCommand PrintStickerCommand { get; }
     public RelayCommand ExpiredDevicesCommand { get; }
 
     public bool CanAccessStickerDesigner => BlueMax.Presentation.Wpf.App.AccessControl.CanAccess(StickerDesignerSection);
+    public bool CanAccessReceiptStickerDesigner => BlueMax.Presentation.Wpf.App.AccessControl.CanAccess(ReceiptStickerDesignerSection);
 
     public bool IsSidebarVisible
     {
@@ -164,6 +182,7 @@ public sealed class MainViewModel : ViewModelBase
         else if (_currentView is MaintenanceViewModel) CurrentTitle = LocalTitle(MaintenanceSection);
         else if (_currentView is InventoryViewModel) CurrentTitle = LocalTitle(InventorySection);
         else if (_currentView is DeviceHistoryViewModel) CurrentTitle = LocalTitle(DeviceHistorySection);
+        else if (_currentView is ReceiptStickerDesignerViewModel) CurrentTitle = LocalTitle(ReceiptStickerDesignerSection);
         else if (_currentView is StickerDesignerViewModel) CurrentTitle = LocalTitle(StickerDesignerSection);
         else if (_currentView is SettingsViewModel) CurrentTitle = LocalTitle(SettingsSection);
         else if (_currentView is RentalsViewModel) CurrentTitle = LocalTitle(RentalsSection);

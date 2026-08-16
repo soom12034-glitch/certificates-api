@@ -1,7 +1,19 @@
+using System.ComponentModel.DataAnnotations;
 using BlueMax.Domain;
 using Xunit;
 
 namespace BlueMax.Domain.Tests;
+
+static class ModelValidator
+{
+    public static IList<ValidationResult> Validate(object model)
+    {
+        var results = new List<ValidationResult>();
+        var ctx = new ValidationContext(model);
+        Validator.TryValidateObject(model, ctx, results, validateAllProperties: true);
+        return results;
+    }
+}
 
 public class CertificateTests
 {
@@ -24,6 +36,7 @@ public class CertificateTests
         };
 
         // Assert
+        Assert.Empty(ModelValidator.Validate(certificate));
         Assert.Equal("CERT-001", certificate.CertificateNumber);
         Assert.Equal("Test Client", certificate.ClientName);
         Assert.Equal("Total Station", certificate.DeviceType);
@@ -43,7 +56,41 @@ public class CertificateTests
         };
 
         // Assert
-        Assert.Equal("", certificate.CertificateNumber); // Validation would fail at runtime
+        var results = ModelValidator.Validate(certificate);
+        Assert.Contains(results, r => r.MemberNames.Contains(nameof(Certificate.CertificateNumber)));
+    }
+
+    [Fact]
+    public void Certificate_WithMissingRequiredFields_FailsValidation()
+    {
+        // Arrange
+        var certificate = new Certificate
+        {
+            CertificateNumber = "CERT-003",
+            ClientName = "Test Client"
+        };
+
+        // Assert
+        var results = ModelValidator.Validate(certificate);
+        Assert.Contains(results, r => r.MemberNames.Contains(nameof(Certificate.DeviceType)));
+    }
+
+    [Fact]
+    public void Certificate_WithCertificateNumberTooLong_FailsValidation()
+    {
+        // Arrange
+        var certificate = new Certificate
+        {
+            CertificateNumber = new string('C', 51), // Exceeds StringLength(50)
+            ClientName = "Test Client",
+            IssueDate = DateTime.Now,
+            ExpiryDate = DateTime.Now.AddYears(1),
+            CreatedAt = DateTime.Now
+        };
+
+        // Assert
+        var results = ModelValidator.Validate(certificate);
+        Assert.Contains(results, r => r.MemberNames.Contains(nameof(Certificate.CertificateNumber)));
     }
 
     [Fact]
@@ -79,6 +126,7 @@ public class CustomerTests
         };
 
         // Assert
+        Assert.Empty(ModelValidator.Validate(customer));
         Assert.Equal("Test Company", customer.Name);
         Assert.Equal("1234567890", customer.Phone);
     }
@@ -94,7 +142,8 @@ public class CustomerTests
         };
 
         // Assert
-        Assert.Equal("", customer.Name); // Validation would fail at runtime
+        var results = ModelValidator.Validate(customer);
+        Assert.Contains(results, r => r.MemberNames.Contains(nameof(Customer.Name)));
     }
 }
 
@@ -107,6 +156,7 @@ public class WorkOrderTests
         var workOrder = new WorkOrder
         {
             CustomerName = "Test Client",
+            CustomerPhone = "1234567890",
             DeviceType = "Total Station",
             Model = "TS16",
             SerialNumber = "SN-12345",
@@ -119,6 +169,7 @@ public class WorkOrderTests
         };
 
         // Assert
+        Assert.Empty(ModelValidator.Validate(workOrder));
         Assert.Equal("Test Client", workOrder.CustomerName);
         Assert.Equal("Pending", workOrder.Status);
         Assert.Equal(150, workOrder.TotalCost);
@@ -138,6 +189,25 @@ public class WorkOrderTests
         // Assert
         Assert.Equal(workOrder.PartsCost + workOrder.LaborCost, workOrder.TotalCost);
     }
+
+    [Fact]
+    public void WorkOrder_WithNegativeCost_FailsValidation()
+    {
+        // Arrange
+        var workOrder = new WorkOrder
+        {
+            CustomerName = "Test Client",
+            DeviceType = "Total Station",
+            Status = "Pending",
+            PartsCost = -5, // Invalid: Range(0, double.MaxValue)
+            ReceivedDate = DateTime.Now,
+            UpdatedDate = DateTime.Now
+        };
+
+        // Assert
+        var results = ModelValidator.Validate(workOrder);
+        Assert.Contains(results, r => r.MemberNames.Contains(nameof(WorkOrder.PartsCost)));
+    }
 }
 
 public class SparePartTests
@@ -156,6 +226,7 @@ public class SparePartTests
         };
 
         // Assert
+        Assert.Empty(ModelValidator.Validate(sparePart));
         Assert.Equal("SP-001", sparePart.Code);
         Assert.Equal(5, sparePart.Quantity);
     }
@@ -173,5 +244,21 @@ public class SparePartTests
 
         // Assert
         Assert.True(sparePart.SellingPrice >= 0);
+    }
+
+    [Fact]
+    public void SparePart_WithNegativeQuantity_FailsValidation()
+    {
+        // Arrange
+        var sparePart = new SparePart
+        {
+            Code = "SP-003",
+            Name = "Gasket",
+            Quantity = -1 // Invalid: Range(0, 100000)
+        };
+
+        // Assert
+        var results = ModelValidator.Validate(sparePart);
+        Assert.Contains(results, r => r.MemberNames.Contains(nameof(SparePart.Quantity)));
     }
 }

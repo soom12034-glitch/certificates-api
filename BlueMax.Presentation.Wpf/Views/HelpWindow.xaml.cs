@@ -1,4 +1,5 @@
 using System.Windows;
+using BlueMax.Presentation.Wpf.Services;
 
 namespace BlueMax.Presentation.Wpf.Views
 {
@@ -7,6 +8,7 @@ namespace BlueMax.Presentation.Wpf.Views
         public HelpWindow()
         {
             InitializeComponent();
+            LanguageService.Instance.ApplyFlowDirection(this);
         }
     }
 }

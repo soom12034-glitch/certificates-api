@@ -1,4 +1,4 @@
-﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 
 namespace BlueMax.Domain;
 
@@ -525,6 +525,25 @@ public class Rental
     [Required(ErrorMessage = "Rental type is required")]
     [StringLength(20, ErrorMessage = "Rental type cannot exceed 20 characters")]
     public string RentalType { get; set; } = "Daily";
+
+    /// <summary>
+    /// Daily rental rate used for automatic price calculation.
+    /// </summary>
+    [Range(0, double.MaxValue, ErrorMessage = "Daily price must be positive")]
+    public decimal DailyPrice { get; set; }
+
+    /// <summary>
+    /// Monthly rental rate used for automatic price calculation.
+    /// </summary>
+    [Range(0, double.MaxValue, ErrorMessage = "Monthly price must be positive")]
+    public decimal MonthlyPrice { get; set; }
+
+    /// <summary>
+    /// Value of the rented device in Saudi Riyals (used as the compensation
+    /// base in the rental contract in case of loss or damage).
+    /// </summary>
+    [Range(0, double.MaxValue, ErrorMessage = "Device value must be positive")]
+    public decimal DeviceValue { get; set; }
 
     /// <summary>
     /// Total price for the rental.

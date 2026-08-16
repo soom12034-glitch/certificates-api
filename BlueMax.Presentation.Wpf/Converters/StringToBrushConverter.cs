@@ -14,7 +14,7 @@ public class StringToBrushConverter : IValueConverter
         {
             try
             {
-                return new BrushConverter().ConvertFrom(colorString) as Brush;
+                return new BrushConverter().ConvertFrom(colorString) as Brush ?? Brushes.Black;
             }
             catch
             {

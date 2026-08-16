@@ -24,9 +24,12 @@ public partial class App : Application
     {
         bool _handlersAttached;
         Mutex? _singleInstanceMutex;
+        bool _ownsSingleInstanceMutex;
         // bool _errorShown; // Reserved for future use
         public static AccessControlState AccessControl { get; } = new AccessControlState();
-        BackupService? _backupService;
+        static BackupService? _backupService;
+
+        public static BackupService? BackupService => _backupService;
 
     // Static StreamWriter for direct file logging
     private static StreamWriter? _logFileWriter;
@@ -40,6 +43,11 @@ public partial class App : Application
         {
             try
             {
+                // All numbers (dates, amounts, sizes, codes) must render with
+                // English digits regardless of the operating system locale.
+                System.Globalization.CultureInfo.DefaultThreadCurrentCulture = System.Globalization.CultureInfo.InvariantCulture;
+                System.Globalization.CultureInfo.CurrentCulture = System.Globalization.CultureInfo.InvariantCulture;
+
                 QuestPDF.Settings.License = QuestPDF.Infrastructure.LicenseType.Community;
 
                 // Initialize direct file logging
@@ -136,13 +144,23 @@ public partial class App : Application
         base.OnStartup(e);
         Log("OnStartup: After base.OnStartup(e).");
 
-        var createdNew = false;
-        _singleInstanceMutex = new Mutex(true, @"Global\BlueMax.Presentation.Wpf.SingleInstance", out createdNew);
-        if (!createdNew)
+        try
         {
-            MessageBox.Show("البرنامج يعمل بالفعل. لا يمكن فتح أكثر من نسخة في نفس الوقت.", "تنبيه", MessageBoxButton.OK, MessageBoxImage.Information);
-            Shutdown();
-            return;
+            var createdNew = false;
+            _singleInstanceMutex = new Mutex(true, @"Global\BlueMax.Presentation.Wpf.SingleInstance", out createdNew);
+            _ownsSingleInstanceMutex = createdNew;
+            if (!createdNew)
+            {
+                MessageBox.Show("البرنامج يعمل بالفعل. لا يمكن فتح أكثر من نسخة في نفس الوقت.", "تنبيه", MessageBoxButton.OK, MessageBoxImage.Information);
+                Shutdown();
+                return;
+            }
+        }
+        catch (Exception mutexEx)
+        {
+            Log($"Single-instance mutex not acquired (continuing without it): {mutexEx.Message}");
+            _singleInstanceMutex = null;
+            _ownsSingleInstanceMutex = false;
         }
 
         try
@@ -165,6 +183,14 @@ public partial class App : Application
             Log("OnStartup: Before new MainWindow().Show().");
             try
             {
+                LegacyConfigCompanyMigration.MigrateOnce();
+            }
+            catch (Exception migrateEx)
+            {
+                Log($"LegacyConfigCompanyMigration error: {migrateEx.Message}");
+            }
+            try
+            {
                 var connectionString = SecureConnectionStringStore.LoadConnectionString()
                     ?? ConfigurationManager.ConnectionStrings["MyDb"]?.ConnectionString;
                 var localDbPath = AppDbContext.GetLocalDbPath();
@@ -173,6 +199,17 @@ public partial class App : Application
             catch (Exception backupEx)
             {
                 LogService.LogException(backupEx);
+            }
+            try
+            {
+                using var db = DbContextFactory.CreateDbContext();
+                db.Database.EnsureCreated();
+                db.EnsureSchemaCompatible();
+            }
+            catch (Exception schemaEx)
+            {
+                Log($"EnsureSchemaCompatible error: {schemaEx.Message}");
+                LogService.LogException(schemaEx);
             }
             var mainWindow = new MainWindow();
             mainWindow.WindowState = WindowState.Normal;
@@ -214,7 +251,10 @@ public partial class App : Application
 
         if (_singleInstanceMutex != null)
         {
-            _singleInstanceMutex.ReleaseMutex();
+            if (_ownsSingleInstanceMutex)
+            {
+                _singleInstanceMutex.ReleaseMutex();
+            }
             _singleInstanceMutex.Dispose();
             _singleInstanceMutex = null;
         }
@@ -227,7 +267,7 @@ public partial class App : Application
             var dbPath = BlueMax.Infrastructure.AppDbContext.GetLocalDbPath();
             if (!File.Exists(dbPath))
                 return;
-            var dstDir = Path.Combine("D:\\", "CalibrationCertificates", "Backups");
+            var dstDir = AppPaths.Backups;
             Directory.CreateDirectory(dstDir);
             var fileName = $"local_{DateTime.Now:yyyyMMdd_HHmmss}.db";
             var dst = Path.Combine(dstDir, fileName);
@@ -320,6 +360,8 @@ public partial class App : Application
         const string UserAllowedSectionsKey = "UserAllowedSections";
         const string UsersJsonKey = "UsersJson";
         const string LastUserNameKey = "LastUserName";
+        const string Pbkdf2Prefix = "PBKDF2$";
+        const int Pbkdf2Iterations = 100_000;
 
         // Rate limiting for login attempts
         private static readonly Dictionary<string, List<DateTime>> _loginAttempts = new();
@@ -392,7 +434,8 @@ public partial class App : Application
             ("Maintenance", "الصيانة"),
             ("Financials", "المالية"),
             ("DeviceHistory", "سجل الجهاز"),
-            ("StickerDesigner", "مصمم الملصق")
+            ("StickerDesigner", "مصمم الملصق"),
+            ("ReceiptStickerDesigner", "مصمم استيكر الاستلام")
         };
 
         readonly HashSet<string> _userAllowedSections = new(StringComparer.OrdinalIgnoreCase);
@@ -488,11 +531,8 @@ public partial class App : Application
             if (string.IsNullOrWhiteSpace(pin))
                 return false;
 
-            if (VerifyPin(pin))
-            {
-                IsAdminSession = true;
+            if (TryLoginAsAdminWithPin(pin))
                 return true;
-            }
 
             System.Windows.MessageBox.Show("الرقم السري غير صحيح.", "خطأ", MessageBoxButton.OK, MessageBoxImage.Warning);
             return false;
@@ -507,13 +547,12 @@ public partial class App : Application
             if (string.IsNullOrWhiteSpace(pin))
                 return false;
 
-            if (!VerifyPin(pin))
+            if (!TryLoginAsAdminWithPin(pin))
             {
                 System.Windows.MessageBox.Show("الرقم السري غير صحيح.", "خطأ", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return false;
             }
 
-            IsAdminSession = true;
             return true;
         }
 
@@ -526,11 +565,23 @@ public partial class App : Application
         {
             try
             {
-                var u = FindUser(username);
+                var name = (username ?? "").Trim();
+                if (!CanAttemptLogin(name))
+                    return false;
+
+                var u = FindUser(name);
                 if (u == null)
+                {
+                    RecordLoginAttempt(name, false);
                     return false;
+                }
                 if (!VerifySecret(password, u.Salt, u.PasswordHash))
+                {
+                    RecordLoginAttempt(name, false);
                     return false;
+                }
+
+                RecordLoginAttempt(name, true);
                 IsAdminSession = false;
                 _currentUserName = u.Username;
                 _lastUserName = u.Username;
@@ -556,8 +607,14 @@ public partial class App : Application
         {
             if (IsAdminSession)
                 return true;
-            if (!VerifyPin(pin ?? ""))
+            if (!CanAttemptLogin("__admin_pin__"))
                 return false;
+            if (!VerifyPin(pin ?? ""))
+            {
+                RecordLoginAttempt("__admin_pin__", false);
+                return false;
+            }
+            RecordLoginAttempt("__admin_pin__", true);
             _currentUserName = "";
             IsAdminSession = true;
             Changed?.Invoke(this, EventArgs.Empty);
@@ -700,21 +757,20 @@ public partial class App : Application
         {
             try
             {
-                _adminSalt = ConfigurationManager.AppSettings[AdminPinSaltKey] ?? "";
-                _adminHash = ConfigurationManager.AppSettings[AdminPinHashKey] ?? "";
+                _adminSalt = Services.AppSettingHelper.Load(AdminPinSaltKey) ?? "";
+                _adminHash = Services.AppSettingHelper.Load(AdminPinHashKey) ?? "";
 
                 if (string.IsNullOrWhiteSpace(_adminSalt) || string.IsNullOrWhiteSpace(_adminHash))
                 {
                     _adminSalt = GenerateSalt();
-                    var defaultPin = "123456";
+                    var defaultPin = GenerateRandomPin();
                     _adminHash = HashPin(defaultPin, _adminSalt);
                     SaveAppSetting(AdminPinSaltKey, _adminSalt);
                     SaveAppSetting(AdminPinHashKey, _adminHash);
-                    // Log the default PIN for first-time setup (should be changed immediately)
-                    System.Diagnostics.Debug.WriteLine($"DEFAULT ADMIN PIN (CHANGE IMMEDIATELY): {defaultPin}");
+                    ShowDefaultPinNotice(defaultPin);
                 }
 
-                var raw = ConfigurationManager.AppSettings[UserAllowedSectionsKey] ?? "";
+                var raw = Services.AppSettingHelper.Load(UserAllowedSectionsKey) ?? "";
                 _userAllowedSections.Clear();
                 foreach (var code in ParseCsv(raw))
                     _userAllowedSections.Add(code);
@@ -727,21 +783,22 @@ public partial class App : Application
                 }
 
                 _users.Clear();
-                var usersJson = ConfigurationManager.AppSettings[UsersJsonKey] ?? "";
+                var usersJson = Services.AppSettingHelper.Load(UsersJsonKey) ?? "";
                 if (!string.IsNullOrWhiteSpace(usersJson))
                 {
                     var parsed = JsonSerializer.Deserialize<List<UserAccount>>(usersJson);
                     if (parsed != null)
                         _users.AddRange(parsed.Where(u => !string.IsNullOrWhiteSpace(u.Username)));
                 }
-                _lastUserName = ConfigurationManager.AppSettings[LastUserNameKey] ?? "";
+                _lastUserName = Services.AppSettingHelper.Load(LastUserNameKey) ?? "";
             }
             catch (Exception ex)
             {
                 Log($"Error in LoadOrInitialize: {ex.Message}");
                 _adminSalt = GenerateSalt();
-                var defaultPin = "123456";
+                var defaultPin = GenerateRandomPin();
                 _adminHash = HashPin(defaultPin, _adminSalt);
+                ShowDefaultPinNotice(defaultPin);
                 _userAllowedSections.Clear();
                 foreach (var s in _sections)
                     _userAllowedSections.Add(s.Code);
@@ -772,8 +829,39 @@ public partial class App : Application
         {
             if (string.IsNullOrWhiteSpace(pin))
                 return false;
-            var hash = HashPin(pin, _adminSalt);
-            return string.Equals(hash, _adminHash, StringComparison.Ordinal);
+            var stored = _adminHash ?? "";
+            try
+            {
+                if (stored.StartsWith(Pbkdf2Prefix, StringComparison.Ordinal))
+                {
+                    var expected = Convert.FromBase64String(stored.Substring(Pbkdf2Prefix.Length));
+                    var saltBytes = Convert.FromBase64String(_adminSalt ?? "");
+                    using var derive = new Rfc2898DeriveBytes(pin, saltBytes, Pbkdf2Iterations, HashAlgorithmName.SHA256);
+                    return FixedTimeEquals(derive.GetBytes(32), expected);
+                }
+            }
+            catch
+            {
+                return false;
+            }
+
+            // Legacy SHA256 hash (backward compatibility)
+            using (var sha = SHA256.Create())
+            {
+                var data = Encoding.UTF8.GetBytes($"{_adminSalt}:{pin}");
+                var hash = Convert.ToBase64String(sha.ComputeHash(data));
+                return string.Equals(hash, stored, StringComparison.Ordinal);
+            }
+        }
+
+        static bool FixedTimeEquals(byte[] a, byte[] b)
+        {
+            if (a.Length != b.Length)
+                return false;
+            var diff = 0;
+            for (var i = 0; i < a.Length; i++)
+                diff |= a[i] ^ b[i];
+            return diff == 0;
         }
 
         bool IsAllowedForCurrentUser(string sectionCode)
@@ -812,26 +900,45 @@ public partial class App : Application
 
         static string HashSecret(string secret, string salt)
         {
-            using var sha = SHA256.Create();
-            var data = Encoding.UTF8.GetBytes($"{salt}:{secret}");
-            var bytes = sha.ComputeHash(data);
-            return Convert.ToBase64String(bytes);
+            var saltBytes = Convert.FromBase64String(salt ?? "");
+            using var derive = new Rfc2898DeriveBytes(secret ?? "", saltBytes, Pbkdf2Iterations, HashAlgorithmName.SHA256);
+            return Pbkdf2Prefix + Convert.ToBase64String(derive.GetBytes(32));
         }
 
         static bool VerifySecret(string secret, string salt, string expectedHash)
         {
             if (string.IsNullOrWhiteSpace(expectedHash))
                 return false;
-            var hash = HashSecret(secret ?? "", salt ?? "");
-            return string.Equals(hash, expectedHash, StringComparison.Ordinal);
+            var saltStr = salt ?? "";
+            try
+            {
+                if (expectedHash.StartsWith(Pbkdf2Prefix, StringComparison.Ordinal))
+                {
+                    var expected = Convert.FromBase64String(expectedHash.Substring(Pbkdf2Prefix.Length));
+                    var saltBytes = Convert.FromBase64String(saltStr);
+                    using var derive = new Rfc2898DeriveBytes(secret ?? "", saltBytes, Pbkdf2Iterations, HashAlgorithmName.SHA256);
+                    return FixedTimeEquals(derive.GetBytes(32), expected);
+                }
+            }
+            catch
+            {
+                return false;
+            }
+
+            // Legacy SHA256 hashes (kept for backward compatibility)
+            using (var sha = SHA256.Create())
+            {
+                var data = Encoding.UTF8.GetBytes($"{saltStr}:{secret}");
+                var hash = Convert.ToBase64String(sha.ComputeHash(data));
+                return string.Equals(hash, expectedHash, StringComparison.Ordinal);
+            }
         }
 
         static string HashPin(string pin, string salt)
         {
-            using var sha = SHA256.Create();
-            var data = Encoding.UTF8.GetBytes($"{salt}:{pin}");
-            var bytes = sha.ComputeHash(data);
-            return Convert.ToBase64String(bytes);
+            var saltBytes = Convert.FromBase64String(salt ?? "");
+            using var derive = new Rfc2898DeriveBytes(pin ?? "", saltBytes, Pbkdf2Iterations, HashAlgorithmName.SHA256);
+            return Pbkdf2Prefix + Convert.ToBase64String(derive.GetBytes(32));
         }
 
         static string GenerateSalt()
@@ -847,6 +954,22 @@ public partial class App : Application
             RandomNumberGenerator.Fill(bytes);
             var num = BitConverter.ToUInt32(bytes, 0);
             return (num % 900000 + 100000).ToString(); // 6-digit PIN between 100000-999999
+        }
+
+        static void ShowDefaultPinNotice(string defaultPin)
+        {
+            try
+            {
+                System.Diagnostics.Debug.WriteLine($"DEFAULT ADMIN PIN (CHANGE IMMEDIATELY): {defaultPin}");
+                System.Windows.MessageBox.Show(
+                    $"تم إنشاء رقم سري افتراضي للمدير: {defaultPin}\nيرجى تغييره فوراً من الإعدادات.",
+                    "رقم سري افتراضي",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+            }
+            catch
+            {
+            }
         }
 
         static IEnumerable<string> ParseCsv(string csv)

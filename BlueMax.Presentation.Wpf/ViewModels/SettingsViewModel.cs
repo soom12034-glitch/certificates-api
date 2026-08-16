@@ -115,6 +115,7 @@ public sealed class SettingsViewModel : ViewModelBase
             ChooseLibreOfficeProgramCommand = new RelayCommand(_ => ChooseLibreOfficeProgram());
         UploadHeaderCommand = new RelayCommand(_ => UploadHeader());
         UploadFooterCommand = new RelayCommand(_ => UploadFooter());
+        UploadLogoCommand = new RelayCommand(_ => UploadLogo());
         UploadAppIconCommand = new RelayCommand(_ => UploadAppIcon());
         SavePrinterCommand = new RelayCommand(_ => SavePrinter());
         SaveVerificationCommand = new RelayCommand(_ => SaveVerification());
@@ -472,6 +473,110 @@ public sealed class SettingsViewModel : ViewModelBase
         }
     }
 
+    public string CompanyCommercialRecord
+    {
+        get => _report.CompanyCommercialRecord ?? string.Empty;
+        set
+        {
+            if (_report.CompanyCommercialRecord != value)
+            {
+                _report.CompanyCommercialRecord = value ?? "";
+                OnPropertyChanged();
+            }
+        }
+    }
+
+    public string CompanyTaxNumber
+    {
+        get => _report.CompanyTaxNumber ?? string.Empty;
+        set
+        {
+            if (_report.CompanyTaxNumber != value)
+            {
+                _report.CompanyTaxNumber = value ?? "";
+                OnPropertyChanged();
+            }
+        }
+    }
+
+    public string CompanyNationalAddress
+    {
+        get => _report.CompanyNationalAddress ?? string.Empty;
+        set
+        {
+            if (_report.CompanyNationalAddress != value)
+            {
+                _report.CompanyNationalAddress = value ?? "";
+                OnPropertyChanged();
+            }
+        }
+    }
+
+    public string ContractRepresentativeName
+    {
+        get => _report.ContractRepresentativeName ?? string.Empty;
+        set
+        {
+            if (_report.ContractRepresentativeName != value)
+            {
+                _report.ContractRepresentativeName = value ?? "";
+                OnPropertyChanged();
+            }
+        }
+    }
+
+    public string ContractRepresentativeId
+    {
+        get => _report.ContractRepresentativeId ?? string.Empty;
+        set
+        {
+            if (_report.ContractRepresentativeId != value)
+            {
+                _report.ContractRepresentativeId = value ?? "";
+                OnPropertyChanged();
+            }
+        }
+    }
+
+    public string ContractRepresentativePhone
+    {
+        get => _report.ContractRepresentativePhone ?? string.Empty;
+        set
+        {
+            if (_report.ContractRepresentativePhone != value)
+            {
+                _report.ContractRepresentativePhone = value ?? "";
+                OnPropertyChanged();
+            }
+        }
+    }
+
+    public string LogoPath
+    {
+        get => _report.LogoPath ?? string.Empty;
+        set
+        {
+            if (_report.LogoPath != value)
+            {
+                _report.LogoPath = value ?? "";
+                OnPropertyChanged();
+            }
+        }
+    }
+
+    public bool ShowLogo
+    {
+        get => _report.ShowLogo;
+        set
+        {
+            if (_report.ShowLogo != value)
+            {
+                _report.ShowLogo = value;
+                OnPropertyChanged();
+            }
+        }
+    }
+
     public string FooterImagePath
     {
         get => _report.FooterImagePath ?? string.Empty;
@@ -480,6 +585,22 @@ public sealed class SettingsViewModel : ViewModelBase
             if (_report.FooterImagePath != value)
             {
                 _report.FooterImagePath = value ?? "";
+                OnPropertyChanged();
+            }
+        }
+    }
+
+    public string CertificatePrefix
+    {
+        get => _report.CertificatePrefix ?? "HAT";
+        set
+        {
+            var clean = (value ?? "").Trim();
+            if (clean.Length > 20)
+                clean = clean.Substring(0, 20);
+            if (_report.CertificatePrefix != clean)
+            {
+                _report.CertificatePrefix = clean;
                 OnPropertyChanged();
             }
         }
@@ -639,6 +760,7 @@ public sealed class SettingsViewModel : ViewModelBase
     public RelayCommand ChooseLibreOfficeProgramCommand { get; }
     public RelayCommand UploadHeaderCommand { get; }
     public RelayCommand UploadFooterCommand { get; }
+    public RelayCommand UploadLogoCommand { get; }
     public RelayCommand UploadAppIconCommand { get; }
     public RelayCommand SavePrinterCommand { get; }
     public RelayCommand SaveVerificationCommand { get; }
@@ -1124,6 +1246,16 @@ public sealed class SettingsViewModel : ViewModelBase
             return;
         var store = new ReportDesignerSettingsStore();
         FooterImagePath = store.SaveAsset(dialog.FileName, "Footer");
+    }
+
+    void UploadLogo()
+    {
+        var dialog = new OpenFileDialog { Filter = "Image Files|*.png;*.jpg;*.jpeg;*.bmp" };
+        if (dialog.ShowDialog() != true)
+            return;
+        var store = new ReportDesignerSettingsStore();
+        LogoPath = store.SaveAsset(dialog.FileName, "Logo");
+        ShowLogo = true;
     }
 
     void UploadAppIcon()
@@ -1642,6 +1774,14 @@ public sealed class SettingsViewModel : ViewModelBase
             settings.AutoBackupTime = AutoBackupTime;
             settings.MaxBackupCount = MaxBackupCount;
             BackupSettingsStore.Save(settings);
+            try
+            {
+                BlueMax.Presentation.Wpf.App.BackupService?.RescheduleBackup();
+            }
+            catch (Exception rescheduleEx)
+            {
+                LogService.LogException(rescheduleEx);
+            }
             Status = Resources.Translations.Get(Resources.Translations.English.BackupSettingsSaved);
         }
         catch (Exception ex)

@@ -12,6 +12,12 @@ public class ReportDesignerSettings
     public string CompanyHeader { get; set; } = "";
     public string CompanyAddress { get; set; } = "";
     public string CompanyPhone { get; set; } = "";
+    public string CompanyCommercialRecord { get; set; } = "";
+    public string CompanyTaxNumber { get; set; } = "";
+    public string CompanyNationalAddress { get; set; } = "";
+    public string ContractRepresentativeName { get; set; } = "";
+    public string ContractRepresentativeId { get; set; } = "";
+    public string ContractRepresentativePhone { get; set; } = "";
     public bool ShowLogo { get; set; }
     public string? LayoutTemplatePath { get; set; }
     public List<ReportLayoutItem> LayoutItems { get; set; } = new();
@@ -28,6 +34,7 @@ public class ReportDesignerSettings
     public bool FlipY { get; set; }
     public string? AppIconPath { get; set; }
     public string? LibreOfficeProgramPath { get; set; }
+    public string CertificatePrefix { get; set; } = "HAT";
 }
 
 public class ReportLayoutItem

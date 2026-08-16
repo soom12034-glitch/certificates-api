@@ -1,16 +1,22 @@
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using BlueMax.Presentation.Wpf.ViewModels;
+using BlueMax.Presentation.Wpf.Services;
 using System.Windows.Input;
 using System;
 using System.ComponentModel;
 using System.Windows.Media;
 using System.Windows.Shapes;
+using System.Windows.Threading;
+using System.Windows;
  
 namespace BlueMax.Presentation.Wpf.Views;
  
 public partial class StickerDesignerView : UserControl
 {
+    const double MmToPx = 1.0 / 0.264583;
+    DispatcherTimer? _gridRedrawTimer;
+
     public StickerDesignerView()
     {
         InitializeComponent();
@@ -23,6 +29,11 @@ public partial class StickerDesignerView : UserControl
         StickerCanvas.SizeChanged += OnCanvasSizeChanged;
         SubscribeVm();
         RedrawGrid();
+        FitZoom();
+        Focusable = true;
+        Focus();
+        KeyDown += OnDesignerKeyDown;
+        PreviewScroller.SizeChanged += (_, __) => FitZoom();
     }
 
     void OnUnloaded(object? sender, System.Windows.RoutedEventArgs e)
@@ -34,6 +45,44 @@ public partial class StickerDesignerView : UserControl
     void OnCanvasSizeChanged(object? sender, System.Windows.SizeChangedEventArgs e)
     {
         RedrawGrid();
+        FitZoom();
+    }
+
+    void FitZoom()
+    {
+        var vm = DataContext as StickerDesignerViewModel;
+        if (vm == null || vm.CanvasWidthPx <= 0 || vm.CanvasHeightPx <= 0) return;
+        if (PreviewScroller.ActualWidth <= 0 || PreviewScroller.ActualHeight <= 0) return;
+
+        var availW = Math.Max(50, PreviewScroller.ActualWidth - 48);
+        var availH = Math.Max(50, PreviewScroller.ActualHeight - 48);
+        var fit = Math.Min(availW / vm.CanvasWidthPx, availH / vm.CanvasHeightPx);
+        vm.Zoom = Math.Max(0.5, Math.Min(4.0, fit));
+    }
+
+    void OnDesignerKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+    {
+        if (DataContext is not StickerDesignerViewModel vm) return;
+        var item = vm.SelectedStickerItem;
+        if (item == null) return;
+
+        var step = 0.25 * MmToPx;
+        var deltaX = 0.0;
+        var deltaY = 0.0;
+        switch (e.Key)
+        {
+            case System.Windows.Input.Key.Left: deltaX = -step; break;
+            case System.Windows.Input.Key.Right: deltaX = step; break;
+            case System.Windows.Input.Key.Up: deltaY = -step; break;
+            case System.Windows.Input.Key.Down: deltaY = step; break;
+            default: return;
+        }
+
+        var maxX = Math.Max(0, vm.CanvasWidthPx - item.Width);
+        var maxY = Math.Max(0, vm.CanvasHeightPx - item.Height);
+        item.X = Math.Max(0, Math.Min(item.X + deltaX, maxX));
+        item.Y = Math.Max(0, Math.Min(item.Y + deltaY, maxY));
+        e.Handled = true;
     }
 
     StickerDesignerViewModel? _vm;
@@ -70,6 +119,22 @@ public partial class StickerDesignerView : UserControl
     void RedrawGrid()
     {
         if (GridOverlay == null) return;
+        if (_gridRedrawTimer == null)
+        {
+            _gridRedrawTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(80) };
+            _gridRedrawTimer.Tick += (_, __) =>
+            {
+                _gridRedrawTimer.Stop();
+                DrawGrid();
+            };
+        }
+        _gridRedrawTimer.Stop();
+        _gridRedrawTimer.Start();
+    }
+
+    void DrawGrid()
+    {
+        if (GridOverlay == null) return;
         GridOverlay.Children.Clear();
         var vm = DataContext as StickerDesignerViewModel;
         if (vm == null || !vm.ShowGrid) return;
@@ -78,9 +143,8 @@ public partial class StickerDesignerView : UserControl
         var h = Math.Max(0.0, vm.CanvasHeightPx);
         if (w <= 0 || h <= 0) return;
 
-        const double mmToPx = 1.0 / 0.264583;
         var stepMm = Math.Max(0.2, vm.SnapStepMm);
-        var stepPx = stepMm * mmToPx;
+        var stepPx = stepMm * MmToPx;
 
         int index = 0;
         for (double x = 0; x <= w + 0.5; x += stepPx, index++)
@@ -113,6 +177,16 @@ public partial class StickerDesignerView : UserControl
         }
     }
 
+    void CustomTemplateItem_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+    {
+        if (DataContext is not StickerDesignerViewModel vm) return;
+        if (sender is ListBoxItem { DataContext: StickerTemplateInfo template })
+        {
+            vm.ApplyCustomTemplateCommand.Execute(template);
+            e.Handled = true;
+        }
+    }
+
     void StickerThumb_OnDragDelta(object sender, DragDeltaEventArgs e)
     {
         if (sender is not Thumb thumb || thumb.Tag is not StickerItem item)
@@ -134,13 +208,14 @@ public partial class StickerDesignerView : UserControl
         // Calculate new position (DragDelta is already in the canvas logical coordinate space)
         var deltaX = e.HorizontalChange;
         var deltaY = e.VerticalChange;
+        if (thumb.FlowDirection == FlowDirection.RightToLeft)
+            deltaX = -deltaX;
         var proposedX = item.X + deltaX;
         var proposedY = item.Y + deltaY;
         
         // Apply snapping if enabled
         if (vm != null && vm.SnapToGrid)
         {
-             const double MmToPx = 1.0 / 0.264583;
              var stepPx = Math.Max(0.1, vm.SnapStepMm) * MmToPx;
              proposedX = Math.Round(proposedX / stepPx) * stepPx;
              proposedY = Math.Round(proposedY / stepPx) * stepPx;
@@ -166,12 +241,13 @@ public partial class StickerDesignerView : UserControl
         // DragDelta is already in the canvas logical coordinate space
         var deltaX = e.HorizontalChange;
         var deltaY = e.VerticalChange;
+        if (thumb.FlowDirection == FlowDirection.RightToLeft)
+            deltaX = -deltaX;
         var proposedW = item.Width + deltaX;
         var proposedH = item.Height + deltaY;
 
         if (vm != null && vm.SnapToGrid)
         {
-            const double MmToPx = 1.0 / 0.264583;
             var stepPx = Math.Max(0.1, vm.SnapStepMm) * MmToPx;
             proposedW = Math.Round(proposedW / stepPx) * stepPx;
             proposedH = Math.Round(proposedH / stepPx) * stepPx;
@@ -194,6 +270,15 @@ public partial class StickerDesignerView : UserControl
         {
             vm.SelectedStickerItem = item;
             e.Handled = true;
+        }
+    }
+
+    void StickerThumb_OnMouseEnter(object sender, MouseEventArgs e)
+    {
+        if (sender is Thumb thumb && thumb.Tag is StickerItem item &&
+            DataContext is StickerDesignerViewModel vm)
+        {
+            vm.SelectedStickerItem = item;
         }
     }
 }

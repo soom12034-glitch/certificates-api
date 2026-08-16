@@ -7,7 +7,51 @@ public static class PdfConverter
 {
     public static string ConvertDocxToPdf(string docxPath)
     {
-        return Path.ChangeExtension(docxPath, ".pdf");
+        var pdfPath = Path.ChangeExtension(docxPath, ".pdf");
+        if (string.IsNullOrWhiteSpace(docxPath) || !File.Exists(docxPath))
+            return pdfPath;
+
+        var sofficePath = ResolveSofficePath();
+        if (string.IsNullOrWhiteSpace(sofficePath))
+            return pdfPath;
+
+        try
+        {
+            var outDir = Path.Combine(Path.GetTempPath(), $"BlueMax_DocxToPdf_{Guid.NewGuid():N}");
+            Directory.CreateDirectory(outDir);
+
+            var psi = new ProcessStartInfo
+            {
+                FileName = sofficePath,
+                UseShellExecute = false,
+                CreateNoWindow = true,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                Arguments = $"--headless --norestore --convert-to pdf --outdir \"{outDir}\" \"{docxPath}\""
+            };
+
+            using var process = Process.Start(psi);
+            if (process == null)
+                return pdfPath;
+            if (!process.WaitForExit(120000))
+            {
+                try { process.Kill(); } catch { }
+                return pdfPath;
+            }
+
+            var converted = Directory.GetFiles(outDir, "*.pdf").FirstOrDefault();
+            if (string.IsNullOrWhiteSpace(converted) || !File.Exists(converted))
+                return pdfPath;
+
+            Directory.CreateDirectory(Path.GetDirectoryName(pdfPath)!);
+            File.Copy(converted, pdfPath, overwrite: true);
+            try { Directory.Delete(outDir, recursive: true); } catch { }
+            return pdfPath;
+        }
+        catch
+        {
+            return pdfPath;
+        }
     }
 
     public static string? TryConvertPdfToPng(string pdfPath)

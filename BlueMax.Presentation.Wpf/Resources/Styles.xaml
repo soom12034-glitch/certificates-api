@@ -1,30 +1,30 @@
 ﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
-    <!-- Solid Colors (replaced gradients for performance) -->
-    <SolidColorBrush x:Key="PurpleGradient" Color="#6366F1"/>
-    <SolidColorBrush x:Key="PinkGradient" Color="#EC4899"/>
-    <SolidColorBrush x:Key="CyanGradient" Color="#3B82F6"/>
-    <SolidColorBrush x:Key="GreenGradient" Color="#10B981"/>
-    <SolidColorBrush x:Key="PinkYellowGradient" Color="#F59E0B"/>
-    <SolidColorBrush x:Key="LightPurpleGradient" Color="#8B5CF6"/>
-    <SolidColorBrush x:Key="LightPinkGradient" Color="#F472B6"/>
-    <SolidColorBrush x:Key="OrangeGradient" Color="#FB923C"/>
-    <SolidColorBrush x:Key="CyanLightGradient" Color="#06B6D4"/>
+    <!-- Solid Colors (single source of truth: Resources/Colors.xaml) -->
+    <SolidColorBrush x:Key="PurpleGradient" Color="{DynamicResource PrimaryColor}"/>
+    <SolidColorBrush x:Key="PinkGradient" Color="{DynamicResource SecondaryPinkColor}"/>
+    <SolidColorBrush x:Key="CyanGradient" Color="{DynamicResource InfoBlueColor}"/>
+    <SolidColorBrush x:Key="GreenGradient" Color="{DynamicResource SuccessColor}"/>
+    <SolidColorBrush x:Key="PinkYellowGradient" Color="{DynamicResource WarningColor}"/>
+    <SolidColorBrush x:Key="LightPurpleGradient" Color="{DynamicResource PrimaryVioletColor}"/>
+    <SolidColorBrush x:Key="LightPinkGradient" Color="{DynamicResource PinkLightColor}"/>
+    <SolidColorBrush x:Key="OrangeGradient" Color="{DynamicResource OrangeColor}"/>
+    <SolidColorBrush x:Key="CyanLightGradient" Color="{DynamicResource InfoCyanColor}"/>
 
     <!-- Solid Colors -->
-    <SolidColorBrush x:Key="SidebarDarkBackground" Color="#2D1B4E"/>
-    <SolidColorBrush x:Key="SidebarLightBackground" Color="#FFFFFF"/>
-    <SolidColorBrush x:Key="DarkModeBackground" Color="#4B5563"/>
-    <SolidColorBrush x:Key="TextPrimary" Color="#1F2937"/>
-    <SolidColorBrush x:Key="TextSecondary" Color="#6B7280"/>
-    <SolidColorBrush x:Key="CardBackground" Color="#FFFFFF"/>
-    <SolidColorBrush x:Key="SurfaceBackground" Color="#F3F4F6"/>
-    <SolidColorBrush x:Key="BorderLight" Color="#E5E7EB"/>
-    <SolidColorBrush x:Key="SuccessGreen" Color="#10B981"/>
-    <SolidColorBrush x:Key="WarningOrange" Color="#F59E0B"/>
-    <SolidColorBrush x:Key="ErrorRed" Color="#EF4444"/>
-    <SolidColorBrush x:Key="InfoBlue" Color="#3B82F6"/>
+    <SolidColorBrush x:Key="SidebarDarkBackground" Color="{DynamicResource SidebarDeepColor}"/>
+    <SolidColorBrush x:Key="SidebarLightBackground" Color="{DynamicResource SurfaceWhiteColor}"/>
+    <SolidColorBrush x:Key="DarkModeBackground" Color="{DynamicResource TextMutedColor}"/>
+    <SolidColorBrush x:Key="TextPrimary" Color="{DynamicResource TextPrimaryColor}"/>
+    <SolidColorBrush x:Key="TextSecondary" Color="{DynamicResource TextHintColor}"/>
+    <SolidColorBrush x:Key="CardBackground" Color="{DynamicResource SurfaceWhiteColor}"/>
+    <SolidColorBrush x:Key="SurfaceBackground" Color="{DynamicResource SurfaceAltColor}"/>
+    <SolidColorBrush x:Key="BorderLight" Color="{DynamicResource BorderLightColor}"/>
+    <SolidColorBrush x:Key="SuccessGreen" Color="{DynamicResource SuccessColor}"/>
+    <SolidColorBrush x:Key="WarningOrange" Color="{DynamicResource WarningColor}"/>
+    <SolidColorBrush x:Key="ErrorRed" Color="{DynamicResource DangerColor}"/>
+    <SolidColorBrush x:Key="InfoBlue" Color="{DynamicResource InfoBlueColor}"/>
 
     <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
 
@@ -120,7 +120,7 @@
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsEnabled" Value="False">
-                            <Setter Property="Background" Value="#F3F4F6"/>
+                            <Setter Property="Background" Value="{DynamicResource SurfaceAltBrush}"/>
                             <Setter Property="Opacity" Value="0.7"/>
                         </Trigger>
                         <Trigger Property="IsKeyboardFocused" Value="True">
@@ -172,10 +172,10 @@
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="Border" Property="Background" Value="#F3F4F6"/>
+                            <Setter TargetName="Border" Property="Background" Value="{DynamicResource SurfaceAltBrush}"/>
                         </Trigger>
                         <Trigger Property="IsPressed" Value="True">
-                            <Setter TargetName="Border" Property="Background" Value="#E5E7EB"/>
+                            <Setter TargetName="Border" Property="Background" Value="{DynamicResource BorderLightBrush}"/>
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
@@ -198,13 +198,56 @@
         <Setter Property="Padding" Value="20"/>
     </Style>
 
+    <!-- DataGrid Cell Style -->
+    <Style x:Key="ModernDataGridCellStyle" TargetType="DataGridCell">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="Padding" Value="10,4"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+        <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="DataGridCell">
+                    <Border Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            Padding="{TemplateBinding Padding}"
+                            SnapsToDevicePixels="True">
+                        <ContentPresenter VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                          HorizontalAlignment="Center"
+                                          Margin="0,0,6,0"/>
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+        <Style.Triggers>
+            <Trigger Property="IsSelected" Value="True">
+                <Setter Property="Background" Value="Transparent"/>
+                <Setter Property="Foreground" Value="{StaticResource TextStrongBrush}"/>
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <!-- DataGrid Header Style -->
+    <Style x:Key="DataGridColumnHeaderStyle" TargetType="DataGridColumnHeader">
+        <Setter Property="Background" Value="{StaticResource SurfaceSoftBrush}"/>
+        <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="FontSize" Value="13"/>
+        <Setter Property="Padding" Value="10,8"/>
+        <Setter Property="MinHeight" Value="42"/>
+        <Setter Property="BorderBrush" Value="{StaticResource BorderLight}"/>
+        <Setter Property="BorderThickness" Value="0,0,0,1"/>
+        <Setter Property="HorizontalContentAlignment" Value="Center"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+    </Style>
+
     <!-- DataGrid Style -->
     <Style x:Key="ModernDataGridStyle" TargetType="DataGrid">
         <Setter Property="Background" Value="White"/>
         <Setter Property="BorderBrush" Value="{StaticResource BorderLight}"/>
         <Setter Property="BorderThickness" Value="1"/>
-        <Setter Property="GridLinesVisibility" Value="Horizontal"/>
-        <Setter Property="HorizontalGridLinesBrush" Value="{StaticResource BorderLight}"/>
+        <Setter Property="GridLinesVisibility" Value="None"/>
         <Setter Property="HeadersVisibility" Value="Column"/>
         <Setter Property="AutoGenerateColumns" Value="False"/>
         <Setter Property="CanUserAddRows" Value="False"/>
@@ -213,18 +256,30 @@
         <Setter Property="SelectionMode" Value="Single"/>
         <Setter Property="SelectionUnit" Value="FullRow"/>
         <Setter Property="AlternationCount" Value="2"/>
-    </Style>
-
-    <!-- DataGrid Header Style -->
-    <Style x:Key="DataGridColumnHeaderStyle" TargetType="DataGridColumnHeader">
-        <Setter Property="Background" Value="#F9FAFB"/>
         <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
-        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="FontFamily" Value="Cairo, Segoe UI"/>
         <Setter Property="FontSize" Value="13"/>
-        <Setter Property="Padding" Value="12,8"/>
-        <Setter Property="BorderBrush" Value="{StaticResource BorderLight}"/>
-        <Setter Property="BorderThickness" Value="0,0,1,0"/>
-        <Setter Property="HorizontalContentAlignment" Value="Center"/>
+        <Setter Property="RowHeight" Value="40"/>
+        <Setter Property="RowBackground" Value="White"/>
+        <Setter Property="AlternatingRowBackground" Value="{StaticResource SurfaceSoftBrush}"/>
+        <Setter Property="ColumnHeaderStyle" Value="{StaticResource DataGridColumnHeaderStyle}"/>
+        <Setter Property="CellStyle" Value="{StaticResource ModernDataGridCellStyle}"/>
+        <Setter Property="RowStyle">
+            <Setter.Value>
+                <Style TargetType="DataGridRow">
+                    <Setter Property="Background" Value="Transparent"/>
+                    <Style.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter Property="Background" Value="{StaticResource SurfaceSelectedBrush}"/>
+                        </Trigger>
+                        <Trigger Property="IsSelected" Value="True">
+                            <Setter Property="Background" Value="{StaticResource SurfaceSelectedBrush}"/>
+                            <Setter Property="Foreground" Value="{StaticResource TextStrongBrush}"/>
+                        </Trigger>
+                    </Style.Triggers>
+                </Style>
+            </Setter.Value>
+        </Setter>
     </Style>
 
     <!-- ComboBox Style -->
@@ -243,7 +298,7 @@
                     <Setter Property="Margin" Value="0"/>
                     <Style.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
-                            <Setter Property="Background" Value="#F3F4F6"/>
+                            <Setter Property="Background" Value="{DynamicResource SurfaceAltBrush}"/>
                         </Trigger>
                         <Trigger Property="IsSelected" Value="True">
                             <Setter Property="Background" Value="{StaticResource PurpleGradient}"/>
@@ -258,6 +313,7 @@
                 <ControlTemplate TargetType="ComboBox">
                     <Grid>
                         <Border x:Name="Border"
+                                IsHitTestVisible="False"
                                 Background="{TemplateBinding Background}"
                                 BorderBrush="{TemplateBinding BorderBrush}"
                                 BorderThickness="{TemplateBinding BorderThickness}"
@@ -279,6 +335,16 @@
                                       Width="10" Height="6"/>
                             </Grid>
                         </Border>
+                        <ToggleButton x:Name="Toggle"
+                                      Focusable="False"
+                                      ClickMode="Press"
+                                      IsChecked="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}">
+                            <ToggleButton.Template>
+                                <ControlTemplate TargetType="ToggleButton">
+                                    <Border Background="Transparent"/>
+                                </ControlTemplate>
+                            </ToggleButton.Template>
+                        </ToggleButton>
                         <Popup x:Name="Popup"
                                Placement="Bottom"
                                IsOpen="{TemplateBinding IsDropDownOpen}"
@@ -298,7 +364,7 @@
                     </Grid>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsEnabled" Value="False">
-                            <Setter Property="Background" Value="#F3F4F6"/>
+                            <Setter Property="Background" Value="{DynamicResource SurfaceAltBrush}"/>
                             <Setter Property="Opacity" Value="0.7"/>
                         </Trigger>
                         <Trigger Property="IsKeyboardFocused" Value="True">
@@ -349,6 +415,25 @@
         <Setter Property="FontSize" Value="14"/>
         <Setter Property="FontWeight" Value="Medium"/>
         <Setter Property="Margin" Value="0,0,0,8"/>
+    </Style>
+
+    <!-- Empty State Text Style -->
+    <Style x:Key="EmptyStateTextStyle" TargetType="TextBlock">
+        <Setter Property="Foreground" Value="{StaticResource TextSecondary}"/>
+        <Setter Property="FontSize" Value="13"/>
+        <Setter Property="FontWeight" Value="Medium"/>
+        <Setter Property="HorizontalAlignment" Value="Center"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+        <Setter Property="Margin" Value="16"/>
+        <Setter Property="TextWrapping" Value="Wrap"/>
+    </Style>
+
+    <!-- Busy Indicator Overlay Style -->
+    <Style x:Key="BusyOverlayStyle" TargetType="Border">
+        <Setter Property="Background" Value="{DynamicResource OverlaySoftBrush}"/>
+        <Setter Property="CornerRadius" Value="8"/>
+        <Setter Property="HorizontalAlignment" Value="Stretch"/>
+        <Setter Property="VerticalAlignment" Value="Stretch"/>
     </Style>
 
 </ResourceDictionary>

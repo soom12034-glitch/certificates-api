@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Configuration;
 using System.Printing;
@@ -17,6 +18,7 @@ public partial class MaintenanceReceiptWindow : Window
     public MaintenanceReceiptWindow(MaintenanceViewModel.MaintenanceReceiptData data)
     {
         InitializeComponent();
+        BlueMax.Presentation.Wpf.Services.LanguageService.Instance.ApplyFlowDirection(this);
         var vm = new ReceiptViewModel(data);
         DataContext = vm;
         Loaded += (_, __) => vm.RefreshPreviewCommand.Execute(null);
@@ -405,6 +407,26 @@ public partial class MaintenanceReceiptWindow : Window
                     };
                     root.Children.Add(companySubHeader);
                 }
+
+                var companyContact = new TextBlock
+                {
+                    FlowDirection = FlowDirection.RightToLeft,
+                    FontFamily = new FontFamily("Tahoma"),
+                    FontSize = 12,
+                    Foreground = new SolidColorBrush(Color.FromRgb(100, 100, 100)),
+                    TextAlignment = TextAlignment.Center,
+                    Margin = new Thickness(0, 0, 0, 20)
+                };
+                var contactParts = new List<string>();
+                if (!string.IsNullOrWhiteSpace(_companySettings.CompanyPhone))
+                    contactParts.Add($"هاتف: {_companySettings.CompanyPhone}");
+                if (!string.IsNullOrWhiteSpace(_companySettings.CompanyAddress))
+                    contactParts.Add(_companySettings.CompanyAddress);
+                if (contactParts.Count > 0)
+                {
+                    companyContact.Text = string.Join("  |  ", contactParts);
+                    root.Children.Add(companyContact);
+                }
             }
 
             // Top-Right Date and Receipt Number block
@@ -544,7 +566,7 @@ public partial class MaintenanceReceiptWindow : Window
             sig.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
             sig.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
 
-            sig.Children.Add(MakeSignatureBlock("توقيع المستلم (الشركة)", 0));
+            sig.Children.Add(MakeSignatureBlock("توقيع المستلم (المنشأة)", 0));
             sig.Children.Add(MakeSignatureBlock("توقيع العميل", 1));
 
             root.Children.Add(sig);

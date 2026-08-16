@@ -1,4 +1,4 @@
-﻿<UserControl x:Class="BlueMax.Presentation.Wpf.Views.ClientsView"
+<UserControl x:Class="BlueMax.Presentation.Wpf.Views.ClientsView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:viewmodels="clr-namespace:BlueMax.Presentation.Wpf.ViewModels"
@@ -23,15 +23,15 @@
         <!-- Main Content -->
         <Grid Grid.Row="1">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="300" /> <!-- Input Section (Sidebar) -->
-                <ColumnDefinition Width="10" />
-                <ColumnDefinition Width="1.5*" />  <!-- History Section (Middle) -->
-                <ColumnDefinition Width="10" />
-                <ColumnDefinition Width="1*" />  <!-- Clients List (Right/End) -->
+                <ColumnDefinition Width="*" MinWidth="260" MaxWidth="320" /> <!-- Input Section (Sidebar) -->
+                <ColumnDefinition Width="12" />
+                <ColumnDefinition Width="1.5*" MinWidth="420" />  <!-- History Section (Main/Flexible) -->
+                <ColumnDefinition Width="12" />
+                <ColumnDefinition Width="*" MinWidth="300" MaxWidth="360" />  <!-- Clients List (Compact Sidebar) -->
             </Grid.ColumnDefinitions>
 
             <!-- Input Section -->
-            <Border Grid.Column="0" Background="{DynamicResource CardBackground}" CornerRadius="10" Padding="15">
+            <Border Grid.Column="0" Background="{DynamicResource CardBackground}" CornerRadius="12" Padding="16">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" /> <!-- Header -->
@@ -39,37 +39,37 @@
                         <RowDefinition Height="Auto" /> <!-- Buttons -->
                     </Grid.RowDefinitions>
 
-                    <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=ClientData}" FontSize="18" FontWeight="Bold" Foreground="White" Margin="0,0,0,15" />
+                    <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=ClientData}" FontSize="16" FontWeight="Bold" Foreground="{DynamicResource TextPrimary}" Margin="0,0,0,14" />
 
                     <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
                         <StackPanel>
-                            <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=Name}" Foreground="#333333" Margin="0,0,0,8" FontSize="14" FontWeight="Bold" FontFamily="Cairo, Segoe UI" />
+                            <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=Name}" Foreground="{DynamicResource TextBodyBrush}" Margin="0,0,0,6" FontSize="14" FontWeight="Bold" FontFamily="Cairo, Segoe UI" />
                             <TextBox Text="{Binding CustomerNameInput, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource ModernTextBox}" FontSize="14" Height="40" Padding="10,10" VerticalContentAlignment="Center" Foreground="Black" FontFamily="Cairo, Segoe UI" />
 
-                            <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=PhoneNumber}" Foreground="#333333" Margin="0,12,0,8" FontSize="14" FontWeight="Bold" FontFamily="Cairo, Segoe UI" />
+                            <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=PhoneNumber}" Foreground="{DynamicResource TextBodyBrush}" Margin="0,10,0,6" FontSize="14" FontWeight="Bold" FontFamily="Cairo, Segoe UI" />
                             <TextBox Text="{Binding CustomerPhoneInput, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource ModernTextBox}" FontSize="14" Height="40" Padding="10,10" VerticalContentAlignment="Center" Foreground="Black" FontFamily="Cairo, Segoe UI" />
 
-                            <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=Address}" Foreground="#333333" Margin="0,12,0,8" FontSize="14" FontWeight="Bold" FontFamily="Cairo, Segoe UI" />
+                            <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=Address}" Foreground="{DynamicResource TextBodyBrush}" Margin="0,10,0,6" FontSize="14" FontWeight="Bold" FontFamily="Cairo, Segoe UI" />
                             <TextBox Text="{Binding CustomerAddressInput, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource ModernTextBox}" FontSize="14" Height="40" Padding="10,10" VerticalContentAlignment="Center" Foreground="Black" FontFamily="Cairo, Segoe UI" />
 
-                            <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=ClientNotes}" Foreground="#333333" Margin="0,12,0,8" FontSize="14" FontWeight="Bold" FontFamily="Cairo, Segoe UI" />
+                            <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=ClientNotes}" Foreground="{DynamicResource TextBodyBrush}" Margin="0,10,0,6" FontSize="14" FontWeight="Bold" FontFamily="Cairo, Segoe UI" />
                             <TextBox Text="{Binding CustomerNotesInput, UpdateSourceTrigger=PropertyChanged}" 
-                                     Height="70" AcceptsReturn="True" TextWrapping="Wrap" 
+                                     Height="72" AcceptsReturn="True" TextWrapping="Wrap" 
                                      Style="{StaticResource ModernTextBox}" VerticalContentAlignment="Top" FontSize="14" Padding="10,10" Foreground="Black" FontFamily="Cairo, Segoe UI" />
                         </StackPanel>
                     </ScrollViewer>
 
-                    <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,15,0,0">
-                        <Button Content="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=Clear}" Width="60" Margin="5" Command="{Binding NewCustomerCommand}" Style="{StaticResource ModernButtonStyle}" />
-                        <Button Content="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=SaveButton}" Width="60" Margin="5" Command="{Binding SaveCustomerCommand}" Style="{StaticResource ModernButtonStyle}" />
-                        <Button Content="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=DeleteButton}" Width="60" Margin="5" Command="{Binding DeleteCustomerCommand}" Style="{StaticResource ModernButtonStyle}" Background="#FF5252" BorderBrush="#FF5252" />
-                        <Button Content="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=Report}" Width="60" Margin="5" Command="{Binding PrintReportCommand}" Style="{StaticResource ModernButtonStyle}" Background="#FF9800" BorderBrush="#FF9800" />
-                    </StackPanel>
+                    <UniformGrid Grid.Row="2" Columns="2" Margin="0,14,0,0">
+                        <Button Content="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=Clear}" Command="{Binding NewCustomerCommand}" Style="{StaticResource ModernButtonStyle}" />
+                        <Button Content="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=SaveButton}" Command="{Binding SaveCustomerCommand}" Style="{StaticResource ModernButtonStyle}" />
+                        <Button Content="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=DeleteButton}" Command="{Binding DeleteCustomerCommand}" Style="{StaticResource ModernButtonStyle}" Background="{DynamicResource DangerLightBrush}" BorderBrush="{DynamicResource DangerLightBrush}" />
+                        <Button Content="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=Report}" Command="{Binding PrintReportCommand}" Style="{StaticResource ModernButtonStyle}" Background="{DynamicResource WarningOrangeBrush}" BorderBrush="{DynamicResource WarningOrangeBrush}" />
+                    </UniformGrid>
                 </Grid>
             </Border>
 
             <!-- History Section (Middle) -->
-            <Border Grid.Column="2" Background="White" CornerRadius="10" Padding="15">
+            <Border Grid.Column="2" Background="White" CornerRadius="12" Padding="16">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
@@ -78,83 +78,109 @@
                         <RowDefinition Height="*" />
                     </Grid.RowDefinitions>
 
-                    <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=DeviceMaintenanceHistory}" FontSize="18" FontWeight="Bold" Margin="0,0,0,10" Foreground="#333" />
+                    <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=DeviceMaintenanceHistory}" FontSize="16" FontWeight="Bold" Margin="0,0,0,10" Foreground="{DynamicResource TextBodyBrush}" />
                     
                     <DataGrid Grid.Row="1" ItemsSource="{Binding WorkOrders}"
-                              AutoGenerateColumns="False" IsReadOnly="True" Margin="0,0,0,15"
-                              BorderThickness="1" BorderBrush="#EEEEEE"
+                              Style="{StaticResource ModernDataGridStyle}"
+                              Margin="0,0,0,14"
                               ScrollViewer.VerticalScrollBarVisibility="Auto">
                         <DataGrid.Columns>
-                            <DataGridTextColumn Header="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=DateField}" Binding="{Binding ReceivedDate, StringFormat=yyyy-MM-dd}" Width="90" />
-                            <DataGridTextColumn Header="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=DeviceField}" Binding="{Binding DeviceType}" Width="100" />
-                            <DataGridTextColumn Header="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=Model}" Binding="{Binding Model}" Width="80" />
-                            <DataGridTextColumn Header="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=Cost}" Binding="{Binding TotalCost}" Width="70" />
+                            <DataGridTextColumn Header="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=DateField}" Binding="{Binding ReceivedDate, StringFormat=yyyy-MM-dd}" Width="*" MinWidth="90" />
+                            <DataGridTextColumn Header="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=DeviceField}" Binding="{Binding DeviceType}" Width="*" MinWidth="100" />
+                            <DataGridTextColumn Header="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=Model}" Binding="{Binding Model}" Width="*" MinWidth="80" />
+                            <DataGridTextColumn Header="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=Cost}" Binding="{Binding TotalCost}" Width="*" MinWidth="70" />
                         </DataGrid.Columns>
                     </DataGrid>
 
-                    <TextBlock Grid.Row="2" Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=CalibrationCertificates}" FontSize="18" FontWeight="Bold" Margin="0,0,0,10" Foreground="#333" />
+                    <TextBlock Grid.Row="2" Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=CalibrationCertificates}" FontSize="16" FontWeight="Bold" Margin="0,0,0,10" Foreground="{DynamicResource TextBodyBrush}" />
                     
                     <DataGrid Grid.Row="3" ItemsSource="{Binding Certificates}"
-                              AutoGenerateColumns="False" IsReadOnly="True"
-                              BorderThickness="1" BorderBrush="#EEEEEE"
+                              Style="{StaticResource ModernDataGridStyle}"
                               ScrollViewer.VerticalScrollBarVisibility="Auto">
                         <DataGrid.Columns>
-                            <DataGridTextColumn Header="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=CertificateNumber}" Binding="{Binding CertificateNumber}" Width="100" />
-                            <DataGridTextColumn Header="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=DeviceField}" Binding="{Binding DeviceType}" Width="100" />
-                            <DataGridTextColumn Header="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=Issue}" Binding="{Binding IssueDate, StringFormat=yyyy-MM-dd}" Width="90" />
-                            <DataGridTextColumn Header="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=Expiry}" Binding="{Binding ExpiryDate, StringFormat=yyyy-MM-dd}" Width="90" />
+                            <DataGridTextColumn Header="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=CertificateNumber}" Binding="{Binding CertificateNumber}" Width="*" MinWidth="100" />
+                            <DataGridTextColumn Header="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=DeviceField}" Binding="{Binding DeviceType}" Width="*" MinWidth="100" />
+                            <DataGridTextColumn Header="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=Issue}" Binding="{Binding IssueDate, StringFormat=yyyy-MM-dd}" Width="*" MinWidth="90" />
+                            <DataGridTextColumn Header="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=Expiry}" Binding="{Binding ExpiryDate, StringFormat=yyyy-MM-dd}" Width="*" MinWidth="90" />
                         </DataGrid.Columns>
                     </DataGrid>
                 </Grid>
             </Border>
 
             <!-- Table Section (Right/End) -->
-            <Border Grid.Column="4" Background="White" CornerRadius="10" Padding="15">
+            <Border Grid.Column="4" Background="White" CornerRadius="12" Padding="16">
                 <Grid>
                     <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="*" />
                     </Grid.RowDefinitions>
 
+                    <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=Clients}" FontSize="16" FontWeight="Bold" Margin="0,0,0,10" Foreground="{DynamicResource TextBodyBrush}" />
+
                     <!-- Search Bar -->
-                    <Grid Margin="0,0,0,10">
+                    <Grid Grid.Row="1" Margin="0,0,0,10">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="Auto" />
-                            <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
-                        <TextBox Grid.Column="0" Margin="0,0,10,0" 
+                        <TextBox Grid.Column="0" Height="40" VerticalContentAlignment="Center"
                                  Text="{Binding CustomerSearchText, UpdateSourceTrigger=PropertyChanged}" 
                                  Style="{StaticResource ModernTextBox}" 
-                                 ToolTip="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=ClientsSearchSmartTooltip}" />
+                                 ToolTip="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=ClientsSearchSmartTooltip}">
+                            <TextBox.InputBindings>
+                                <KeyBinding Key="Enter" Command="{Binding RefreshCustomersCommand}" />
+                            </TextBox.InputBindings>
+                        </TextBox>
                         
-                        <Button Grid.Column="1" Content="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=Search}" Command="{Binding RefreshCustomersCommand}" Style="{StaticResource ModernButtonStyle}" Width="60" Margin="0,0,5,0" />
-                        <Button Grid.Column="2" Content="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=Refresh}" Command="{Binding RefreshCustomersCommand}" Style="{StaticResource ModernButtonStyle}" Width="60" Background="#4CAF50" BorderBrush="#4CAF50" ToolTip="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=RefreshCustomersListTooltip}" />
+                        <Button Grid.Column="1" Content="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=Search}" Command="{Binding RefreshCustomersCommand}" Style="{StaticResource ModernButtonStyle}" Width="76" Margin="8,0,0,0" />
                     </Grid>
 
                     <!-- DataGrid -->
-                    <DataGrid Grid.Row="1"
-                              ItemsSource="{Binding Customers}"
-                              SelectedItem="{Binding SelectedCustomer, Mode=TwoWay}"
-                              AutoGenerateColumns="False"
-                              IsReadOnly="True"
-                              CanUserAddRows="False"
-                              EnableRowVirtualization="True"
-                              EnableColumnVirtualization="True"
-                              BorderThickness="1"
-                              BorderBrush="#EEEEEE">
-                        <DataGrid.Columns>
-                            <DataGridTemplateColumn Header="⚠️" Width="35">
-                                <DataGridTemplateColumn.CellTemplate>
-                                    <DataTemplate>
-                                        <TextBlock Text="🚨" Visibility="{Binding HasCalibrationAlert, Converter={StaticResource BooleanToVisibilityConverter}}" HorizontalAlignment="Center" ToolTip="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=CalibrationAlertTooltip}"/>
-                                    </DataTemplate>
-                                </DataGridTemplateColumn.CellTemplate>
-                            </DataGridTemplateColumn>
-                            <DataGridTextColumn Header="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=CompanyClientName}" Binding="{Binding Name}" Width="*" />
-                            <DataGridTextColumn Header="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=PhoneNumber}" Binding="{Binding Phone}" Width="100" />
-                        </DataGrid.Columns>
-                    </DataGrid>
+                    <Grid Grid.Row="2">
+                        <DataGrid ItemsSource="{Binding Customers}"
+                                  SelectedItem="{Binding SelectedCustomer, Mode=TwoWay}"
+                                  Style="{StaticResource ModernDataGridStyle}"
+                                  EnableRowVirtualization="True"
+                                  EnableColumnVirtualization="True">
+                            <DataGrid.Columns>
+                                <DataGridTemplateColumn Width="*" MinWidth="35">
+                                    <DataGridTemplateColumn.Header>
+                                        <Path Data="{StaticResource IconBell}" Style="{StaticResource AppIconStyle}" Width="16" Height="16" Fill="{DynamicResource TextSecondary}" ToolTip="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=CalibrationAlertTooltip}"/>
+                                    </DataGridTemplateColumn.Header>
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <Path Data="{StaticResource IconBell}" Style="{StaticResource AppIconStyle}" Width="16" Height="16" Fill="{StaticResource ErrorRed}" Visibility="{Binding HasCalibrationAlert, Converter={StaticResource BooleanToVisibilityConverter}}" HorizontalAlignment="Center" ToolTip="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=CalibrationAlertTooltip}"/>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <DataGridTextColumn Header="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=CompanyClientName}" Binding="{Binding Name}" Width="*" />
+                                <DataGridTextColumn Header="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=PhoneNumber}" Binding="{Binding Phone}" Width="*" MinWidth="100" />
+                            </DataGrid.Columns>
+                        </DataGrid>
+
+                        <!-- Busy indicator -->
+                        <Grid Panel.ZIndex="100"
+                              Visibility="{Binding IsBusy, Converter={StaticResource BooleanToVisibilityConverter}}">
+                            <Border Style="{StaticResource BusyOverlayStyle}"/>
+                            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                                <ProgressBar IsIndeterminate="True" Width="220" HorizontalAlignment="Center"/>
+                                <TextBlock Text="{Binding BusyMessage}" Margin="0,8,0,0" HorizontalAlignment="Center" Style="{StaticResource EmptyStateTextStyle}"/>
+                            </StackPanel>
+                        </Grid>
+
+                        <!-- Empty state -->
+                        <TextBlock Panel.ZIndex="50"
+                                   Style="{StaticResource EmptyStateTextStyle}"
+                                   Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=[NoDataAvailable]}">
+                            <TextBlock.Visibility>
+                                <MultiBinding Converter="{StaticResource EmptyStateVisibilityConverter}">
+                                    <Binding Path="Customers.Count"/>
+                                    <Binding Path="IsBusy"/>
+                                </MultiBinding>
+                            </TextBlock.Visibility>
+                        </TextBlock>
+                    </Grid>
                 </Grid>
             </Border>
         </Grid>

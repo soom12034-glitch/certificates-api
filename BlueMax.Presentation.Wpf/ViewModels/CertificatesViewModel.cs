@@ -12,6 +12,7 @@ using Microsoft.Win32;
 using BlueMax.Domain;
 using BlueMax.Infrastructure;
 using BlueMax.Presentation.Wpf.Services;
+using BlueMax.Presentation.Wpf.Resources;
 using System.Diagnostics;
 using System.IO;
 using System.Threading;
@@ -40,9 +41,11 @@ public sealed class CertificatesViewModel : ViewModelBase
     const int AutoFillDelayMs = 250;
     const int DeviceDefaultsDelayMs = 200;
     static string CloudApiBase =>
-        System.Configuration.ConfigurationManager.AppSettings["CloudApiBase"] ?? "https://vnumera.cashierpro-cloud.com";
+        (System.Configuration.ConfigurationManager.AppSettings["CloudApiBase"] ?? "").Trim();
     static string CloudApiKey =>
-        System.Configuration.ConfigurationManager.AppSettings["CloudApiKey"] ?? "fb3a9c12d7e54a8f309b2c6de1457f90c3ab8d6e1f2c4b5a7689e0f1d2c3b4a5";
+        (System.Configuration.ConfigurationManager.AppSettings["CloudApiKey"] ?? "").Trim();
+    static bool IsCloudUploadConfigured =>
+        !string.IsNullOrWhiteSpace(CloudApiBase) && !string.IsNullOrWhiteSpace(CloudApiKey);
     readonly Dictionary<string, CalibrationTemplate> _templates;
     readonly Dictionary<string, List<TemplateHubTagItem>> _templateHubTagsByDocumentType;
     CancellationTokenSource? _clientOptionsCts;
@@ -80,12 +83,10 @@ public sealed class CertificatesViewModel : ViewModelBase
     CertificateRow? _selectedCertificate;
     int? _currentCertificateId;
     bool _isEditMode;
-    string _modeText = "وضع: جديد";
+    string _modeText = Translations.Get("ModeNew");
     int _loadScope;
     bool _showExpiredOnly;
     bool _isInitialized;
-    bool _isBusy;
-    string _busyMessage = "";
     bool _isAutoUploadEnabled = true;
     string _lastExportedPdfPath = "";
     string _lastVerificationUrl = "";
@@ -101,15 +102,17 @@ public sealed class CertificatesViewModel : ViewModelBase
     int _applyTemplateVersion;
     int _templateOptionsVersion;
     public ObservableCollection<string> AutoLevelSpecOptions { get; }
+    readonly StickerDesignerViewModel _stickerDesigner;
 
-    public CertificatesViewModel()
+    public CertificatesViewModel(StickerDesignerViewModel stickerDesigner)
     {
+        _stickerDesigner = stickerDesigner ?? new StickerDesignerViewModel();
         LayoutBoxes = new ObservableCollection<LayoutBoxItem>();
         Certificates = new ObservableCollection<CertificateRow>();
         CalibrationRows = new ObservableCollection<CalibrationRow>();
         TemplateOptions = new ObservableCollection<string>();
         DeviceTypes = new ObservableCollection<string> { "Total Station", "Auto Level", "GPS" };
-        BrandOptions = new ObservableCollection<string> { "Leica", "Trimble", "Sokkia", "Topcon", "South", "CHC", "Kolida", "Stonex", "Ruide", "Sanding", "Hi-Target", "Foif", "Gowin", "CST/berger", "Nikon", "Pentax", "Spectra", "Geomax", "مختلف الاجهزة الصينيه" };
+        BrandOptions = new ObservableCollection<string> { "Leica", "Trimble", "Sokkia", "Topcon", "South", "CHC", "Kolida", "Stonex", "Ruide", "Sanding", "Hi-Target", "Foif", "Gowin", "CST/berger", "Nikon", "Pentax", "Spectra", "Geomax", Translations.Get("BrandMiscChineseDevices") };
         PrintModes = new ObservableCollection<string> { "Full Print", "Data Only" };
         AccuracyOptions = new ObservableCollection<string> { "1\"", "2\"", "3\"", "5\"", "7\"" };
         AutoLevelSpecOptions = new ObservableCollection<string>();
@@ -146,10 +149,10 @@ public sealed class CertificatesViewModel : ViewModelBase
             new TemplateHubDocumentType("cert_total_station", "Certificate (Total Station)"),
             new TemplateHubDocumentType("cert_gps", "Certificate (GPS)"),
             new TemplateHubDocumentType("cert_auto_level", "Certificate (Auto Level)"),
-            new TemplateHubDocumentType("invoice", "إيصال استلام فردى"),
+            new TemplateHubDocumentType("invoice", Translations.Get("DocTypeInvoice")),
             new TemplateHubDocumentType("price_quotation", "Price Quotation"),
             new TemplateHubDocumentType("maintenance_report", "Maintenance Report"),
-            new TemplateHubDocumentType("rental_receipt", "إقرار استلام جهاز إيجار")
+            new TemplateHubDocumentType("rental_receipt", Translations.Get("DocTypeRentalReceipt"))
         };
         TemplateHubTags = new ObservableCollection<TemplateHubTagItem>();
         _templateHubTagsByDocumentType = BuildTemplateHubTagsDictionary();
@@ -181,6 +184,7 @@ public sealed class CertificatesViewModel : ViewModelBase
         PrintA4Command = new AsyncRelayCommand(async _ => await PrintA4Async());
         EditOldCertificateCommand = new RelayCommand(_ => EnterEditModeFromSelection(), _ => SelectedCertificate != null);
         OpenSelectedCertificateFileCommand = new AsyncRelayCommand(async _ => await OpenSelectedCertificateFileAsync(), _ => SelectedCertificate != null);
+        ReprintSelectedCertificateCommand = new AsyncRelayCommand(async _ => await ReprintSelectedCertificateAsync(), _ => SelectedCertificate != null);
 
         if (DeviceTypes.Count > 0)
             DeviceType = DeviceTypes[0];
@@ -207,7 +211,7 @@ public sealed class CertificatesViewModel : ViewModelBase
         IsBusy = true; BusyMessage = "Uploading PDF...";
         try
         {
-            var outputDir = System.IO.Path.Combine(AppContext.BaseDirectory, "Certificates_Output");
+            var outputDir = AppPaths.CertificatesOutput;
             var certNo = (CertificateNumber ?? "").Trim();
             var pdfPath = System.IO.Path.Combine(outputDir, $"Cert_{certNo}.pdf");
             if (!File.Exists(pdfPath))
@@ -216,18 +220,18 @@ public sealed class CertificatesViewModel : ViewModelBase
                 await EnsureDbCreatedOnceAsync();
                 var certificateId = _currentCertificateId.Value;
                 var templateKey = MapCertificateTemplateKey(DeviceType);
-                var engine = new WordTemplateEngine("", outputDir);
+                var engine = new WordTemplateEngine("");
                 var docService = new CertificateDocumentService(db, engine);
                 var templatePath = await EnsureTemplatePathAsync(templateKey);
                 if (string.IsNullOrWhiteSpace(templatePath))
                 {
-                    StatusMessage = "يرجى تحديد قالب Word أولاً من إدارة القوالب.";
+                    StatusMessage = Translations.Get("StSelectWordTemplateFirst");
                     return;
                 }
                 var docxPath = await docService.GenerateCertificateDocxAndPdfByIdFromPathAsync(certificateId, templatePath);
                 if (string.IsNullOrWhiteSpace(docxPath) || !File.Exists(docxPath))
                 {
-                    StatusMessage = "فشل إنشاء ملف Word.";
+                    StatusMessage = Translations.Get("StFailedToCreateWordFile");
                     return;
                 }
                 Directory.CreateDirectory(outputDir);
@@ -243,7 +247,7 @@ public sealed class CertificatesViewModel : ViewModelBase
         }
         catch (Exception ex)
         {
-            StatusMessage = $"تعذر رفع الشهادة: {ex.Message}";
+            StatusMessage = string.Format(Translations.Get("StUploadFailed"), ex.Message);
         }
         finally
         {
@@ -255,6 +259,12 @@ public sealed class CertificatesViewModel : ViewModelBase
     {
         try
         {
+            if (!IsCloudUploadConfigured)
+            {
+                StatusMessage = Translations.Get("StCloudNotConfigured");
+                return;
+            }
+
             using var client = new HttpClient();
             client.Timeout = TimeSpan.FromSeconds(60);
             client.DefaultRequestHeaders.Add("X-Api-Key", CloudApiKey);
@@ -287,7 +297,7 @@ public sealed class CertificatesViewModel : ViewModelBase
             var body = await resp.Content.ReadAsStringAsync();
             if (!resp.IsSuccessStatusCode)
             {
-                StatusMessage = $"فشل الرفع: {(int)resp.StatusCode} {resp.ReasonPhrase}. {body}";
+                StatusMessage = string.Format(Translations.Get("StUploadHttpFailed"), (int)resp.StatusCode, resp.ReasonPhrase, body);
                 return;
             }
 
@@ -298,20 +308,20 @@ public sealed class CertificatesViewModel : ViewModelBase
                 if (!string.IsNullOrWhiteSpace(verifyUrl))
                 {
                     LastVerificationUrl = verifyUrl!;
-                    StatusMessage = $"تم رفع الشهادة: {verifyUrl}";
+                    StatusMessage = string.Format(Translations.Get("StUploadedWithUrl"), verifyUrl!);
                     try { SaveVerifyUrlLocal(CertificateNumber ?? string.Empty, verifyUrl!); } catch { }
                 }
                 else
-                    StatusMessage = "تم رفع الشهادة بنجاح.";
+                    StatusMessage = Translations.Get("StUploadedOk");
             }
             catch
             {
-                StatusMessage = "تم رفع الشهادة بنجاح.";
+                StatusMessage = Translations.Get("StUploadedOk");
             }
         }
         catch (Exception ex)
         {
-            StatusMessage = $"تعذر رفع الشهادة: {ex.Message}";
+            StatusMessage = string.Format(Translations.Get("StUploadFailed"), ex.Message);
         }
     }
 
@@ -327,7 +337,7 @@ public sealed class CertificatesViewModel : ViewModelBase
         var hadPreviousUrl = false;
         try
         {
-            var mapPath = System.IO.Path.Combine(AppContext.BaseDirectory, "Certificates_Output", "verify_urls.json");
+            var mapPath = System.IO.Path.Combine(AppPaths.CertificatesOutput, "verify_urls.json");
             if (System.IO.File.Exists(mapPath))
             {
                 var json = System.IO.File.ReadAllText(mapPath);
@@ -339,48 +349,48 @@ public sealed class CertificatesViewModel : ViewModelBase
         {
         }
 
-        var outputDir = System.IO.Path.Combine(AppContext.BaseDirectory, "Certificates_Output");
+        var outputDir = AppPaths.CertificatesOutput;
         using var db = CreateDbContext();
         await EnsureDbCreatedOnceAsync();
         var certificateId = _currentCertificateId.Value;
         var templateKey = MapCertificateTemplateKey(DeviceType);
-        var engine = new WordTemplateEngine("", outputDir);
+        var engine = new WordTemplateEngine("");
         var docService = new CertificateDocumentService(db, engine);
         var templatePath = await EnsureTemplatePathAsync(templateKey);
         if (string.IsNullOrWhiteSpace(templatePath))
         {
-            StatusMessage = "تم حفظ الشهادة، لكن تعذر الرفع: يرجى تحديد قالب Word أولاً من إدارة القوالب.";
+            StatusMessage = Translations.Get("StSavedButNoWord");
             return;
         }
 
         var docxPath = await docService.GenerateCertificateDocxAndPdfByIdFromPathAsync(certificateId, templatePath);
         if (string.IsNullOrWhiteSpace(docxPath) || !File.Exists(docxPath))
         {
-            StatusMessage = "تم حفظ الشهادة، لكن تعذر إنشاء ملف Word للرفع.";
+            StatusMessage = Translations.Get("StSavedButNoWordFile");
             return;
         }
 
         var pdfPath = System.IO.Path.ChangeExtension(docxPath, ".pdf");
         if (!File.Exists(pdfPath))
         {
-            StatusMessage = "تم حفظ الشهادة، لكن تعذر إنشاء ملف PDF للرفع.";
+            StatusMessage = Translations.Get("StSavedButNoPdf");
             return;
         }
 
         _lastExportedPdfPath = pdfPath;
         await UploadPdfToServerAsync(pdfPath);
 
-        if (StatusMessage.StartsWith("تم رفع الشهادة", StringComparison.Ordinal))
+        if (StatusMessage.StartsWith(Translations.Get("StUploadedPrefix"), StringComparison.Ordinal))
         {
             StatusMessage = hadPreviousUrl
-                ? $"تم تحديث الملف المرفوع بنجاح: {LastVerificationUrl}"
-                : $"تم رفع الشهادة تلقائياً بنجاح: {LastVerificationUrl}";
+                ? string.Format(Translations.Get("StUpdatedUploaded"), LastVerificationUrl)
+                : string.Format(Translations.Get("StAutoUploaded"), LastVerificationUrl);
         }
-        else if (StatusMessage == "تم رفع الشهادة بنجاح.")
+        else if (StatusMessage == Translations.Get("StUploadedOk"))
         {
             StatusMessage = hadPreviousUrl
-                ? "تم تحديث الملف المرفوع بنجاح."
-                : "تم رفع الشهادة تلقائياً بنجاح.";
+                ? Translations.Get("StUpdatedUploadedPlain")
+                : Translations.Get("StAutoUploadedPlain");
         }
     }
 
@@ -390,7 +400,7 @@ public sealed class CertificatesViewModel : ViewModelBase
         {
             var certNo = (CertificateNumber ?? "").Trim();
             if (string.IsNullOrWhiteSpace(certNo)) return;
-            var mapPath = System.IO.Path.Combine(AppContext.BaseDirectory, "Certificates_Output", "verify_urls.json");
+            var mapPath = System.IO.Path.Combine(AppPaths.CertificatesOutput, "verify_urls.json");
             var hasUrl = false;
             if (System.IO.File.Exists(mapPath))
             {
@@ -407,7 +417,7 @@ public sealed class CertificatesViewModel : ViewModelBase
             if (!hasUrl)
             {
                 // Generate PDF (if not present) and upload to get verifyUrl
-                var outputDir = System.IO.Path.Combine(AppContext.BaseDirectory, "Certificates_Output");
+                var outputDir = AppPaths.CertificatesOutput;
                 var path = System.IO.Path.Combine(outputDir, $"Cert_{certNo}.pdf");
                 if (!System.IO.File.Exists(path))
                 {
@@ -416,7 +426,7 @@ public sealed class CertificatesViewModel : ViewModelBase
                     await EnsureDbCreatedOnceAsync();
                     var certificateId = _currentCertificateId.Value;
                     var templateKey = MapCertificateTemplateKey(DeviceType);
-                    var engine = new WordTemplateEngine("", outputDir);
+                    var engine = new WordTemplateEngine("");
                     var docService = new CertificateDocumentService(db, engine);
                     var templatePath = await EnsureTemplatePathAsync(templateKey);
                     if (string.IsNullOrWhiteSpace(templatePath)) return;
@@ -452,21 +462,21 @@ public sealed class CertificatesViewModel : ViewModelBase
             await EnsureDbCreatedOnceAsync();
             var certificateId = _currentCertificateId.Value;
             var templateKey = MapCertificateTemplateKey(DeviceType);
-            var outputDir = System.IO.Path.Combine(AppContext.BaseDirectory, "Certificates_Output");
-            var engine = new WordTemplateEngine("", outputDir);
+            var outputDir = AppPaths.CertificatesOutput;
+            var engine = new WordTemplateEngine("");
             var docService = new CertificateDocumentService(db, engine);
             var templatePath = await EnsureTemplatePathAsync(templateKey);
 
             if (string.IsNullOrWhiteSpace(templatePath))
             {
-                StatusMessage = "يرجى تحديد قالب Word أولاً من إدارة القوالب.";
+                StatusMessage = Translations.Get("StSelectWordTemplateFirst");
                 return;
             }
 
             var docxPath = await docService.GenerateCertificateDocxAndPdfByIdFromPathAsync(certificateId, templatePath);
             if (string.IsNullOrWhiteSpace(docxPath) || !File.Exists(docxPath))
             {
-                StatusMessage = "فشل إنشاء ملف Word.";
+                StatusMessage = Translations.Get("StFailedToCreateWordFile");
                 return;
             }
 
@@ -498,7 +508,7 @@ public sealed class CertificatesViewModel : ViewModelBase
                 pdfPath = questPdfPath;
             }
 
-            StatusMessage = $"تم إنشاء PDF: {pdfPath}";
+            StatusMessage = string.Format(Translations.Get("StCreatedPdf"), pdfPath);
             try { Process.Start(new ProcessStartInfo { FileName = pdfPath, UseShellExecute = true }); } catch { }
             _lastExportedPdfPath = pdfPath;
             if (IsAutoUploadEnabled)
@@ -509,7 +519,7 @@ public sealed class CertificatesViewModel : ViewModelBase
         }
         catch (Exception ex)
         {
-            StatusMessage = $"تعذر تصدير PDF: {ex.Message}";
+            StatusMessage = string.Format(Translations.Get("StPdfExportFailed"), ex.Message);
         }
         finally
         {
@@ -529,13 +539,13 @@ public sealed class CertificatesViewModel : ViewModelBase
         if (string.IsNullOrWhiteSpace(certNo))
             return;
 
-        var outputDir = System.IO.Path.Combine(AppContext.BaseDirectory, "Certificates_Output");
+        var outputDir = AppPaths.CertificatesOutput;
         var pdfPath = System.IO.Path.Combine(outputDir, $"Cert_{certNo}.pdf");
         var docxPath = System.IO.Path.Combine(outputDir, $"Cert_{certNo}.docx");
         var openPath = System.IO.File.Exists(docxPath) ? docxPath : (System.IO.File.Exists(pdfPath) ? pdfPath : "");
         if (string.IsNullOrWhiteSpace(openPath))
         {
-            IsBusy = true; BusyMessage = "جارٍ تجهيز المعاينة...";
+            IsBusy = true; BusyMessage = Translations.Get("StPreparingPreview");
             try
             {
                 await EnsureDbCreatedOnceAsync();
@@ -544,22 +554,22 @@ public sealed class CertificatesViewModel : ViewModelBase
                 if (string.IsNullOrWhiteSpace(templatePath))
                 {
                     MessageBox.Show(
-                        "يرجى تحديد قالب Word لهذا النوع من شاشة إدارة القوالب أولاً",
-                        "قالب غير موجود",
+                        Translations.Get("MsgTemplateMissingForType"),
+                        Translations.Get("MsgTemplateMissing"),
                         MessageBoxButton.OK,
                         MessageBoxImage.Warning);
                     return;
                 }
 
                 using var db = CreateDbContext();
-                var engine = new WordTemplateEngine("", outputDir);
+                var engine = new WordTemplateEngine("");
                 var docService = new CertificateDocumentService(db, engine);
                 var result = await docService.GenerateCertificateDocxAndPdfByIdFromPathAsync(row.Id, templatePath);
                 openPath = result;
             }
             catch (Exception ex)
             {
-                MessageBox.Show(ex.Message, "تعذر فتح المعاينة", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(ex.Message, Translations.Get("MsgCannotOpenPreview"), MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
             finally
@@ -576,7 +586,83 @@ public sealed class CertificatesViewModel : ViewModelBase
         }
         catch (Exception ex)
         {
-            MessageBox.Show(ex.Message, "تعذر فتح الملف", MessageBoxButton.OK, MessageBoxImage.Error);
+            MessageBox.Show(ex.Message, Translations.Get("MsgCannotOpenFile"), MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    async Task ReprintSelectedCertificateAsync()
+    {
+        var row = SelectedCertificate;
+        if (row == null)
+            return;
+        if (IsBusy)
+        {
+            StatusMessage = "Another operation is in progress.";
+            return;
+        }
+        IsBusy = true; BusyMessage = "Preparing document for printing...";
+        try
+        {
+            await EnsureDbCreatedOnceAsync();
+            var templateKey = MapCertificateTemplateKey(row.DeviceType);
+            var templatePath = await LoadTemplatePathAsync(templateKey);
+            if (string.IsNullOrWhiteSpace(templatePath))
+            {
+                MessageBox.Show(
+                    Translations.Get("MsgTemplateMissingForType"),
+                    Translations.Get("MsgTemplateMissing"),
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+                return;
+            }
+
+            using var db = CreateDbContext();
+            var engine = new WordTemplateEngine("");
+            var docService = new CertificateDocumentService(db, engine);
+            var docxPath = await docService.GenerateCertificateDocxAndPdfByIdFromPathAsync(row.Id, templatePath);
+            if (string.IsNullOrWhiteSpace(docxPath) || !File.Exists(docxPath))
+            {
+                StatusMessage = Translations.Get("StFailedToCreateWordFile");
+                return;
+            }
+
+            try
+            {
+                var a4Printer = GetA4PrinterName();
+                var useSpecific = !string.IsNullOrWhiteSpace(a4Printer) && IsPrinterInstalled(a4Printer);
+                var printInfo = new ProcessStartInfo
+                {
+                    FileName = docxPath,
+                    UseShellExecute = true,
+                    Verb = useSpecific ? "printto" : "print",
+                    Arguments = useSpecific ? $"\"{a4Printer}\"" : ""
+                };
+                Process.Start(printInfo);
+                StatusMessage = useSpecific
+                    ? $"Document sent to printer: {a4Printer}"
+                    : "Document sent to the default printer.";
+            }
+            catch (Exception)
+            {
+                try
+                {
+                    Process.Start(new ProcessStartInfo { FileName = docxPath, UseShellExecute = true });
+                    StatusMessage = "Opened in Word. Please print from Word.";
+                }
+                catch (Exception ex2)
+                {
+                    StatusMessage = $"Failed to print or open in Word: {ex2.Message}";
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = string.Format(Translations.Get("StFilePrepareFailed"), ex.Message);
+            BlueMax.Presentation.Wpf.App.Log($"[CertificatesViewModel] ReprintSelectedCertificateAsync error: {ex}");
+        }
+        finally
+        {
+            IsBusy = false; BusyMessage = "";
         }
     }
 
@@ -722,13 +808,14 @@ public sealed class CertificatesViewModel : ViewModelBase
         get => _statusMessage;
         set => SetProperty(ref _statusMessage, value);
     }
-    public bool IsBusy
+    public override bool IsBusy
     {
-        get => _isBusy;
+        get => base.IsBusy;
         set
         {
-            if (!SetProperty(ref _isBusy, value))
+            if (base.IsBusy == value)
                 return;
+            base.IsBusy = value;
             GeneratePdfCommand?.RaiseCanExecuteChanged();
             ExportPdfCommand?.RaiseCanExecuteChanged();
             UploadCertificateCommand?.RaiseCanExecuteChanged();
@@ -737,10 +824,10 @@ public sealed class CertificatesViewModel : ViewModelBase
             PrintA4Command?.RaiseCanExecuteChanged();
         }
     }
-    public string BusyMessage
+    public override string BusyMessage
     {
-        get => _busyMessage;
-        set => SetProperty(ref _busyMessage, value);
+        get => base.BusyMessage;
+        set => base.BusyMessage = value;
     }
 
     public bool IsAutoUploadEnabled
@@ -1013,6 +1100,7 @@ public sealed class CertificatesViewModel : ViewModelBase
                 EditOldCertificateCommand?.RaiseCanExecuteChanged();
                 DeleteCertificateCommand?.RaiseCanExecuteChanged();
                 OpenSelectedCertificateFileCommand?.RaiseCanExecuteChanged();
+                ReprintSelectedCertificateCommand?.RaiseCanExecuteChanged();
             }
         }
     }
@@ -1040,6 +1128,7 @@ public sealed class CertificatesViewModel : ViewModelBase
     public RelayCommand NewTemplateCommand { get; }
     public RelayCommand ChooseBackgroundImageCommand { get; }
     public AsyncRelayCommand OpenSelectedCertificateFileCommand { get; }
+    public AsyncRelayCommand ReprintSelectedCertificateCommand { get; }
 
     public void ApplyQuickAction(QuickActionMode mode)
     {
@@ -1086,7 +1175,7 @@ public sealed class CertificatesViewModel : ViewModelBase
 
     void UpdateModeText()
     {
-        ModeText = _isEditMode ? "وضع: تعديل" : "وضع: جديد";
+        ModeText = _isEditMode ? Translations.Get("ModeEdit") : Translations.Get("ModeNew");
         DeleteCertificateCommand?.RaiseCanExecuteChanged();
     }
 
@@ -1200,13 +1289,13 @@ public sealed class CertificatesViewModel : ViewModelBase
         if (string.IsNullOrWhiteSpace(ClientName))
         {
             StatusMessage = "Client name is required.";
-            MessageBox.Show("يرجى إدخال اسم العميل أولاً.", "بيانات ناقصة", MessageBoxButton.OK, MessageBoxImage.Warning);
+            MessageBox.Show(Translations.Get("MsgClientNameRequired"), Translations.Get("MsgMissingData"), MessageBoxButton.OK, MessageBoxImage.Warning);
             return false;
         }
         if (string.IsNullOrWhiteSpace(Model))
         {
             StatusMessage = "Model is required.";
-            MessageBox.Show("يرجى إدخال الموديل أولاً.", "بيانات ناقصة", MessageBoxButton.OK, MessageBoxImage.Warning);
+            MessageBox.Show(Translations.Get("MsgModelRequired"), Translations.Get("MsgMissingData"), MessageBoxButton.OK, MessageBoxImage.Warning);
             return false;
         }
         if (string.Equals(DeviceType, "GPS", StringComparison.OrdinalIgnoreCase))
@@ -1223,7 +1312,7 @@ public sealed class CertificatesViewModel : ViewModelBase
             if (string.IsNullOrWhiteSpace(SerialText))
             {
                 StatusMessage = "Serial number is required.";
-                MessageBox.Show("يرجى إدخال السيريال أولاً.", "بيانات ناقصة", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(Translations.Get("MsgSerialRequired"), Translations.Get("MsgMissingData"), MessageBoxButton.OK, MessageBoxImage.Warning);
                 return false;
             }
         }
@@ -1232,28 +1321,29 @@ public sealed class CertificatesViewModel : ViewModelBase
             && string.IsNullOrWhiteSpace(SpecValue))
         {
             StatusMessage = "Auto Level deviation rate is required.";
-            MessageBox.Show("يرجى إدخال قيمة معيار الانحراف (Auto Level) أولاً.", "بيانات ناقصة", MessageBoxButton.OK, MessageBoxImage.Warning);
+            MessageBox.Show(Translations.Get("MsgAutoLevelDeviationRequired"), Translations.Get("MsgMissingData"), MessageBoxButton.OK, MessageBoxImage.Warning);
             return false;
         }
 
-        IsBusy = true; BusyMessage = "جارٍ الحفظ...";
+        IsBusy = true; BusyMessage = Translations.Get("StSaving");
         try
         {
             using var db = CreateDbContext();
             await db.Database.EnsureCreatedAsync();
 
             var typedName = (ClientName ?? "").Trim();
+            var typedPhone = (Phone ?? "").Trim();
             Customer? customer = null;
             if (!string.IsNullOrWhiteSpace(typedName))
             {
-                customer = await db.Customers.FirstOrDefaultAsync(c => c.Name == typedName);
+                customer = await db.Customers.FirstOrDefaultAsync(c => c.Name == typedName && (string.IsNullOrWhiteSpace(typedPhone) || c.Phone == typedPhone));
                 if (customer == null)
                 {
                     customer = new Customer
                     {
                         CreatedAt = DateTime.Now,
                         Name = typedName,
-                        Phone = Phone ?? ""
+                        Phone = typedPhone
                     };
                     db.Customers.Add(customer);
                     await db.SaveChangesAsync();
@@ -1270,13 +1360,13 @@ public sealed class CertificatesViewModel : ViewModelBase
             if (isLoadedFromArchive)
             {
                 var result = MessageBox.Show(
-                    "تم تحميل هذه الشهادة من الأرشيف.\nهل تريد تعديل الشهادة الحالية (استبدالها) أم حفظها كشهادة جديدة؟\n\nنعم = تعديل الشهادة الحالية\nلا = حفظ كشهادة جديدة\nإلغاء = إلغاء العملية",
-                    "طريقة الحفظ",
+                    Translations.Get("MsgArchiveSavePrompt"),
+                    Translations.Get("MsgSaveMethod"),
                     MessageBoxButton.YesNoCancel,
                     MessageBoxImage.Question);
                 if (result == MessageBoxResult.Cancel)
                 {
-                    StatusMessage = "تم إلغاء العملية.";
+                    StatusMessage = Translations.Get("StCancelled");
                     return false;
                 }
                 forceNewFromExisting = (result == MessageBoxResult.No);
@@ -1385,10 +1475,25 @@ public sealed class CertificatesViewModel : ViewModelBase
                 certificate.TemplateId = null;
             }
 
+            // Prevent duplicate certificate numbers for already-assigned numbers
+            var needsGeneratedNumber = string.IsNullOrWhiteSpace(certificate.CertificateNumber) ||
+                                       certificate.CertificateNumber.StartsWith("TEMP-WO-");
+            if (!needsGeneratedNumber)
+            {
+                var duplicateExists = await db.Certificates.AnyAsync(c =>
+                    c.Id != certificate.Id &&
+                    c.CertificateNumber == certificate.CertificateNumber);
+                if (duplicateExists)
+                {
+                    StatusMessage = Translations.Get("StCertificateNumberDuplicate");
+                    return false;
+                }
+            }
+
             await db.SaveChangesAsync();
 
             // Generate proper certificate number if it's null/whitespace or has temporary marker
-            if (string.IsNullOrWhiteSpace(certificate.CertificateNumber) || certificate.CertificateNumber.StartsWith("TEMP-WO-"))
+            if (needsGeneratedNumber)
             {
                 certificate.CertificateNumber = BuildCertificateNumber(certificate);
                 await db.SaveChangesAsync();
@@ -1404,7 +1509,7 @@ public sealed class CertificatesViewModel : ViewModelBase
             PreviewStickerZplCommand.RaiseCanExecuteChanged();
             PrintA4Command.RaiseCanExecuteChanged();
             await RefreshCertificatesAsync();
-            StatusMessage = "تم حفظ الشهادة.";
+            StatusMessage = Translations.Get("StCertificateSaved");
 
             try
             {
@@ -1419,7 +1524,7 @@ public sealed class CertificatesViewModel : ViewModelBase
         }
         catch (Exception ex)
         {
-            StatusMessage = $"تعذر الحفظ: {ex.Message}";
+            StatusMessage = string.Format(Translations.Get("StSaveFailed"), ex.Message);
             return false;
         }
         finally
@@ -1463,7 +1568,7 @@ public sealed class CertificatesViewModel : ViewModelBase
 
         if (IsAutoUploadEnabled)
         {
-            BusyMessage = "جارٍ رفع الشهادة للسحابة...";
+            BusyMessage = Translations.Get("StUploadingCloud");
             await UploadCurrentCertificateAfterSaveAsync();
         }
     }
@@ -1507,18 +1612,36 @@ public sealed class CertificatesViewModel : ViewModelBase
     {
         if (SelectedCertificate == null)
             return;
-        IsBusy = true; BusyMessage = "جارٍ الحذف...";
-        using var db = CreateDbContext();
-        var entity = await db.Certificates.FirstOrDefaultAsync(c => c.Id == SelectedCertificate.Id);
-        if (entity != null)
+        var confirm = MessageBox.Show(
+            Translations.Get("ConfirmDelete"),
+            Translations.Get("DeleteConfirmTitle"),
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Warning);
+        if (confirm != MessageBoxResult.Yes)
+            return;
+        IsBusy = true; BusyMessage = Translations.Get("StDeleting");
+        try
         {
-            db.Certificates.Remove(entity);
-            await db.SaveChangesAsync();
+            using var db = CreateDbContext();
+            var entity = await db.Certificates.FirstOrDefaultAsync(c => c.Id == SelectedCertificate.Id);
+            if (entity != null)
+            {
+                db.Certificates.Remove(entity);
+                await db.SaveChangesAsync();
+            }
+            NewCertificate();
+            await RefreshCertificatesAsync();
+            StatusMessage = "Certificate deleted.";
         }
-        NewCertificate();
-        await RefreshCertificatesAsync();
-        StatusMessage = "Certificate deleted.";
-        IsBusy = false; BusyMessage = "";
+        catch (Exception ex)
+        {
+            StatusMessage = $"Failed to delete certificate: {ex.Message}";
+            BlueMax.Presentation.Wpf.App.Log($"[CertificatesViewModel] DeleteCertificateAsync error: {ex}");
+        }
+        finally
+        {
+            IsBusy = false; BusyMessage = "";
+        }
     }
 
     async Task RefreshCertificatesAsync()
@@ -1641,14 +1764,14 @@ public sealed class CertificatesViewModel : ViewModelBase
         var ext = System.IO.Path.GetExtension(path).ToLowerInvariant();
         if (ext == ".pdf")
         {
-            var outDir = System.IO.Path.Combine(AppContext.BaseDirectory, "TemplatePreview");
+            var outDir = AppPaths.TemplatePreview;
             System.IO.Directory.CreateDirectory(outDir);
             var png = BlueMax.Infrastructure.PdfConverter.TryConvertPdfToPng(path, 300, 90);
             LayoutTemplatePdfPath = path;
             LayoutTemplatePath = png ?? "";
             if (string.IsNullOrWhiteSpace(LayoutTemplatePath))
             {
-                StatusMessage = "تعذر معاينة PDF: يرجى تثبيت LibreOffice أو ضبط LIBREOFFICE_PROGRAM.";
+                StatusMessage = Translations.Get("StPdfPreviewFailedLibreOffice");
                 return;
             }
         }
@@ -1687,7 +1810,7 @@ public sealed class CertificatesViewModel : ViewModelBase
         }
         else if (ext == ".txt" || ext == ".rtf")
         {
-            var outDir = System.IO.Path.Combine(AppContext.BaseDirectory, "TemplatePreview");
+            var outDir = AppPaths.TemplatePreview;
             System.IO.Directory.CreateDirectory(outDir);
             var pngPath = System.IO.Path.Combine(outDir, $"text-bg-{DateTime.Now:yyyyMMddHHmmss}.png");
             try
@@ -1700,7 +1823,7 @@ public sealed class CertificatesViewModel : ViewModelBase
             {
                 LayoutTemplatePdfPath = "";
                 LayoutTemplatePath = "";
-                StatusMessage = "تعذر توليد خلفية من الملف النصي.";
+                StatusMessage = Translations.Get("StBgFromTextFailed");
                 return;
             }
         }
@@ -1714,7 +1837,7 @@ public sealed class CertificatesViewModel : ViewModelBase
             LayoutTemplatePdfPath = "";
             LayoutTemplatePath = path;
         }
-        StatusMessage = "تم اختيار صورة خلفية للقالب.";
+        StatusMessage = Translations.Get("StBgImageSelected");
     }
 
     public static void RenderTextOrRtfToPng(string path, double width, double height, string outputPng)
@@ -1750,7 +1873,7 @@ public sealed class CertificatesViewModel : ViewModelBase
         var path = (LayoutTemplatePdfPath ?? "") != "" ? LayoutTemplatePdfPath : (LayoutTemplatePath ?? "");
         if (string.IsNullOrWhiteSpace(path))
         {
-            StatusMessage = "قم برفع قالب أولاً ثم اضغط معاينة.";
+            StatusMessage = Translations.Get("StUploadTemplateFirst");
             return;
         }
         var ext = System.IO.Path.GetExtension(path).ToLowerInvariant();
@@ -1762,13 +1885,13 @@ public sealed class CertificatesViewModel : ViewModelBase
             {
                 using var db = CreateDbContext();
                 await EnsureDbCreatedOnceAsync();
-                var outputDir = System.IO.Path.Combine(AppContext.BaseDirectory, "Certificates_Output");
-                var engine = new WordTemplateEngine(System.IO.Path.GetDirectoryName(path) ?? "", outputDir);
+                var outputDir = AppPaths.CertificatesOutput;
+                var engine = new WordTemplateEngine(System.IO.Path.GetDirectoryName(path) ?? "");
                 var docService = new CertificateDocumentService(db, engine);
                 var result = await docService.GenerateCertificateDocxAndPdfByIdAsync(_currentCertificateId.Value, System.IO.Path.GetFileName(path));
                 var openPath = result;
                 Process.Start(new ProcessStartInfo { FileName = openPath, UseShellExecute = true });
-                StatusMessage = "تم إنشاء معاينة DOCX.";
+                StatusMessage = Translations.Get("StDocxPreviewCreated");
             }
             else
             {
@@ -1786,21 +1909,21 @@ public sealed class CertificatesViewModel : ViewModelBase
                     ["issue_date"] = IssueDate.ToString("dd-MM-yyyy"),
                     ["delegate_name"] = DelegateName
                 };
-                var engine = new WordTemplateEngine(System.IO.Path.GetDirectoryName(path) ?? "", System.IO.Path.Combine(AppContext.BaseDirectory, "TemplatePreview"));
+                var engine = new WordTemplateEngine(System.IO.Path.GetDirectoryName(path) ?? "");
                 var docxName = System.IO.Path.GetFileName(path);
                 var outputDocx = await Task.Run(() => engine.GenerateDocument(docxName, data));
                 Process.Start(new ProcessStartInfo { FileName = outputDocx, UseShellExecute = true });
-                StatusMessage = "تم إنشاء معاينة DOCX.";
+                StatusMessage = Translations.Get("StDocxPreviewCreated");
             }
             }
             else
             {
-                StatusMessage = "المعاينة تعتمد على قوالب Word (DOCX) فقط.";
+                StatusMessage = Translations.Get("StPreviewDocxOnly");
             }
         }
         catch (Exception ex)
         {
-            var logPath = System.IO.Path.Combine(AppContext.BaseDirectory, "last-pdf-error.txt");
+            var logPath = System.IO.Path.Combine(AppPaths.LogsDir, "last-pdf-error.txt");
             try
             {
                 System.IO.File.WriteAllText(logPath, ex.ToString());
@@ -1808,7 +1931,7 @@ public sealed class CertificatesViewModel : ViewModelBase
             catch
             {
             }
-            StatusMessage = $"حدث خطأ أثناء إنشاء المعاينة (تفاصيل في last-pdf-error.txt): {ex.Message}";
+            StatusMessage = string.Format(Translations.Get("StPreviewErrorDetails"), ex.Message);
         }
     }
 
@@ -1865,7 +1988,7 @@ public sealed class CertificatesViewModel : ViewModelBase
             {
                 LayoutTemplatePdfPath = path;
                 LayoutTemplatePath = "";
-                StatusMessage = "جاري تجهيز معاينة PDF...";
+                StatusMessage = Translations.Get("StPreparingPdfPreview");
             }
         else if (ext == ".docx")
         {
@@ -1889,11 +2012,11 @@ public sealed class CertificatesViewModel : ViewModelBase
                     Y = item.Ymm / PixelToMm
                 });
             }
-            StatusMessage = $"تم تحميل القالب: {SelectedTemplateName}";
+            StatusMessage = string.Format(Translations.Get("StTemplateLoaded"), SelectedTemplateName);
         }
         catch
         {
-            StatusMessage = "تعذر تحميل القالب المحدد.";
+            StatusMessage = Translations.Get("StTemplateLoadFailed");
         }
     }
 
@@ -1913,7 +2036,7 @@ public sealed class CertificatesViewModel : ViewModelBase
                 };
                 if (sfd.ShowDialog() != true)
                 {
-                    StatusMessage = "ألغيت حفظ القالب.";
+                    StatusMessage = Translations.Get("StTemplateSaveCancelled");
                     return;
                 }
                 name = System.IO.Path.GetFileNameWithoutExtension(sfd.FileName);
@@ -1966,11 +2089,11 @@ public sealed class CertificatesViewModel : ViewModelBase
             if (!TemplateOptions.Contains(name))
                 TemplateOptions.Add(name);
             SelectedTemplateName = name;
-            StatusMessage = "تم حفظ القالب.";
+            StatusMessage = Translations.Get("StTemplateSaved");
         }
         catch
         {
-            StatusMessage = "تعذر حفظ القالب.";
+            StatusMessage = Translations.Get("StTemplateSaveFailed");
         }
     }
 
@@ -2032,11 +2155,11 @@ public sealed class CertificatesViewModel : ViewModelBase
             store.Save(DeviceType, name, tpl);
             RefreshTemplateOptions();
             SelectedTemplateName = name;
-            StatusMessage = "تم إنشاء وحفظ قالب جديد.";
+            StatusMessage = Translations.Get("StTemplateCreated");
         }
         catch
         {
-            StatusMessage = "تعذر إنشاء القالب.";
+            StatusMessage = Translations.Get("StTemplateCreateFailed");
         }
     }
 
@@ -2176,8 +2299,8 @@ public sealed class CertificatesViewModel : ViewModelBase
             await EnsureDbCreatedOnceAsync();
             var certificateId = _currentCertificateId.Value;
             var templateKey = MapCertificateTemplateKey(DeviceType);
-            var outputDir = System.IO.Path.Combine(AppContext.BaseDirectory, "Certificates_Output");
-            var engine = new WordTemplateEngine("", outputDir);
+            var outputDir = AppPaths.CertificatesOutput;
+            var engine = new WordTemplateEngine("");
             var docService = new CertificateDocumentService(db, engine);
             var templatePath = await EnsureTemplatePathAsync(templateKey);
             if (string.IsNullOrWhiteSpace(templatePath))
@@ -2227,15 +2350,15 @@ public sealed class CertificatesViewModel : ViewModelBase
             await EnsureDbCreatedOnceAsync();
             var certificateId = _currentCertificateId.Value;
             var templateKey = MapCertificateTemplateKey(DeviceType);
-            var outputDir = System.IO.Path.Combine(AppContext.BaseDirectory, "Certificates_Output");
-            var engine = new WordTemplateEngine("", outputDir);
+            var outputDir = AppPaths.CertificatesOutput;
+            var engine = new WordTemplateEngine("");
             var docService = new CertificateDocumentService(db, engine);
             var templatePath = await EnsureTemplatePathAsync(templateKey);
             
             string? docxPath;
             if (string.IsNullOrWhiteSpace(templatePath))
             {
-                StatusMessage = "يرجى تحديد قالب Word أولاً من إدارة القوالب.";
+                StatusMessage = Translations.Get("StSelectWordTemplateFirst");
                 return;
             }
             else
@@ -2244,7 +2367,7 @@ public sealed class CertificatesViewModel : ViewModelBase
                 docxPath = result;
                 if (string.IsNullOrWhiteSpace(docxPath))
                 {
-                    StatusMessage = "فشل إنشاء ملف Word.";
+                    StatusMessage = Translations.Get("StFailedToCreateWordFile");
                     return;
                 }
             }
@@ -2281,7 +2404,7 @@ public sealed class CertificatesViewModel : ViewModelBase
         }
         catch (Exception ex)
         {
-            StatusMessage = $"تعذر تجهيز الملف: {ex.Message}";
+            StatusMessage = string.Format(Translations.Get("StFilePrepareFailed"), ex.Message);
         }
         finally
         {
@@ -2328,7 +2451,7 @@ public sealed class CertificatesViewModel : ViewModelBase
         if (!string.IsNullOrWhiteSpace(path) && File.Exists(path))
             return path;
         if (!string.IsNullOrWhiteSpace(path))
-            StatusMessage = "قالب Word غير موجود. يرجى إعادة رفع القالب من إدارة القوالب.";
+            StatusMessage = Translations.Get("StWordTemplateMissing");
         var ofd = new OpenFileDialog
         {
             Filter = "Word Template (*.docx)|*.docx",
@@ -2345,143 +2468,117 @@ public sealed class CertificatesViewModel : ViewModelBase
 
     async Task ExportStickerZplAsync()
     {
-        if (!await SaveCertificateInternalAsync())
+        if (IsBusy)
+        {
+            StatusMessage = "Another operation is in progress.";
             return;
-        if (!_currentCertificateId.HasValue)
-            return;
+        }
         if (IsAutoUploadEnabled)
             await EnsureVerifyUrlBeforeDocumentAsync();
 
-        IsBusy = true; BusyMessage = "جارٍ إرسال الملصق...";
-        var reportSettings = await Task.Run(() => new ReportDesignerSettingsStore().Load());
-        var companyName = reportSettings.CompanyName ?? "";
-        var companyHeader = reportSettings.CompanyHeader ?? "";
-        var companyPhone = reportSettings.CompanyPhone ?? "";
-        var companyAddress = reportSettings.CompanyAddress ?? "";
-
-        var settings = await Task.Run(() => new PrinterSettingsStore().Load());
-        var protocol = settings.Protocol ?? "ZPL";
-
+        IsBusy = true; BusyMessage = Translations.Get("StSendingSticker");
         try
         {
-            var tempStickerDesignerViewModel = new StickerDesignerViewModel();
-            tempStickerDesignerViewModel.CompanyName = companyName;
-            tempStickerDesignerViewModel.CompanyHeader = companyHeader;
-            tempStickerDesignerViewModel.CompanyAddress = companyAddress;
-            tempStickerDesignerViewModel.CompanyPhone = companyPhone;
-            tempStickerDesignerViewModel.Brand = Brand ?? "";
-            tempStickerDesignerViewModel.Model = Model ?? "";
-            tempStickerDesignerViewModel.Serial = SerialText ?? "";
-            tempStickerDesignerViewModel.CertificateNumber = CertificateNumber ?? "";
-            tempStickerDesignerViewModel.CalDate = IssueDate;
-            tempStickerDesignerViewModel.ExpDate = ExpiryDate;
-            tempStickerDesignerViewModel.UpdateQrContent();
+            var reportSettings = await Task.Run(() => new ReportDesignerSettingsStore().Load());
+            ApplyCertificateDataToSticker(reportSettings);
+
+            var settings = await Task.Run(() => new PrinterSettingsStore().Load());
+            var protocol = settings.Protocol ?? "ZPL";
 
             var service = new StickerPrintService();
-            await service.PrintStickerAsync(tempStickerDesignerViewModel, settings);
+            await service.PrintStickerAsync(_stickerDesigner, settings);
             StatusMessage = string.Equals(protocol, "Windows", StringComparison.OrdinalIgnoreCase)
-                ? "تم إرسال الملصق عبر تعريف Windows."
-                : $"تم إرسال ملصق {protocol} (Layout) للطابعة.";
+                ? Translations.Get("StStickerSentWindows")
+                : string.Format(Translations.Get("StStickerSentLayout"), protocol);
         }
         catch (Exception ex)
         {
-            StatusMessage = $"فشل إرسال الملصق: {ex.Message}";
+            StatusMessage = string.Format(Translations.Get("StStickerSendFailed"), ex.Message);
+            BlueMax.Presentation.Wpf.App.Log($"[CertificatesViewModel] ExportStickerZplAsync error: {ex}");
         }
-        IsBusy = false; BusyMessage = "";
+        finally
+        {
+            IsBusy = false; BusyMessage = "";
+        }
     }
 
     async Task PreviewStickerZplAsync()
     {
-        if (!_currentCertificateId.HasValue)
+        if (IsBusy)
         {
-            StatusMessage = "Select a certificate before preview.";
+            StatusMessage = "Another operation is in progress.";
             return;
         }
         if (IsAutoUploadEnabled)
             await EnsureVerifyUrlBeforeDocumentAsync();
-        IsBusy = true; BusyMessage = "جارٍ إنشاء معاينة الملصق...";
-        var reportSettings = await Task.Run(() => new ReportDesignerSettingsStore().Load());
-        var companyName = reportSettings.CompanyName ?? "";
-        var companyHeader = reportSettings.CompanyHeader ?? "";
-        var companyPhone = reportSettings.CompanyPhone ?? "";
-        var companyAddress = reportSettings.CompanyAddress ?? "";
-
-        var payload = new CertificateBarcodeInfo
-        {
-            CompanyName = companyName,
-            DeviceBrand = Brand,
-            DeviceModel = Model,
-            DeviceSerialNumber = SerialText,
-            CertificateNumber = CertificateNumber,
-            IssueDate = IssueDate,
-            ExpiryDate = ExpiryDate
-        }.ToPayload();
-
-        var settings = await Task.Run(() => new PrinterSettingsStore().Load());
-        var protocol = settings.Protocol ?? "ZPL";
-
+        IsBusy = true; BusyMessage = Translations.Get("StPreparingStickerPreview");
         try
         {
+            var reportSettings = await Task.Run(() => new ReportDesignerSettingsStore().Load());
+            ApplyCertificateDataToSticker(reportSettings);
+
+            var previewWindow = new BlueMax.Presentation.Wpf.Views.StickerPreviewWindow(_stickerDesigner)
             {
-                var vm = new StickerDesignerViewModel();
-                // Data is already loaded in VM constructor via LoadLayout()
-                
-                vm.CompanyName = companyName;
-                vm.CompanyHeader = companyHeader;
-                vm.CompanyAddress = companyAddress;
-                vm.CompanyPhone = companyPhone;
-                vm.Brand = Brand ?? "";
-                vm.Model = Model ?? "";
-                vm.Serial = SerialText ?? "";
-                vm.CertificateNumber = CertificateNumber ?? "";
-                vm.CalDate = IssueDate;
-                vm.ExpDate = ExpiryDate;
-
-                // Ø¥Ø¶Ø§ÙØ© Ø³Ø¬Ù„Ø§Øª Ø§Ù„ØªØµØ­ÙŠØ­ Ù‡Ù†Ø§
-                Debug.WriteLine($"[CertificatesViewModel] Passing to StickerDesignerViewModel:");
-                Debug.WriteLine($"  CompanyName: {vm.CompanyName}");
-                Debug.WriteLine($"  CompanyHeader: {vm.CompanyHeader}");
-                Debug.WriteLine($"  CompanyAddress: {vm.CompanyAddress}");
-                Debug.WriteLine($"  CompanyPhone: {vm.CompanyPhone}");
-                Debug.WriteLine($"  Brand: {vm.Brand}");
-                Debug.WriteLine($"  Model: {vm.Model}");
-                Debug.WriteLine($"  Serial: {vm.Serial}");
-                Debug.WriteLine($"  CertificateNumber: {vm.CertificateNumber}");
-                Debug.WriteLine($"  CalDate: {vm.CalDate}");
-                Debug.WriteLine($"  ExpDate: {vm.ExpDate}");
-                
-                // Final force update to ensure all items are updated correctly
-                vm.UpdateItemText("company", vm.CompanyName);
-                vm.UpdateItemText("header", vm.CompanyHeader);
-                vm.UpdateItemText("address", vm.CompanyAddress);
-                vm.UpdateItemText("phone", vm.CompanyPhone);
-                vm.UpdateItemText("brand_value", vm.Brand);
-                vm.UpdateItemText("model_value", vm.Model);
-                vm.UpdateItemText("serial_value", vm.Serial);
-                vm.UpdateItemText("cert_value", vm.CertificateNumber);
-                vm.UpdateItemText("cal_value", vm.CalDate.ToString("dd-MM-yyyy"));
-                vm.UpdateItemText("exp_value", vm.ExpDate.ToString("dd-MM-yyyy"));
-                
-                vm.ApplyVariableBindings();
-                vm.UpdateQrContent();
-                
-                // Ensure Header and Company items are visible in preview
-                vm.UpdateItemVisibility("header", true);
-                vm.UpdateItemVisibility("company", !string.IsNullOrEmpty(vm.CompanyName));
-
-                var previewWindow = new BlueMax.Presentation.Wpf.Views.StickerPreviewWindow(vm)
-                {
-                    Owner = System.Windows.Application.Current?.MainWindow
-                };
-                previewWindow.ShowDialog();
-                StatusMessage = "تم فتح معاينة الاستيكر وفق نموذج التصميم الحقيقي.";
-            }
+                Owner = System.Windows.Application.Current?.MainWindow
+            };
+            previewWindow.ShowDialog();
+            StatusMessage = Translations.Get("StStickerPreviewOpened");
         }
         catch (Exception ex)
         {
-            StatusMessage = $"فشل المعاينة: {ex.Message}";
+            StatusMessage = string.Format(Translations.Get("StStickerPreviewFailed"), ex.Message);
+            BlueMax.Presentation.Wpf.App.Log($"[CertificatesViewModel] PreviewStickerZplAsync error: {ex}");
         }
-        IsBusy = false; BusyMessage = "";
+        finally
+        {
+            IsBusy = false; BusyMessage = "";
+        }
+    }
+
+    // Push the current certificate/report data onto the shared designer view model so the
+    // certificates section previews and prints EXACTLY the layout the user built in the
+    // sticker designer (live edits included, no disk round-trip, no StrictLayout reset).
+    public void ApplyCurrentCertificateDataToSticker()
+    {
+        try
+        {
+            LegacyConfigCompanyMigration.MigrateOnce();
+            var reportSettings = new ReportDesignerSettingsStore().Load();
+            ApplyCertificateDataToSticker(reportSettings);
+        }
+        catch (Exception ex)
+        {
+            BlueMax.Presentation.Wpf.App.Log($"[CertificatesViewModel] ApplyCurrentCertificateDataToSticker error: {ex}");
+        }
+    }
+
+    void ApplyCertificateDataToSticker(ReportDesignerSettings reportSettings)
+    {
+        var vm = _stickerDesigner;
+        vm.CompanyName = reportSettings.CompanyName ?? "";
+        vm.CompanyHeader = reportSettings.CompanyHeader ?? "";
+        vm.CompanyAddress = reportSettings.CompanyAddress ?? "";
+        vm.CompanyPhone = reportSettings.CompanyPhone ?? "";
+        vm.Brand = Brand ?? "";
+        vm.Model = Model ?? "";
+        vm.Serial = SerialText ?? "";
+        vm.CertificateNumber = CertificateNumber ?? "";
+        vm.CalDate = IssueDate;
+        vm.ExpDate = ExpiryDate;
+
+        vm.UpdateItemText("company", vm.CompanyName);
+        vm.UpdateItemText("header", vm.CompanyHeader);
+        vm.UpdateItemText("address", vm.CompanyAddress);
+        vm.UpdateItemText("phone", vm.CompanyPhone);
+        vm.UpdateItemText("brand_value", vm.Brand);
+        vm.UpdateItemText("model_value", vm.Model);
+        vm.UpdateItemText("serial_value", vm.Serial);
+        vm.UpdateItemText("cert_value", vm.CertificateNumber);
+        vm.UpdateItemText("cal_value", BlueMax.Presentation.Wpf.Services.StickerText.FormatDate(vm.CalDate));
+        vm.UpdateItemText("exp_value", BlueMax.Presentation.Wpf.Services.StickerText.FormatDate(vm.ExpDate));
+
+        vm.ApplyVariableBindings();
+        vm.UpdateQrContent();
     }
 
     void ArrangeLayoutBoxes()
@@ -2508,7 +2605,7 @@ public sealed class CertificatesViewModel : ViewModelBase
                 y += stepY;
             }
         }
-        StatusMessage = "تم توزيع الحقول تلقائيًا.";
+        StatusMessage = Translations.Get("StFieldsAutoDistributed");
     }
     void AddLayoutBox(object? parameter)
     {
@@ -2521,19 +2618,19 @@ public sealed class CertificatesViewModel : ViewModelBase
         }
         var title = key switch
         {
-            "client_name" => "اسم العميل",
-            "date" => "التاريخ",
-            "expiry_date" => "تاريخ الانتهاء",
-            "cert_no" => "رقم الشهادة",
-            "work_no" => "أمر العمل",
-            "report_type" => "نوع التقرير",
-            "phone" => "الهاتف",
-            "device_type" => "نوع الجهاز",
-            "brand" => "الماركة",
-            "model" => "الموديل",
-            "serial" => "السيريال",
-            "table_start" => "بداية الجدول",
-            _ => "حقل"
+            "client_name" => Translations.Get("FieldClientName"),
+            "date" => Translations.Get("FieldDate"),
+            "expiry_date" => Translations.Get("FieldExpiryDate"),
+            "cert_no" => Translations.Get("FieldCertNo"),
+            "work_no" => Translations.Get("FieldWorkNo"),
+            "report_type" => Translations.Get("FieldReportType"),
+            "phone" => Translations.Get("FieldPhone"),
+            "device_type" => Translations.Get("FieldDeviceType"),
+            "brand" => Translations.Get("FieldBrand"),
+            "model" => Translations.Get("FieldModel"),
+            "serial" => Translations.Get("FieldSerial"),
+            "table_start" => Translations.Get("FieldTableStart"),
+            _ => Translations.Get("FieldGeneric")
         };
 
         LayoutBoxes.Add(new LayoutBoxItem
@@ -2562,7 +2659,7 @@ public sealed class CertificatesViewModel : ViewModelBase
         {
             fi.InCanvas = false;
         }
-        StatusMessage = "تمت إزالة الحقل من التصميم.";
+        StatusMessage = Translations.Get("StFieldRemoved");
     }
 
     void ResetLayout()
@@ -2570,7 +2667,7 @@ public sealed class CertificatesViewModel : ViewModelBase
         LayoutBoxes.Clear();
         foreach (var f in FieldItems)
             f.InCanvas = false;
-        StatusMessage = "تمت إعادة ضبط التخطيط.";
+        StatusMessage = Translations.Get("StLayoutReset");
     }
 
     public class CertificateBarcodeInfo
@@ -2627,7 +2724,6 @@ public sealed class CertificatesViewModel : ViewModelBase
                 var lastMap = lastRows
                     .Where(r => !string.IsNullOrWhiteSpace(r.Item) && r.MeasuredValue.HasValue)
                     .ToDictionary(r => r.Item!, r => (object)r.MeasuredValue!.Value);
-                var rnd = new Random();
                 var rows = new List<CalibrationRow>();
                 foreach (var row in template.Rows)
                 {
@@ -2639,11 +2735,8 @@ public sealed class CertificatesViewModel : ViewModelBase
                             if (saved is decimal decimalValue)
                                 cal.MeasuredValue = (double)decimalValue;
                         }
-                        else
-                        {
-                            var jitter = (rnd.NextDouble() - 0.5) * template.Tolerance * 0.2;
-                            cal.MeasuredValue = row.StandardValue.Value + jitter;
-                        }
+                        // No saved measured value: leave MeasuredValue null so the user
+                        // enters the actual reading instead of fabricated data.
                     }
                     rows.Add(cal);
                 }
@@ -2990,7 +3083,7 @@ public sealed class CertificatesViewModel : ViewModelBase
         // Debug logging
         try
         {
-            var logDir = System.IO.Path.Combine(System.AppContext.BaseDirectory, "Logs");
+            var logDir = AppPaths.LogsDir;
             System.IO.Directory.CreateDirectory(logDir);
             var logPath = System.IO.Path.Combine(logDir, "template_tags.log");
             var logLines = new List<string>
@@ -3185,12 +3278,27 @@ public sealed class CertificatesViewModel : ViewModelBase
     {
         var date = certificate.IssueDate == default ? DateTime.Today : certificate.IssueDate;
         var yymm = date.ToString("yyMM");
-        return $"HAT-{yymm}-{certificate.Id:0000}";
+        var prefix = GetCertificateNumberPrefix();
+        return $"{prefix}-{yymm}-{certificate.Id:0000}";
+    }
+
+    static string GetCertificateNumberPrefix()
+    {
+        try
+        {
+            var settings = new ReportDesignerSettingsStore().Load();
+            var prefix = (settings.CertificatePrefix ?? "").Trim();
+            return string.IsNullOrWhiteSpace(prefix) ? "HAT" : prefix;
+        }
+        catch
+        {
+            return "HAT";
+        }
     }
 
     static string GetVerifyUrlMapPath()
     {
-        var dir = System.IO.Path.Combine(AppContext.BaseDirectory, "Certificates_Output");
+        var dir = AppPaths.CertificatesOutput;
         System.IO.Directory.CreateDirectory(dir);
         return System.IO.Path.Combine(dir, "verify_urls.json");
     }
@@ -3241,7 +3349,7 @@ public sealed class CertificatesViewModel : ViewModelBase
         {
             if (!string.IsNullOrWhiteSpace(LastVerificationUrl))
                 Clipboard.SetText(LastVerificationUrl);
-            StatusMessage = "تم نسخ رابط التحقق.";
+            StatusMessage = Translations.Get("StVerifyLinkCopied");
         }
         catch { }
     }

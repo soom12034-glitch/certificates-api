@@ -11,10 +11,11 @@ using System.Windows.Media.Imaging;
 using System.Diagnostics;
 using System.Threading.Tasks;
 using System.Text.Json;
+using BlueMax.Presentation.Wpf.Resources;
 
 namespace BlueMax.Presentation.Wpf.ViewModels;
 
-public class StickerDesignerViewModel : ViewModelBase
+public class StickerDesignerViewModel : ViewModelBase, IStickerPrintModel
     {
         bool _editEnabled = true;
         private string _qrDebugInfo = string.Empty;
@@ -24,7 +25,21 @@ public class StickerDesignerViewModel : ViewModelBase
             set => SetProperty(ref _qrDebugInfo, value);
         }
 
-    const double PixelToMm = 0.264583;
+    readonly StickerKind _kind;
+
+    /// <summary>Which sticker this designer instance builds (certificate vs. maintenance receipt).</summary>
+    public StickerKind Kind => _kind;
+
+    /// <summary>True when this designer edits the maintenance receipt sticker (isolated data/settings).</summary>
+    public bool IsReceipt => _kind == StickerKind.Receipt;
+
+    /// <summary>True when this designer edits the calibration certificate sticker.</summary>
+    public bool IsCertificate => _kind != StickerKind.Receipt;
+
+    /// <summary>Isolated printer-settings file name for this sticker kind (never shared between kinds).</summary>
+    protected virtual string PrinterSettingsFileName => BlueMax.Infrastructure.PrinterSettingsStore.DefaultFileName;
+
+    protected const double PixelToMm = 0.264583;
     double _stickerWidthMm = 50;
     double _stickerHeightMm = 30;
     double _canvasWidthPx;
@@ -32,8 +47,8 @@ public class StickerDesignerViewModel : ViewModelBase
     double _previewScale = 1.0;
     bool _useLogo;
     string _logoPath = "";
-    string _companyName = "اسم الشركة";
-    string _companyHeader = "اختصار الشركة";
+    string _companyName = "اسم المنشأة";
+    string _companyHeader = "اختصار المنشأة";
     string _companyAddress = "العنوان";
     string _companyPhone = "رقم الهاتف";
     string _brand = "";
@@ -50,10 +65,19 @@ public class StickerDesignerViewModel : ViewModelBase
     readonly StickerLayoutStore _store;
     bool _showGrid = false;
     bool _showQr = true;
+    string _statusMessage = "";
+    readonly ObservableCollection<StickerTemplateInfo> _customTemplates = new();
 
-    public StickerDesignerViewModel()
+    public StickerDesignerViewModel() : this(StickerKind.Certificate)
     {
-        _store = new StickerLayoutStore();
+    }
+
+    public StickerDesignerViewModel(StickerKind kind)
+    {
+        _kind = kind;
+        _store = new StickerLayoutStore(kind);
+        foreach (var t in _store.LoadCustomTemplates())
+            _customTemplates.Add(t);
         PickLogoCommand = new RelayCommand(_ => PickLogo());
         SaveLayoutCommand = new RelayCommand(_ => SaveLayout());
         ResetLayoutCommand = new RelayCommand(_ => ResetLayout());
@@ -68,10 +92,37 @@ public class StickerDesignerViewModel : ViewModelBase
         AddLineItemCommand = new RelayCommand(_ => AddLineItem());
         DeleteSelectedItemCommand = new RelayCommand(_ => DeleteSelectedItem(), _ => SelectedStickerItem != null);
         ApplySizeTemplateCommand = new RelayCommand(param => ApplySizeTemplate(param?.ToString()));
+        ApplyCustomTemplateCommand = new RelayCommand(param => ApplyCustomTemplate(param));
         SaveCustomTemplateCommand = new RelayCommand(_ => SaveCustomTemplate());
         SnapToGrid = true;
         SnapStepMm = 1;
+        LoadCompanyDefaultsFromSettings();
         LoadLayout();
+    }
+
+    /// <summary>
+    /// Loads the establishment (company) data saved in Settings and uses it as the
+    /// sticker defaults for the company name, abbreviation, address and phone, so the
+    /// sticker designer is always pre-filled from the recorded settings.
+    /// </summary>
+    void LoadCompanyDefaultsFromSettings()
+    {
+        try
+        {
+            var report = new ReportDesignerSettingsStore().Load();
+            if (!string.IsNullOrWhiteSpace(report.CompanyName))
+                _companyName = report.CompanyName;
+            if (!string.IsNullOrWhiteSpace(report.CompanyHeader))
+                _companyHeader = report.CompanyHeader;
+            if (!string.IsNullOrWhiteSpace(report.CompanyAddress))
+                _companyAddress = report.CompanyAddress;
+            if (!string.IsNullOrWhiteSpace(report.CompanyPhone))
+                _companyPhone = report.CompanyPhone;
+        }
+        catch (Exception ex)
+        {
+            LogService.LogException(ex);
+        }
     }
 
     public double StickerWidthMm
@@ -256,18 +307,74 @@ public class StickerDesignerViewModel : ViewModelBase
             _ => (50.0, 30.0)
         };
 
+        SetStickerSize(width, height);
+    }
+
+    void ApplyCustomTemplate(object? param)
+    {
+        if (param is not StickerTemplateInfo t) return;
+        if (t.Layout != null)
+        {
+            ApplyLayout(t.Layout);
+            StatusMessage = string.Format(Translations.Get("TemplateAppliedMsg"), t.Name);
+        }
+        else if (t.WidthMm > 0 && t.HeightMm > 0)
+        {
+            SetStickerSize(t.WidthMm, t.HeightMm);
+        }
+    }
+
+    void SetStickerSize(double width, double height)
+    {
         StickerWidthMm = width;
         StickerHeightMm = height;
+        StrictLayout();
+        OnPropertyChanged(nameof(StickerItems));
+    }
+
+    public ObservableCollection<StickerTemplateInfo> CustomTemplates => _customTemplates;
+
+    public string StatusMessage
+    {
+        get => _statusMessage;
+        set => SetProperty(ref _statusMessage, value);
     }
 
     void SaveCustomTemplate()
     {
-        // For now, this is a placeholder. In a full implementation, this would:
-        // 1. Prompt the user for a template name
-        // 2. Save the current StickerWidthMm and StickerHeightMm to a custom templates list
-        // 3. Persist the custom templates to storage
-        // For simplicity, we'll just save the current layout which includes the size
-        SaveLayout();
+        var dialog = new Views.TextInputWindow(Translations.Get("EnterTemplateName"))
+        {
+            Owner = System.Windows.Application.Current?.MainWindow
+        };
+        if (dialog.ShowDialog() != true)
+            return;
+
+        var name = dialog.Answer?.Trim();
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            StatusMessage = Translations.Get("TemplateNameRequired");
+            return;
+        }
+
+        var existing = _customTemplates.FirstOrDefault(t => string.Equals(t.Name, name, StringComparison.OrdinalIgnoreCase));
+        if (existing != null)
+        {
+            existing.WidthMm = StickerWidthMm;
+            existing.HeightMm = StickerHeightMm;
+            existing.Layout = BuildCurrentLayout();
+        }
+        else
+        {
+            _customTemplates.Add(new StickerTemplateInfo
+            {
+                Name = name,
+                WidthMm = StickerWidthMm,
+                HeightMm = StickerHeightMm,
+                Layout = BuildCurrentLayout()
+            });
+        }
+        _store.SaveCustomTemplates(_customTemplates.ToList());
+        StatusMessage = string.Format(Translations.Get("TemplateSavedMsg"), $"{name} ({StickerWidthMm:0.#}×{StickerHeightMm:0.#} مم)");
     }
 
     public bool UseLogo
@@ -341,15 +448,14 @@ public class StickerDesignerViewModel : ViewModelBase
         get => _qrSizeMm;
         set
         {
-            if (SetProperty(ref _qrSizeMm, value))
+            var clamped = Math.Max(5, Math.Min(40, value));
+            if (!SetProperty(ref _qrSizeMm, clamped)) return;
+            var qrItem = FindItem("qr");
+            if (qrItem != null)
             {
-                var qrItem = FindItem("qr");
-                if (qrItem != null)
-                {
-                    var qrSizePx = value / PixelToMm;
-                    qrItem.Width = qrSizePx;
-                    qrItem.Height = qrSizePx;
-                }
+                var qrSizePx = clamped / PixelToMm;
+                qrItem.Width = qrSizePx;
+                qrItem.Height = qrSizePx;
             }
         }
     }
@@ -360,9 +466,9 @@ public class StickerDesignerViewModel : ViewModelBase
         get => _companyName;
         set
         {
-            if (SetProperty(ref _companyName, value))
+            if (SetProperty(ref _companyName, StickerText.ToEnglishDigits(value)))
             {
-                UpdateItemText("company", value ?? "");
+                UpdateItemText("company", _companyName);
                 UpdateQrContent();
             }
         }
@@ -373,9 +479,9 @@ public class StickerDesignerViewModel : ViewModelBase
         get => _companyHeader;
         set
         {
-            if (SetProperty(ref _companyHeader, value))
+            if (SetProperty(ref _companyHeader, StickerText.ToEnglishDigits(value)))
             {
-                UpdateItemText("header", value ?? "");
+                UpdateItemText("header", _companyHeader);
             }
         }
     }
@@ -385,9 +491,9 @@ public class StickerDesignerViewModel : ViewModelBase
         get => _companyAddress;
         set
         {
-            if (SetProperty(ref _companyAddress, value))
+            if (SetProperty(ref _companyAddress, StickerText.ToEnglishDigits(value)))
             {
-                UpdateItemText("address", value ?? "");
+                UpdateItemText("address", _companyAddress);
             }
         }
     }
@@ -397,22 +503,26 @@ public class StickerDesignerViewModel : ViewModelBase
         get => _companyPhone;
         set
         {
-            if (SetProperty(ref _companyPhone, value))
+            if (SetProperty(ref _companyPhone, StickerText.ToEnglishDigits(value)))
             {
-                UpdateItemText("phone", value ?? "");
+                UpdateItemText("phone", FormatPhone(_companyPhone));
                 UpdateQrContent();
             }
         }
     }
+
+    string FormatPhone(string phone) => string.IsNullOrWhiteSpace(phone)
+        ? ""
+        : $"{StickerText.PhoneLabel} {StickerText.ToEnglishDigits(phone)}";
 
     public string Brand
     {
         get => _brand;
         set
         {
-            if (SetProperty(ref _brand, value))
+            if (SetProperty(ref _brand, StickerText.ToEnglishDigits(value)))
             {
-                UpdateItemText("brand_value", value ?? "");
+                UpdateItemText("brand_value", _brand);
                 UpdateQrContent();
             }
         }
@@ -423,9 +533,9 @@ public class StickerDesignerViewModel : ViewModelBase
         get => _model;
         set
         {
-            if (SetProperty(ref _model, value))
+            if (SetProperty(ref _model, StickerText.ToEnglishDigits(value)))
             {
-                UpdateItemText("model_value", value ?? "");
+                UpdateItemText("model_value", _model);
                 UpdateQrContent();
             }
         }
@@ -436,9 +546,9 @@ public class StickerDesignerViewModel : ViewModelBase
         get => _serial;
         set
         {
-            if (SetProperty(ref _serial, value))
+            if (SetProperty(ref _serial, StickerText.ToEnglishDigits(value)))
             {
-                UpdateItemText("serial_value", value ?? "");
+                UpdateItemText("serial_value", _serial);
                 UpdateQrContent();
             }
         }
@@ -449,9 +559,9 @@ public class StickerDesignerViewModel : ViewModelBase
         get => _certificateNumber;
         set
         {
-            if (SetProperty(ref _certificateNumber, value))
+            if (SetProperty(ref _certificateNumber, StickerText.ToEnglishDigits(value)))
             {
-                UpdateItemText("cert_value", value ?? "");
+                UpdateItemText("cert_value", _certificateNumber);
             }
         }
     }
@@ -463,7 +573,7 @@ public class StickerDesignerViewModel : ViewModelBase
         {
             if (SetProperty(ref _calDate, value))
             {
-                UpdateItemText("cal_value", value.ToString("dd-MM-yyyy"));
+                UpdateItemText("cal_value", StickerText.FormatDate(value));
                 UpdateQrContent();
             }
         }
@@ -476,7 +586,7 @@ public class StickerDesignerViewModel : ViewModelBase
         {
             if (SetProperty(ref _expDate, value))
             {
-                UpdateItemText("exp_value", value.ToString("dd-MM-yyyy"));
+                UpdateItemText("exp_value", StickerText.FormatDate(value));
                 UpdateQrContent();
             }
         }
@@ -494,6 +604,15 @@ public class StickerDesignerViewModel : ViewModelBase
         }
     }
 
+    /// <summary>Body item keys whose font size is controlled by the BodyFontSize setting.</summary>
+    protected virtual string[] BodyItemKeys => new[]
+    {
+        "brand_label", "brand_value", "model_label", "model_value", "serial_label", "serial_value",
+        "cert_label", "cert_value", "cal_label", "cal_value", "exp_label", "exp_value",
+        "date_label", "date_value", "customer_label", "customer_value", "device_type_label", "device_type_value",
+        "receipt_number_label", "receipt_number_value", "address", "phone"
+    };
+
     public double BodyFontSize
     {
         get => _bodyFontSize;
@@ -501,8 +620,7 @@ public class StickerDesignerViewModel : ViewModelBase
         {
             if (!SetProperty(ref _bodyFontSize, Math.Max(8, Math.Min(24, value))))
                 return;
-            // Update font size for body items
-            foreach(var key in new[] { "brand_label", "brand_value", "model_label", "model_value", "serial_label", "serial_value", "cert_label", "cert_value", "cal_label", "cal_value", "exp_label", "exp_value", "address", "phone" })
+            foreach (var key in BodyItemKeys)
             {
                 UpdateItemFontSize(key, _bodyFontSize);
             }
@@ -521,8 +639,10 @@ public class StickerDesignerViewModel : ViewModelBase
     public RelayCommand AddLineItemCommand { get; }
     public RelayCommand DeleteSelectedItemCommand { get; }
     public RelayCommand ApplySizeTemplateCommand { get; }
+    public RelayCommand ApplyCustomTemplateCommand { get; }
     public RelayCommand SaveCustomTemplateCommand { get; }
     public ObservableCollection<StickerItem> StickerItems => _stickerItems;
+    System.Collections.Generic.IEnumerable<StickerItem> IStickerPrintModel.StickerItems => _stickerItems;
     public StickerItem? SelectedStickerItem
     {
         get => _selectedStickerItem;
@@ -668,7 +788,9 @@ public class StickerDesignerViewModel : ViewModelBase
         }
         catch (Exception ex)
         {
-            System.Windows.MessageBox.Show($"Failed to show preview: {ex.Message}", "Error", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+            System.Windows.MessageBox.Show(
+                string.Format(BlueMax.Presentation.Wpf.Resources.Translations.Get("PreviewFailed"), ex.Message),
+                "Error", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
         }
     }
 
@@ -676,22 +798,28 @@ public class StickerDesignerViewModel : ViewModelBase
     {
         try
         {
-            var printerSettingsStore = new PrinterSettingsStore();
+            var printerSettingsStore = new PrinterSettingsStore(PrinterSettingsFileName);
             var printerSettings = printerSettingsStore.Load();
             
             var service = new StickerPrintService();
             await service.PrintStickerAsync(this, printerSettings);
-            System.Windows.MessageBox.Show("Test print sent successfully.", "Print", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
+            System.Windows.MessageBox.Show(BlueMax.Presentation.Wpf.Resources.Translations.Get("TestPrintSent"), "Print", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
         }
         catch (Exception ex)
         {
-            System.Windows.MessageBox.Show($"Test print failed: {ex.Message}", "Error", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+            System.Windows.MessageBox.Show(
+                string.Format(BlueMax.Presentation.Wpf.Resources.Translations.Get("TestPrintFailed"), ex.Message),
+                "Error", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
         }
     }
 
     void LoadLayout()
     {
-        var settings = _store.Load();
+        ApplyLayout(_store.Load());
+    }
+
+    void ApplyLayout(StickerLayoutSettings settings)
+    {
         StickerWidthMm = settings.WidthMm;
         StickerHeightMm = settings.HeightMm;
         UseLogo = settings.UseLogo;
@@ -711,7 +839,15 @@ public class StickerDesignerViewModel : ViewModelBase
                 Height = item.Height,
                 FontSize = item.FontSize,
                 DisplayText = item.DisplayText,
-                IsVisible = item.IsVisible
+                IsVisible = item.IsVisible,
+                FontFamily = item.FontFamily,
+                FontColor = item.FontColor,
+                TextAlignment = item.TextAlignment,
+                IsBold = item.IsBold,
+                IsItalic = item.IsItalic,
+                IsUnderline = item.IsUnderline,
+                VariableBinding = item.VariableBinding,
+                ZIndex = item.ZIndex
             });
         }
         ClampAllItems();
@@ -751,32 +887,98 @@ public class StickerDesignerViewModel : ViewModelBase
                     if (qrItem.Y + qrItem.Height > CanvasHeightPx)
                         qrItem.Y = Math.Max(0, (CanvasHeightPx - qrItem.Height) / 2);
                 }
-                qrItem.IsVisible = _showQr;
+                ShowQr = qrItem.IsVisible;
             }
-            UpdateItemVisibility("cert_label", false);
-            UpdateItemVisibility("cert_value", false);
-            UpdateItemVisibility("qr", _showQr);
             UpdateItemText("company", _companyName);
             UpdateItemText("header", _companyHeader);
             UpdateItemText("address", _companyAddress);
             UpdateItemText("phone", _companyPhone);
-            UpdateItemVisibility("brand_label", true);
-            UpdateItemVisibility("brand_value", true);
-            UpdateItemText("brand_value", _brand);
-            UpdateItemText("model_value", _model);
-            UpdateItemText("serial_value", _serial);
-            UpdateItemText("cert_value", _certificateNumber);
-            UpdateItemText("cal_value", _calDate.ToString("dd-MM-yyyy"));
-            UpdateItemText("exp_value", _expDate.ToString("dd-MM-yyyy"));
+            ApplyDataToItems();
             UpdateQrContent();
         }
+
+        EnsureLogoItem();
+        RefreshLabelTexts();
+        var sanitized = SanitizeLayout();
+        if (sanitized || !_store.HasSavedLayout || MissingStandardItems())
+            StrictLayout();
 
         SelectedStickerItem = _stickerItems.Count > 0 ? _stickerItems[0] : null;
     }
 
+    /// <summary>
+    /// Hook for kinds to drop items that must never appear in their layout
+    /// (e.g. the receipt sticker must never contain certificate data or device type).
+    /// Returns true when items were removed so the layout is re-computed.
+    /// </summary>
+    protected virtual bool SanitizeLayout() => false;
+
+    protected virtual string[] StandardItemKeys => new[]
+    {
+        "company", "header", "line_top", "brand_label", "brand_value", "model_label", "model_value",
+        "serial_label", "serial_value", "cal_label", "cal_value", "exp_label", "exp_value",
+        "qr", "line_bottom", "address", "phone"
+    };
+
+    bool MissingStandardItems()
+    {
+        return StandardItemKeys.Any(k => FindItem(k) == null);
+    }
+
+    protected static bool ContainsArabic(string text)
+    {
+        foreach (var c in text)
+        {
+            if (c >= '\u0600' && c <= '\u06FF') return true;
+        }
+        return false;
+    }
+
+    // Keep saved label text if it is already English; migrate legacy Arabic labels to English.
+    protected virtual void RefreshLabelTexts()
+    {
+        void Apply(string key, string english)
+        {
+            var it = FindItem(key);
+            if (it != null && (string.IsNullOrWhiteSpace(it.DisplayText) || ContainsArabic(it.DisplayText)))
+                it.DisplayText = english;
+        }
+        Apply("brand_label", StickerText.BrandLabel);
+        Apply("model_label", StickerText.ModelLabel);
+        Apply("serial_label", StickerText.SerialLabel);
+        Apply("cal_label", StickerText.CalDateLabel);
+        Apply("exp_label", StickerText.ValidUntilLabel);
+    }
+
+    void EnsureLogoItem()
+    {
+        var logo = FindItem("logo");
+        if (logo != null) return;
+
+        var logoW = Math.Min(24 / PixelToMm, CanvasWidthPx * 0.28);
+        var logoH = Math.Min(14 / PixelToMm, CanvasHeightPx * 0.3);
+        _stickerItems.Add(new StickerItem
+        {
+            Key = "logo",
+            X = 2 / PixelToMm,
+            Y = 2 / PixelToMm,
+            Width = logoW,
+            Height = logoH,
+            IsVisible = UseLogo,
+            DisplayText = "Logo",
+            VariableBinding = "logo"
+        });
+    }
+
     void SaveLayout()
     {
-        var settings = new StickerLayoutSettings
+        _store.Save(BuildCurrentLayout());
+        StatusMessage = BlueMax.Presentation.Wpf.Resources.Translations.Get("LayoutSaved");
+    }
+
+    StickerLayoutSettings BuildCurrentLayout()
+    {
+        return new StickerLayoutSettings
         {
             WidthMm = StickerWidthMm,
             HeightMm = StickerHeightMm,
@@ -804,7 +1006,6 @@ public class StickerDesignerViewModel : ViewModelBase
                 ZIndex = it.ZIndex
             }).ToList()
         };
-        _store.Save(settings);
     }
 
     void ResetLayout()
@@ -846,20 +1047,15 @@ public class StickerDesignerViewModel : ViewModelBase
         UpdateItemText("header", _companyHeader);
         UpdateItemText("address", _companyAddress);
         UpdateItemText("phone", _companyPhone);
-        UpdateItemVisibility("brand_label", true);
-        UpdateItemVisibility("brand_value", true);
-        UpdateItemText("brand_value", _brand);
-        UpdateItemText("model_value", _model);
-        UpdateItemText("serial_value", _serial);
-        UpdateItemText("cert_value", _certificateNumber);
-        UpdateItemText("cal_value", _calDate.ToString("dd-MM-yyyy"));
-        UpdateItemText("exp_value", _expDate.ToString("dd-MM-yyyy"));
+        ApplyDataToItems();
         UpdateQrContent();
 
+        EnsureLogoItem();
         StrictLayout();
 
         SelectedStickerItem = _stickerItems.Count > 0 ? _stickerItems[0] : null;
         OnPropertyChanged(nameof(StickerItems));
+        StatusMessage = BlueMax.Presentation.Wpf.Resources.Translations.Get("LayoutResetDone");
     }
 
     public void UpdateItemText(string key, string? text)
@@ -889,7 +1085,41 @@ public class StickerDesignerViewModel : ViewModelBase
         }
     }
 
-    public void ApplyVariableBindings()
+    /// <summary>
+    /// Pushes the current kind-specific data onto the corresponding sticker items.
+    /// Overridden by the receipt designer for its own (isolated) receipt fields.
+    /// </summary>
+    protected virtual void ApplyDataToItems()
+    {
+        UpdateItemText("brand_value", _brand);
+        UpdateItemText("model_value", _model);
+        UpdateItemText("serial_value", _serial);
+        UpdateItemText("cert_value", _certificateNumber);
+        UpdateItemText("cal_value", StickerText.FormatDate(_calDate));
+        UpdateItemText("exp_value", StickerText.FormatDate(_expDate));
+    }
+
+    /// <summary>
+    /// Resolves the display content for a data item key (e.g. "brand_value").
+    /// This is the single data source used by the sticker print service, so the
+    /// exact same printing mechanism serves both sticker kinds with isolated data.
+    /// </summary>
+    public virtual string ResolveValueKey(string itemKey)
+    {
+        return itemKey switch
+        {
+            "brand_value" => StickerText.ToEnglishDigits(_brand),
+            "model_value" => StickerText.ToEnglishDigits(_model),
+            "serial_value" => StickerText.ToEnglishDigits(_serial),
+            "cert_value" => StickerText.ToEnglishDigits(_certificateNumber),
+            "date_value" => StickerText.FormatDate(_calDate),
+            "cal_value" => StickerText.FormatDate(_calDate),
+            "exp_value" => StickerText.FormatDate(_expDate),
+            _ => ""
+        };
+    }
+
+    public virtual void ApplyVariableBindings()
     {
         foreach (var item in _stickerItems)
         {
@@ -901,8 +1131,8 @@ public class StickerDesignerViewModel : ViewModelBase
                     "model" => _model,
                     "serial" => _serial,
                     "cert_value" => _certificateNumber,
-                    "cal_value" => _calDate.ToString("dd-MM-yyyy"),
-                    "exp_value" => _expDate.ToString("dd-MM-yyyy"),
+                    "cal_value" => StickerText.FormatDate(_calDate),
+                    "exp_value" => StickerText.FormatDate(_expDate),
                     _ => item.DisplayText
                 };
                 item.DisplayText = value;
@@ -910,9 +1140,9 @@ public class StickerDesignerViewModel : ViewModelBase
         }
     }
 
-    public void UpdateQrContent()
-        {
-            var qrItem = FindItem("qr");
+    public virtual void UpdateQrContent()
+    {
+        var qrItem = FindItem("qr");
         if (qrItem == null) return;
 
         // Prefer direct verifyUrl if available (after cloud upload). Fallback to informative text.
@@ -925,7 +1155,7 @@ public class StickerDesignerViewModel : ViewModelBase
         else
         {
             // Fallback payload (not a link)
-            var payload = $"{_companyName}\n{_brand}\n{_model}\n{_serial}\n{_expDate:dd-MM-yyyy}\n{_companyPhone}";
+            var payload = $"{_companyName}\n{StickerText.ToEnglishDigits(_brand)}\n{StickerText.ToEnglishDigits(_model)}\n{StickerText.ToEnglishDigits(_serial)}\n{StickerText.FormatDate(_expDate)}\n{StickerText.ToEnglishDigits(_companyPhone)}";
             qrItem.DisplayText = payload;
             QrDebugInfo = $"QR fallback payload (no verifyUrl).";
         }
@@ -936,7 +1166,7 @@ public class StickerDesignerViewModel : ViewModelBase
         try
         {
             if (string.IsNullOrWhiteSpace(certificateNumber)) return string.Empty;
-            var dir = System.IO.Path.Combine(AppContext.BaseDirectory, "Certificates_Output");
+            var dir = AppPaths.CertificatesOutput;
             var mapPath = System.IO.Path.Combine(dir, "verify_urls.json");
             if (!System.IO.File.Exists(mapPath)) return string.Empty;
             var json = System.IO.File.ReadAllText(mapPath);
@@ -959,7 +1189,7 @@ public class StickerDesignerViewModel : ViewModelBase
             var printers = await Task.Run(() => Services.StickerPrinterDetector.DetectAll());
             if (printers.Count == 0)
             {
-                System.Windows.MessageBox.Show("No printers detected.", "Detect", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
+                System.Windows.MessageBox.Show(BlueMax.Presentation.Wpf.Resources.Translations.Get("NoPrintersDetected"), "Detect", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
                 return;
             }
 
@@ -969,7 +1199,7 @@ public class StickerDesignerViewModel : ViewModelBase
             };
             if (picker.ShowDialog() == true && picker.SelectedPrinter != null)
             {
-                var store = new PrinterSettingsStore();
+                var store = new PrinterSettingsStore(PrinterSettingsFileName);
                 var settings = store.Load();
                 settings.PrinterName = picker.SelectedPrinter.Name;
                 if (!string.IsNullOrWhiteSpace(picker.SelectedPrinter.Protocol))
@@ -990,7 +1220,9 @@ public class StickerDesignerViewModel : ViewModelBase
         }
         catch (Exception ex)
         {
-            System.Windows.MessageBox.Show($"Printer detection failed: {ex.Message}", "Error", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+            System.Windows.MessageBox.Show(
+                string.Format(BlueMax.Presentation.Wpf.Resources.Translations.Get("PrinterDetectionFailed"), ex.Message),
+                "Error", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
         }
     }
 
@@ -999,12 +1231,15 @@ public class StickerDesignerViewModel : ViewModelBase
         var qrItem = FindItem("qr");
         if (qrItem == null)
         {
-            System.Windows.MessageBox.Show("QR item not found in sticker layout.", "Error", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+            System.Windows.MessageBox.Show(Translations.Get("QrItemNotFound"), "Error", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
             return;
         }
 
-        // Construct payload including company name/acronym
-        var payload = $"{_companyName}\n{_brand}\n{_model}\n{_serial}\n{_expDate:dd-MM-yyyy}\n{_companyPhone}";
+        // Use the kind-appropriate QR payload (verify URL / certificate fallback / receipt data).
+        UpdateQrContent();
+        var payload = qrItem.DisplayText ?? "";
+        if (string.IsNullOrWhiteSpace(payload))
+            payload = $"{_companyName}\n{_brand}\n{_model}\n{_serial}\n{_expDate:dd-MM-yyyy}\n{_companyPhone}";
 
         try
         {
@@ -1013,7 +1248,7 @@ public class StickerDesignerViewModel : ViewModelBase
 
             if (qrImage == null)
             {
-                System.Windows.MessageBox.Show("Failed to generate QR code image.", "Error", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+                System.Windows.MessageBox.Show(Translations.Get("QrGenerateFailed"), "Error", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
                 return;
             }
 
@@ -1039,17 +1274,21 @@ public class StickerDesignerViewModel : ViewModelBase
                     encoder.Frames.Add(BitmapFrame.Create(qrImage));
                     encoder.Save(fileStream);
                 }
-                System.Windows.MessageBox.Show($"QR Code saved to {saveFileDialog.FileName}", "Success", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
+                System.Windows.MessageBox.Show(
+                    string.Format(Translations.Get("QrCodeSavedMsg"), saveFileDialog.FileName),
+                    "Success", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
             }
         }
         catch (Exception ex)
         {
-            System.Windows.MessageBox.Show($"Error generating or saving QR code: {ex.Message}", "Error", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+            System.Windows.MessageBox.Show(
+                string.Format(Translations.Get("QrSaveError"), ex.Message),
+                "Error", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
         }
     }
 
 
-    public void StrictLayout()
+    public virtual void StrictLayout()
     {
         var mm2px = 1.0 / PixelToMm;
         var left = 2 * mm2px;
@@ -1076,6 +1315,8 @@ public class StickerDesignerViewModel : ViewModelBase
         var address = EnsureItem("address");
         var phone = EnsureItem("phone");
         var qr = EnsureItem("qr");
+        var company = EnsureItem("company");
+        var logo = EnsureItem("logo");
         var brandLabel = EnsureItem("brand_label");
         var modelLabel = EnsureItem("model_label");
         var serialLabel = EnsureItem("serial_label");
@@ -1096,16 +1337,39 @@ public class StickerDesignerViewModel : ViewModelBase
         UpdateItemVisibility("qr", _showQr);
         UpdateItemVisibility("address", true);
         UpdateItemVisibility("phone", true);
-        UpdateItemVisibility("company", false);
+        UpdateItemVisibility("company", true);
         UpdateItemVisibility("header", true);
 
-        // Header - DO NOT OVERWRITE DisplayText here, it should come from _companyHeader or loaded settings
-        // header.DisplayText = "High accuracy"; // REMOVED: This was overwriting user input
-        header.FontSize = headerFont;
+        // Company name (top, prominent)
+        company.DisplayText = _companyName ?? "";
+        company.FontSize = Math.Max(_headerFontSize, bodyFont * 1.2);
+        company.X = left;
+        company.Y = top;
+        company.Width = contentWidth;
+        company.Height = Math.Max(20.0, company.FontSize * 1.5);
+
+        // Logo beside the company name if available
+        var hasLogo = UseLogo && !string.IsNullOrWhiteSpace(LogoPath);
+        UpdateItemVisibility("logo", hasLogo);
+        if (hasLogo)
+        {
+            var logoW = Math.Min(20 * mm2px, contentWidth * 0.3);
+            var logoH = Math.Min(company.Height, CanvasHeightPx * 0.25);
+            logo.Width = logoW;
+            logo.Height = logoH;
+            logo.X = left;
+            logo.Y = company.Y + Math.Max(0, (company.Height - logoH) / 2);
+            company.X = left + logoW + (1 * mm2px);
+            company.Width = Math.Max(0, contentWidth - logoW - (1 * mm2px));
+        }
+
+        // Header / slogan under the company name
+        header.DisplayText = _companyHeader ?? "";
+        header.FontSize = Math.Max(_headerFontSize * 0.8, bodyFont * 0.9);
         header.X = left;
-        header.Y = top;
+        header.Y = company.Y + company.Height;
         header.Width = contentWidth;
-        header.Height = headerH;
+        header.Height = Math.Max(16.0, header.FontSize * 1.4);
 
         // Top line
         lineTop.X = left;
@@ -1125,17 +1389,17 @@ public class StickerDesignerViewModel : ViewModelBase
         var valueColX = left + labelColWidth + (0.5 * mm2px);
         var valueColWidth = Math.Max(0.0, contentWidth - valueColX - (1 * mm2px)); // Maximize value width
 
-        brandLabel.DisplayText = "Brand :";
-        modelLabel.DisplayText = "Model :";
-        serialLabel.DisplayText = "Serial :";
-        calLabel.DisplayText = "Cal Date :";
-        expLabel.DisplayText = "Valid until :";
-        
-        brandValue.DisplayText = _brand ?? "";
-        modelValue.DisplayText = _model ?? "";
-        serialValue.DisplayText = _serial ?? "";
-        calValue.DisplayText = _calDate.ToString("dd-MM-yyyy");
-        expValue.DisplayText = _expDate.ToString("dd-MM-yyyy");
+        brandLabel.DisplayText = StickerText.BrandLabel;
+        modelLabel.DisplayText = StickerText.ModelLabel;
+        serialLabel.DisplayText = StickerText.SerialLabel;
+        calLabel.DisplayText = StickerText.CalDateLabel;
+        expLabel.DisplayText = StickerText.ValidUntilLabel;
+
+        brandValue.DisplayText = StickerText.ToEnglishDigits(_brand ?? "");
+        modelValue.DisplayText = StickerText.ToEnglishDigits(_model ?? "");
+        serialValue.DisplayText = StickerText.ToEnglishDigits(_serial ?? "");
+        calValue.DisplayText = StickerText.FormatDate(_calDate);
+        expValue.DisplayText = StickerText.FormatDate(_expDate);
 
         var y = lineTop.Y + lineTop.Height + (1.5 * mm2px);
         
@@ -1179,8 +1443,8 @@ public class StickerDesignerViewModel : ViewModelBase
         lineBottom.IsVisible = true;
 
         // Footer
-        address.DisplayText = _companyAddress ?? "Address line";
-        phone.DisplayText = $"Phone: {_companyPhone ?? ""}";
+        address.DisplayText = _companyAddress ?? "";
+        phone.DisplayText = FormatPhone(_companyPhone ?? "");
 
         address.X = 0;
         address.Width = CanvasWidthPx;
@@ -1198,7 +1462,7 @@ public class StickerDesignerViewModel : ViewModelBase
         OnPropertyChanged(nameof(StickerItems));
     }
 
-    StickerItem EnsureItem(string key)
+    protected StickerItem EnsureItem(string key)
     {
         var it = FindItem(key);
         if (it != null) return it;
@@ -1223,7 +1487,7 @@ public class StickerDesignerViewModel : ViewModelBase
         return null;
     }
 
-    void ClampAllItems()
+    protected void ClampAllItems()
     {
         foreach (var item in _stickerItems)
         {
@@ -1266,7 +1530,13 @@ public class StickerDesignerViewModel : ViewModelBase
             SetItem(itemSetting.Key, itemSetting.X, itemSetting.Y, itemSetting.Width, itemSetting.Height, itemSetting.FontSize);
             UpdateItemVisibility(itemSetting.Key, itemSetting.IsVisible);
         }
-        ClampAllItems();
+        UpdateItemText("company", _companyName);
+        UpdateItemText("header", _companyHeader);
+        UpdateItemText("address", _companyAddress);
+        UpdateItemText("phone", _companyPhone);
+        ApplyDataToItems();
+        EnsureLogoItem();
+        StrictLayout();
     }
 }
 
@@ -1414,7 +1684,7 @@ public sealed class StickerItem : ViewModelBase
     public double FontSize
     {
         get => _fontSize;
-        set => SetProperty(ref _fontSize, Math.Max(8, Math.Min(300, value)));
+        set => SetProperty(ref _fontSize, Math.Max(4, Math.Min(300, value)));
     }
 
     public bool IsSelected

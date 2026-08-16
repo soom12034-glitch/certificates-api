@@ -35,8 +35,15 @@ public sealed class AsyncRelayCommand : ICommand
         {
             await _execute(parameter);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            try
+            {
+                BlueMax.Presentation.Wpf.App.Log($"[AsyncRelayCommand] Command failed: {ex}");
+            }
+            catch
+            {
+            }
         }
         finally
         {

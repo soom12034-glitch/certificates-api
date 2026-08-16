@@ -1,5 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using BlueMax.Domain;
+using System.Data;
+using System.Data.Common;
 
 namespace BlueMax.Infrastructure;
 
@@ -106,6 +108,141 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<Rental>().HasIndex(r => r.StartDate);
         modelBuilder.Entity<Rental>().HasIndex(r => r.EndDate);
         modelBuilder.Entity<Rental>().HasIndex(r => r.Status);
+    }
+
+    // Brings an existing local SQLite database in line with the current model without
+    // losing data. Idempotent: safe to call at startup and before every save. Does
+    // nothing when a SQL Server provider is configured.
+    public void EnsureSchemaCompatible()
+    {
+        if (Database.ProviderName?.Contains("Sqlite", StringComparison.OrdinalIgnoreCase) != true)
+            return;
+
+        try
+        {
+            var connection = Database.GetDbConnection();
+            var wasClosed = connection.State != ConnectionState.Open;
+            if (wasClosed)
+                connection.Open();
+
+            try
+            {
+                // WorkOrders no longer has QuotationNumber/InvoiceNumber in the model.
+                // Databases created by an older schema still declare them NOT NULL, which
+                // makes every insert fail with "NOT NULL constraint failed: ...".
+                DropColumnsIfExist(connection, "WorkOrders", new[] { "QuotationNumber", "InvoiceNumber" });
+
+                // The Rentals table was added to the model after existing databases were
+                // created; EnsureCreated() does not add tables to an existing database.
+                if (!TableExists(connection, "Rentals"))
+                {
+                    CreateRentalsTable(connection);
+                }
+                else
+                {
+                    AddColumnIfMissing(connection, "Rentals", "DailyPrice", "TEXT NOT NULL DEFAULT '0'");
+                    AddColumnIfMissing(connection, "Rentals", "MonthlyPrice", "TEXT NOT NULL DEFAULT '0'");
+                    AddColumnIfMissing(connection, "Rentals", "DeviceValue", "TEXT NOT NULL DEFAULT '0'");
+                }
+            }
+            finally
+            {
+                if (wasClosed)
+                    connection.Close();
+            }
+        }
+        catch (Exception ex)
+        {
+            LogService.LogException(ex);
+        }
+    }
+
+    static bool TableExists(DbConnection connection, string tableName)
+    {
+        using var command = connection.CreateCommand();
+        command.CommandText = "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = '" + tableName + "'";
+        return Convert.ToInt32(command.ExecuteScalar()) > 0;
+    }
+
+    static HashSet<string> GetColumnNames(DbConnection connection, string tableName)
+    {
+        var columns = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        using var command = connection.CreateCommand();
+        command.CommandText = "PRAGMA table_info(" + tableName + ")";
+        using var reader = command.ExecuteReader();
+        while (reader.Read())
+            columns.Add(Convert.ToString(reader["name"]) ?? "");
+        return columns;
+    }
+
+    static void DropColumnsIfExist(DbConnection connection, string tableName, IEnumerable<string> columnNames)
+    {
+        if (!TableExists(connection, tableName))
+            return;
+        var existing = GetColumnNames(connection, tableName);
+        foreach (var column in columnNames)
+        {
+            if (!existing.Contains(column))
+                continue;
+            using var command = connection.CreateCommand();
+            command.CommandText = "ALTER TABLE " + tableName + " DROP COLUMN " + column;
+            command.ExecuteNonQuery();
+        }
+    }
+
+    static void AddColumnIfMissing(DbConnection connection, string tableName, string columnName, string columnDefinition)
+    {
+        if (!TableExists(connection, tableName))
+            return;
+        var existing = GetColumnNames(connection, tableName);
+        if (existing.Contains(columnName))
+            return;
+        using var command = connection.CreateCommand();
+        command.CommandText = $"ALTER TABLE {tableName} ADD COLUMN {columnName} {columnDefinition}";
+        command.ExecuteNonQuery();
+    }
+
+    static void CreateRentalsTable(DbConnection connection)
+    {
+        const string sql = @"CREATE TABLE ""Rentals"" (
+    ""Id"" INTEGER NOT NULL CONSTRAINT ""PK_Rentals"" PRIMARY KEY AUTOINCREMENT,
+    ""RentalNumber"" TEXT NOT NULL,
+    ""CustomerName"" TEXT NOT NULL,
+    ""Company"" TEXT NOT NULL,
+    ""Phone"" TEXT NOT NULL,
+    ""TaxNumber"" TEXT NOT NULL,
+    ""IdNumber"" TEXT NOT NULL,
+    ""DeviceType"" TEXT NOT NULL,
+    ""Brand"" TEXT NOT NULL,
+    ""Model"" TEXT NOT NULL,
+    ""Serial"" TEXT NOT NULL,
+    ""Serial2"" TEXT NOT NULL,
+    ""StartDate"" TEXT NOT NULL,
+    ""EndDate"" TEXT NOT NULL,
+    ""RentalType"" TEXT NOT NULL,
+    ""DailyPrice"" TEXT NOT NULL,
+    ""MonthlyPrice"" TEXT NOT NULL,
+    ""DeviceValue"" TEXT NOT NULL,
+    ""Price"" TEXT NOT NULL,
+    ""PaidAmount"" TEXT NOT NULL,
+    ""RemainingAmount"" TEXT NOT NULL,
+    ""Status"" TEXT NOT NULL,
+    ""Notes"" TEXT NOT NULL,
+    ""CreatedAt"" TEXT NOT NULL,
+    ""RowVersion"" BLOB NOT NULL
+);
+CREATE UNIQUE INDEX ""IX_Rentals_RentalNumber"" ON ""Rentals"" (""RentalNumber"");
+CREATE INDEX ""IX_Rentals_CustomerName"" ON ""Rentals"" (""CustomerName"");
+CREATE INDEX ""IX_Rentals_Phone"" ON ""Rentals"" (""Phone"");
+CREATE INDEX ""IX_Rentals_DeviceType"" ON ""Rentals"" (""DeviceType"");
+CREATE INDEX ""IX_Rentals_Brand"" ON ""Rentals"" (""Brand"");
+CREATE INDEX ""IX_Rentals_Serial"" ON ""Rentals"" (""Serial"");
+CREATE INDEX ""IX_Rentals_StartDate"" ON ""Rentals"" (""StartDate"");
+CREATE INDEX ""IX_Rentals_EndDate"" ON ""Rentals"" (""EndDate"");
+CREATE INDEX ""IX_Rentals_Status"" ON ""Rentals"" (""Status"");";
+        using var command = connection.CreateCommand();
+        command.CommandText = sql;
+        command.ExecuteNonQuery();
     }
 
     static bool CanUseSqlServer(string connectionString)

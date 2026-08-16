@@ -22,7 +22,7 @@ public class ReportTemplateStore
             "BlueMax",
             "CertSystem",
             "Templates",
-            deviceType ?? "");
+            PathSanitizer.Segment(deviceType ?? ""));
         Directory.CreateDirectory(settingsDir);
         return settingsDir;
     }
@@ -116,7 +116,8 @@ public class ReportTemplateStore
     public void Save(string deviceType, string templateName, ReportTemplateXml template)
     {
         var deviceDir = GetDeviceDir(deviceType);
-        var filePath = Path.Combine(deviceDir, $"{templateName}.json");
+        var safeName = PathSanitizer.Segment(templateName ?? "");
+        var filePath = Path.Combine(deviceDir, $"{safeName}.json");
         try
         {
             var json = JsonSerializer.Serialize(template, new JsonSerializerOptions { WriteIndented = true });

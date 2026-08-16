@@ -53,7 +53,7 @@
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
                             <TextBox Grid.Column="0" Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource ModernTextBox}"/>
-                            <TextBlock Grid.Column="1" Text="📦" FontSize="18" Margin="8,0,0,0" VerticalAlignment="Center"/>
+                            <Path Grid.Column="1" Data="{StaticResource IconBox}" Style="{StaticResource AppIconStyle}" Width="18" Height="18" Fill="{StaticResource TextSecondary}" Margin="8,0,0,0" VerticalAlignment="Center"/>
                         </Grid>
 
                         <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=BrandField}" Style="{StaticResource LabelStyle}"/>
@@ -117,7 +117,7 @@
                     </Grid.RowDefinitions>
 
                     <!-- تنبيه المخزون المنخفض -->
-                    <Border Grid.Row="0" Background="#FFFDE7E9" BorderBrush="#FFD32F2F" BorderThickness="1" CornerRadius="8" Padding="12" Margin="0,0,0,16">
+                    <Border Grid.Row="0" Background="{DynamicResource DangerSurfaceBrush}" BorderBrush="{DynamicResource DangerBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="12" Margin="0,0,0,16">
                         <Border.Style>
                             <Style TargetType="Border">
                                 <Setter Property="Visibility" Value="Collapsed" />
@@ -130,15 +130,17 @@
                         </Border.Style>
                         <Grid>
                             <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
-                            <TextBlock Foreground="#FFD32F2F" FontWeight="Bold" VerticalAlignment="Center">
+                            <Path Grid.Column="0" Data="{StaticResource IconWarning}" Style="{StaticResource AppIconStyle}" Width="20" Height="20" Fill="{DynamicResource DangerBorderBrush}" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="1" Foreground="{DynamicResource DangerBorderBrush}" FontWeight="Bold" VerticalAlignment="Center">
                                 <Run Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=LowStockAlert, Mode=OneWay}" />
                                 <Run Text="{Binding LowStockCount}" />
                                 <Run Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=LowStockAlertEnd, Mode=OneWay}" />
                             </TextBlock>
-                            <CheckBox Grid.Column="1" Content="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=ShowLowStockOnly}" IsChecked="{Binding ShowLowStockOnly}" Foreground="#FFD32F2F" FontWeight="SemiBold" VerticalAlignment="Center" Margin="8,0,0,0"/>
+                            <CheckBox Grid.Column="2" Content="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=ShowLowStockOnly}" IsChecked="{Binding ShowLowStockOnly}" Foreground="{DynamicResource DangerBorderBrush}" FontWeight="SemiBold" VerticalAlignment="Center" Margin="8,0,0,0"/>
                         </Grid>
                     </Border>
 
@@ -167,38 +169,61 @@
                     </Grid>
 
                     <!-- جدول الأصناف -->
-                    <DataGrid Grid.Row="2"
-                              ItemsSource="{Binding Items}"
-                              SelectedItem="{Binding SelectedItem, Mode=TwoWay}"
-                              Style="{StaticResource ModernDataGridStyle}"
-                              AutoGenerateColumns="False"
-                              IsReadOnly="True"
-                              CanUserAddRows="False"
-                              EnableRowVirtualization="True"
-                              EnableColumnVirtualization="True"
-                              VirtualizingPanel.IsVirtualizing="True"
-                              VirtualizingPanel.VirtualizationMode="Recycling"
-                              ScrollViewer.CanContentScroll="True">
-                        <DataGrid.RowStyle>
-                            <Style TargetType="DataGridRow">
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding IsLowStock}" Value="True">
-                                        <Setter Property="Background" Value="#FFFDE7E9" />
-                                        <Setter Property="Foreground" Value="#FFD32F2F" />
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </DataGrid.RowStyle>
-                        <DataGrid.Columns>
-                            <DataGridTextColumn Header="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=Code}" Binding="{Binding Code}" Width="*" />
-                            <DataGridTextColumn Header="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=NameField}" Binding="{Binding Name}" Width="*" />
-                            <DataGridTextColumn Header="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=BrandField}" Binding="{Binding Brand}" Width="*" />
-                            <DataGridTextColumn Header="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=CurrentQuantity}" Binding="{Binding Quantity}" Width="*" />
-                            <DataGridTextColumn Header="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=CostPrice}" Binding="{Binding CostPrice}" Width="*" />
-                            <DataGridTextColumn Header="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=SellingPrice}" Binding="{Binding SellingPrice}" Width="*" />
-                            <DataGridTextColumn Header="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=Location}" Binding="{Binding Location}" Width="*" />
-                        </DataGrid.Columns>
-                    </DataGrid>
+                    <Grid Grid.Row="2">
+                        <DataGrid ItemsSource="{Binding Items}"
+                                  SelectedItem="{Binding SelectedItem, Mode=TwoWay}"
+                                  Style="{StaticResource ModernDataGridStyle}"
+                                  AutoGenerateColumns="False"
+                                  IsReadOnly="True"
+                                  CanUserAddRows="False"
+                                  EnableRowVirtualization="True"
+                                  EnableColumnVirtualization="True"
+                                  VirtualizingPanel.IsVirtualizing="True"
+                                  VirtualizingPanel.VirtualizationMode="Recycling"
+                                  ScrollViewer.CanContentScroll="True">
+                            <DataGrid.RowStyle>
+                                <Style TargetType="DataGridRow">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsLowStock}" Value="True">
+                                            <Setter Property="Background" Value="{DynamicResource DangerSurfaceBrush}" />
+                                            <Setter Property="Foreground" Value="{DynamicResource DangerBorderBrush}" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </DataGrid.RowStyle>
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=Code}" Binding="{Binding Code}" Width="*" />
+                                <DataGridTextColumn Header="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=NameField}" Binding="{Binding Name}" Width="*" />
+                                <DataGridTextColumn Header="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=BrandField}" Binding="{Binding Brand}" Width="*" />
+                                <DataGridTextColumn Header="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=CurrentQuantity}" Binding="{Binding Quantity}" Width="*" />
+                                <DataGridTextColumn Header="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=CostPrice}" Binding="{Binding CostPrice}" Width="*" />
+                                <DataGridTextColumn Header="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=SellingPrice}" Binding="{Binding SellingPrice}" Width="*" />
+                                <DataGridTextColumn Header="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=Location}" Binding="{Binding Location}" Width="*" />
+                            </DataGrid.Columns>
+                        </DataGrid>
+
+                        <!-- Busy indicator -->
+                        <Grid Panel.ZIndex="100"
+                              Visibility="{Binding IsBusy, Converter={StaticResource BooleanToVisibilityConverter}}">
+                            <Border Style="{StaticResource BusyOverlayStyle}"/>
+                            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                                <ProgressBar IsIndeterminate="True" Width="220" HorizontalAlignment="Center"/>
+                                <TextBlock Text="{Binding BusyMessage}" Margin="0,8,0,0" HorizontalAlignment="Center" Style="{StaticResource EmptyStateTextStyle}"/>
+                            </StackPanel>
+                        </Grid>
+
+                        <!-- Empty state -->
+                        <TextBlock Panel.ZIndex="50"
+                                   Style="{StaticResource EmptyStateTextStyle}"
+                                   Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=[NoDataAvailable]}">
+                            <TextBlock.Visibility>
+                                <MultiBinding Converter="{StaticResource EmptyStateVisibilityConverter}">
+                                    <Binding Path="Items.Count"/>
+                                    <Binding Path="IsBusy"/>
+                                </MultiBinding>
+                            </TextBlock.Visibility>
+                        </TextBlock>
+                    </Grid>
                 </Grid>
             </Border>
         </Grid>

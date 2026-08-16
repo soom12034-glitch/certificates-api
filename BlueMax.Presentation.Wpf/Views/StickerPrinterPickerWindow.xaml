@@ -6,7 +6,7 @@
         Width="780" Height="500"
         WindowStartupLocation="CenterOwner"
         ResizeMode="CanResize"
-        Background="#F5F5F5"
+        Background="{DynamicResource SurfaceWindowBrush}"
         FlowDirection="RightToLeft">
     <Grid Margin="14">
         <Grid.RowDefinitions>
@@ -17,10 +17,10 @@
         </Grid.RowDefinitions>
 
         <TextBlock Grid.Row="0" Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=DetectedPrinters}"
-                   FontSize="16" FontWeight="SemiBold" Foreground="#111827" Margin="0,0,0,6"/>
+                   FontSize="16" FontWeight="SemiBold" Foreground="{DynamicResource TextStrongBrush}" Margin="0,0,0,6"/>
 
         <TextBlock Grid.Row="1" Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=ThermalHint}"
-                   FontSize="12" Foreground="#6B7280" Margin="0,0,0,10"/>
+                   FontSize="12" Foreground="{DynamicResource TextHintBrush}" Margin="0,0,0,10"/>
 
         <DataGrid Grid.Row="2"
                   ItemsSource="{Binding Printers}"
@@ -32,14 +32,14 @@
                   SelectionUnit="FullRow"
                   HeadersVisibility="Column"
                   GridLinesVisibility="Horizontal"
-                  BorderBrush="#E5E7EB" BorderThickness="1"
+                  BorderBrush="{DynamicResource BorderLightBrush}" BorderThickness="1"
                   Background="White"
                   RowHeight="30">
             <DataGrid.RowStyle>
                 <Style TargetType="DataGridRow">
                     <Style.Triggers>
                         <DataTrigger Binding="{Binding IsThermal}" Value="True">
-                            <Setter Property="Background" Value="#EFF6FF"/>
+                            <Setter Property="Background" Value="{DynamicResource SurfaceSelectedBrush}"/>
                         </DataTrigger>
                     </Style.Triggers>
                 </Style>
@@ -47,9 +47,9 @@
             <DataGrid.Columns>
                 <DataGridTextColumn Header="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=PrinterName}" Binding="{Binding Name}" Width="*"/>
                 <DataGridTextColumn Header="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=PrinterDriver}" Binding="{Binding DriverName}" Width="*"/>
-                <DataGridTextColumn Header="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=PrinterPort}" Binding="{Binding PortName}" Width="90"/>
-                <DataGridTextColumn Header="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=PrinterProtocolHeader}" Binding="{Binding Protocol}" Width="80"/>
-                <DataGridTextColumn Header="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=PrinterDpi}" Binding="{Binding Dpi}" Width="90"/>
+                <DataGridTextColumn Header="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=PrinterPort}" Binding="{Binding PortName}" Width="*" MinWidth="90"/>
+                <DataGridTextColumn Header="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=PrinterProtocolHeader}" Binding="{Binding Protocol}" Width="*" MinWidth="80"/>
+                <DataGridTextColumn Header="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=PrinterDpi}" Binding="{Binding Dpi}" Width="*" MinWidth="90"/>
             </DataGrid.Columns>
         </DataGrid>
 

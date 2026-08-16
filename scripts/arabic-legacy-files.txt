@@ -1,0 +1,14 @@
+# Files that may still contain hardcoded Arabic literals in MessageBox / Header / Content.
+# These are legacy files scheduled for migration to the translation system.
+# New files must NOT be added here; migrate the literals instead.
+# Keep this list sorted; paths are relative to the repository root.
+BlueMax.KeyGen.UI\MainWindow.xaml
+BlueMax.KeyGen.UI\MainWindow.xaml.cs
+BlueMax.Presentation.Wpf\App.xaml.cs
+BlueMax.Presentation.Wpf\MainWindow.xaml.cs
+BlueMax.Presentation.Wpf\ViewModels\ClientsViewModel.cs
+BlueMax.Presentation.Wpf\ViewModels\InventoryViewModel.cs
+BlueMax.Presentation.Wpf\ViewModels\MaintenanceViewModel.cs
+BlueMax.Presentation.Wpf\ViewModels\RentalsViewModel.cs
+BlueMax.Presentation.Wpf\ViewModels\SettingsViewModel.cs
+BlueMax.Presentation.Wpf\Views\ActivationWindow.xaml.cs

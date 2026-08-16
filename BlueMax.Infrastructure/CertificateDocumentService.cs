@@ -67,6 +67,7 @@ public class CertificateDocumentService
     {
         var qrPayload = BuildCertificateQrPayload(cert, reportSettings, verificationBaseUrl);
         var qrImagePath = TryBuildQrImagePath(qrPayload);
+        var logoImagePath = TryGetCompanyLogoPath(reportSettings);
         var isGps = string.Equals(cert.DeviceType, "GPS", StringComparison.OrdinalIgnoreCase);
         var baseSerial = cert.SerialText ?? "";
         var roverSerial = cert.SerialText2 ?? "";
@@ -113,7 +114,8 @@ public class CertificateDocumentService
             ["valid_until"] = cert.ExpiryDate.ToString("yyyy-MM-dd"),
             ["qr_image_path"] = qrImagePath,
             ["qr_code_img"] = string.IsNullOrWhiteSpace(qrImagePath) ? "" : WordTemplateEngine.QrImageMarker,
-            ["company_logo_img"] = ""
+            ["company_logo_path"] = logoImagePath,
+            ["company_logo_img"] = string.IsNullOrWhiteSpace(logoImagePath) ? "" : WordTemplateEngine.CompanyLogoMarker
         };
 
         TryWriteCertificateTrace(cert, data, qrPayload, qrImagePath);
@@ -145,6 +147,32 @@ public class CertificateDocumentService
         catch
         {
         }
+    }
+
+    private static string TryGetCompanyLogoPath(ReportDesignerSettings? reportSettings)
+    {
+        try
+        {
+            if (reportSettings == null || !reportSettings.ShowLogo)
+                return string.Empty;
+            var logoPath = (reportSettings.LogoPath ?? string.Empty).Trim();
+            if (string.IsNullOrWhiteSpace(logoPath) || !File.Exists(logoPath))
+                return string.Empty;
+            return logoPath;
+        }
+        catch
+        {
+            return string.Empty;
+        }
+    }
+
+    private static void AddCompanyLogoKeys(Dictionary<string, object> data)
+    {
+        var logoImagePath = TryGetCompanyLogoPath(LoadReportSettings());
+        data["company_logo_path"] = logoImagePath;
+        data["company_logo_img"] = string.IsNullOrWhiteSpace(logoImagePath)
+            ? ""
+            : WordTemplateEngine.CompanyLogoMarker;
     }
 
     private static string GetDataValue(Dictionary<string, object> data, string key)
@@ -327,13 +355,11 @@ public class CertificateDocumentService
         var specValue = (cert.SpecValue ?? string.Empty).Trim();
         var certNo = (cert.CertificateNumber ?? string.Empty).Trim();
 
-        var baseUrl = string.IsNullOrWhiteSpace(verificationBaseUrl)
-            ? "https://example.com/certificates"
-            : verificationBaseUrl.Trim();
+        var baseUrl = (verificationBaseUrl ?? string.Empty).Trim();
 
         // Prefer verifyUrl saved locally (after cloud upload). Fallback to baseUrl/certNo.
         var certUrl = TryLoadVerifyUrlLocal(certNo);
-        if (string.IsNullOrWhiteSpace(certUrl))
+        if (string.IsNullOrWhiteSpace(certUrl) && !string.IsNullOrWhiteSpace(baseUrl))
             certUrl = BuildCertificateUrl(baseUrl, certNo);
 
         var lines = new List<string>();
@@ -350,7 +376,8 @@ public class CertificateDocumentService
             lines.Add($"SN2:{serial2}");
         if (!string.IsNullOrWhiteSpace(specValue))
             lines.Add($"SPEC:{specValue}");
-        lines.Add($"URL:{certUrl}");
+        if (!string.IsNullOrWhiteSpace(certUrl))
+            lines.Add($"URL:{certUrl}");
 
         return string.Join(Environment.NewLine, lines.Where(x => !string.IsNullOrWhiteSpace(x)));
     }
@@ -361,7 +388,7 @@ public class CertificateDocumentService
         {
             if (string.IsNullOrWhiteSpace(certificateNumber))
                 return string.Empty;
-            var dir = Path.Combine(AppContext.BaseDirectory, "Certificates_Output");
+            var dir = AppPaths.CertificatesOutput;
             var mapPath = Path.Combine(dir, "verify_urls.json");
             if (!File.Exists(mapPath))
                 return string.Empty;
@@ -514,7 +541,7 @@ public class CertificateDocumentService
 
     private static Dictionary<string, object> BuildWorkOrderTokenData(WorkOrder workOrder, string documentNumber, string reportType)
     {
-        return new Dictionary<string, object>
+        var data = new Dictionary<string, object>
         {
             ["WorkOrderNumber"] = documentNumber,
             ["DocumentNumber"] = documentNumber,
@@ -558,9 +585,10 @@ public class CertificateDocumentService
             ["received_date"] = workOrder.ReceivedDate.ToString("yyyy-MM-dd"),
             ["updated_date"] = workOrder.UpdatedDate.ToString("yyyy-MM-dd"),
             ["report_type"] = reportType,
-            ["company_logo_img"] = "",
             ["qr_code_img"] = ""
         };
+        AddCompanyLogoKeys(data);
+        return data;
     }
 
     public async Task<string> GenerateRentalReceiptDocxAndPdfFromPathAsync(int rentalId, string templateName, string templatePath)
@@ -614,7 +642,7 @@ public class CertificateDocumentService
             table.Cell().Element(c => c.Padding(5)).Text("اسم العميل:").Bold();
             table.Cell().Element(c => c.Padding(5)).Text(rental.CustomerName);
             
-            table.Cell().Element(c => c.Padding(5)).Text("الشركة:").Bold();
+            table.Cell().Element(c => c.Padding(5)).Text("المنشأة:").Bold();
             table.Cell().Element(c => c.Padding(5)).Text(rental.Company ?? "-");
             
             table.Cell().Element(c => c.Padding(5)).Text("رقم الهاتف:").Bold();
@@ -660,7 +688,7 @@ public class CertificateDocumentService
 
     private static Dictionary<string, object> BuildRentalTokenData(Rental rental)
     {
-        return new Dictionary<string, object>
+        var data = new Dictionary<string, object>
         {
             ["RentalNumber"] = rental.RentalNumber,
             ["rental_number"] = rental.RentalNumber,
@@ -725,8 +753,9 @@ public class CertificateDocumentService
             ["issue_date"] = rental.CreatedAt.ToString("yyyy-MM-dd"),
             ["created_date"] = rental.CreatedAt.ToString("yyyy-MM-dd"),
 
-            ["company_logo_img"] = "",
             ["qr_code_img"] = ""
         };
+        AddCompanyLogoKeys(data);
+        return data;
     }
 }

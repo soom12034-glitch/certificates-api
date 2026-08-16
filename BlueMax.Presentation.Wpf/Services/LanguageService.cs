@@ -2,6 +2,7 @@ using System;
 using System.ComponentModel;
 using System.Globalization;
 using System.Windows;
+using BlueMax.Presentation.Wpf.Resources;
 
 namespace BlueMax.Presentation.Wpf.Services;
 
@@ -55,16 +56,24 @@ public class LanguageService : INotifyPropertyChanged
 
     private void UpdateFlowDirection()
     {
-        if (Application.Current.MainWindow is Window mainWindow)
+        if (Application.Current == null) return;
+        foreach (Window window in Application.Current.Windows)
         {
-            mainWindow.FlowDirection = IsRTL ? FlowDirection.RightToLeft : FlowDirection.LeftToRight;
+            ApplyFlowDirection(window);
         }
+    }
+
+    // Applies the active language direction (RTL/LTR) to a window.
+    // Called when a child window is created so direction stays consistent
+    // across all windows when the language is toggled.
+    public void ApplyFlowDirection(Window window)
+    {
+        if (window == null) return;
+        window.FlowDirection = IsRTL ? FlowDirection.RightToLeft : FlowDirection.LeftToRight;
     }
 
     public string GetString(string key)
     {
-        // This will be used with resource files
-        // For now, return the key as placeholder
-        return key;
+        return Translations.Get(key);
     }
 }

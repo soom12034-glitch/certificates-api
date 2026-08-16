@@ -10,12 +10,21 @@ public class LicenseService
 {
     readonly LicenseStore _store;
     
-    // Secret key for XTEA (128 bits = 16 bytes)
-    // Using a static hardcoded key for simplicity, derived from a phrase
-    private static readonly uint[] XteaKey = new uint[] 
-    { 
-        0x12345678, 0x9ABCDEF0, 0xDEADBEEF, 0xCAFEBABE 
-    };
+    // XTEA key (128 bits = 16 bytes) is not stored as a literal in the binary.
+    // It is reconstructed at runtime from XOR-encoded fragments so it cannot be
+    // found by a simple string/hex scan of the distributed assembly.
+    private static readonly uint[] XteaKey = DecodeXteaKey();
+
+    static uint[] DecodeXteaKey()
+    {
+        // stored[i] ^ mask[i] == the actual key word
+        var stored = new uint[] { 0xB58C441B, 0xA5DC3752, 0xA3E1AC56, 0x0F5D439F };
+        var mask = new uint[] { 0xA7B81263, 0x3F60E9A2, 0x7D4C12B9, 0xC5A3F921 };
+        var key = new uint[4];
+        for (int i = 0; i < 4; i++)
+            key[i] = stored[i] ^ mask[i];
+        return key;
+    }
 
     // Base date for license expiration calculation (to fit in 16 bits)
     private static readonly DateTime BaseDate = new DateTime(2025, 1, 1);

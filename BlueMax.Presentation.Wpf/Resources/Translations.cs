@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 
 namespace BlueMax.Presentation.Wpf.Resources;
 
@@ -15,6 +16,7 @@ public static class Translations
         public const string Inventory = "المخزون";
         public const string DeviceHistory = "سجل الأجهزة";
         public const string StickerDesigner = "مصمم الملصق";
+        public const string ReceiptStickerDesigner = "مصمم استيكر الاستلام";
         public const string Settings = "الإعدادات";
         public const string Rentals = "الإيجارات";
         public const string Search = "بحث";
@@ -65,15 +67,25 @@ public static class Translations
         public const string BottomMargin = "هامش سفلي (مم)";
         public const string RightMargin = "هامش أيمن (مم)";
         public const string LeftMargin = "هامش أيسر (مم)";
-        public const string CompanyShort = "اختصار الشركة";
-        public const string CompanyNameField = "اسم الشركة";
-        public const string CompanyPhoneField = "هاتف الشركة";
+        public const string CompanyShort = "اختصار المنشأة";
+        public const string CompanyNameField = "اسم المنشأة";
+        public const string CompanyPhoneField = "هاتف المنشأة";
+        public const string CompanyCommercialRecord = "السجل التجاري";
+        public const string CompanyTaxNumber = "الرقم الضريبي";
+        public const string CompanyNationalAddress = "العنوان الوطني";
+        public const string ContractRepresentativeName = "اسم من ينوب عن المنشأة";
+        public const string ContractRepresentativeId = "رقم هوية من ينوب عن المنشأة";
+        public const string ContractRepresentativePhone = "جوال من ينوب عن المنشأة";
+        public const string CertNumberPrefix = "بادئة رقم الشهادة";
         public const string AppIcon = "أيقونة البرنامج";
         public const string UploadIcon = "رفع أيقونة";
         public const string LibreOfficePath = "مسار LibreOffice";
         public const string Select = "تحديد";
         public const string UploadHeader = "رفع رأس";
         public const string UploadFooter = "رفع تذييل";
+        public const string CompanyLogo = "شعار المنشأة";
+        public const string UploadLogo = "رفع الشعار";
+        public const string ShowLogoInHeader = "إظهار الشعار في ترويسة الوثائق";
         public const string SaveReportSettings = "حفظ إعدادات التقرير";
         public const string WebVerification = "التحقق عبر الويب";
         public const string BaseUrl = "رابط الأساس";
@@ -116,7 +128,7 @@ public static class Translations
         public const string Issue = "الإصدار";
         public const string Expiry = "الانتهاء";
         public const string Refresh = "تحديث";
-        public const string CompanyClientName = "اسم الشركة / العميل";
+        public const string CompanyClientName = "اسم المنشأة / العميل";
         public const string CalibrationAlertTooltip = "تنبيه: يوجد أجهزة انتهت أو شارفت معايرتها على الانتهاء";
         public const string ClientsSearchSmartTooltip = "بحث ذكي بالاسم أو الهاتف";
         public const string RefreshCustomersListTooltip = "تحديث قائمة العملاء";
@@ -125,7 +137,7 @@ public static class Translations
         public const string ExpiredRental = "إيجار منتهي";
         public const string CreateNewRental = "إنشاء إيجار جديد";
         public const string NewRentalForm = "إيجار جديد";
-        public const string Company = "الشركة";
+        public const string Company = "المنشأة";
         public const string TaxNumberField = "الرقم الضريبي";
         public const string IdNumber = "رقم الهوية/الإقامة";
         public const string Serial2Optional = "الرقم التسلسلي 2 (اختياري)";
@@ -149,6 +161,40 @@ public static class Translations
         public const string CurrentlyActive = "نشط حالياً";
         public const string ExpiredStatus = "منتهية";
         public const string TotalIncome = "إجمالي الدخل";
+
+        // Rentals View - Contracts, Receipts & Alerts
+        public const string DailyPrice = "السعر اليومي";
+        public const string MonthlyPrice = "السعر الشهري";
+        public const string DeviceValue = "قيمة الجهاز (ريال سعودي)";
+        public const string RentalContract = "عقد الإيجار";
+        public const string PrintRentalContract = "طباعة عقد الإيجار";
+        public const string ReceiveReceiptTitle = "إقرار استلام جهاز";
+        public const string ReturnReceiptTitle = "إقرار إرجاع جهاز";
+        public const string ContractNumberLabel = "رقم العقد";
+        public const string RentalPeriod = "مدة الإيجار";
+        public const string FirstParty = "الطرف الأول (المؤجر)";
+        public const string SecondParty = "الطرف الثاني (المستأجر)";
+        public const string RepresentativeOf = "من ينوب عن الطرف الأول";
+        public const string RentalDaysCountLabel = "عدد الأيام";
+        public const string PaymentSummary = "ملخص الدفع";
+        public const string ContractTermsTitle = "الشروط والبنود";
+        public const string RentalContractTerms = "أولاً: سريان العقد - يسري هذا العقد ويعتبر نافذاً وملزماً للطرفين من تاريخ تحريره، ويعتبر توقيع الطرفين عليه إقراراً منهما بجميع بنوده وموافقتهما عليها التزاماً كاملاً.\nثانياً: الطرفان - الطرف الأول هو المؤجر المذكور أعلاه ويمثله في التوقيع على هذا العقد الممثل المذكور، والطرف الثاني هو المستأجر المذكور أعلاه.\nثالثاً: ملكية الجهاز - يقر الطرفان بأن الجهاز المؤجر يظل ملكاً للمؤجر ملكية خالصة طوال مدة الإيجار وبعدها، ولا يترتب على هذا العقد أي نقل أو تحويل لملكية الجهاز إلى المستأجر أو إلى أي طرف آخر.\nرابعاً: إقرار الاستلام - يقر المستأجر ويشهد على نفسه بأنه استلم الجهاز المذكور أعلاه بتاريخ بدء العقد صالحاً للعمل بحالة ممتازة وخالياً من العيوب، وقد قام بفحصه بنفسه والتأكد من سلامته ومطابقته لمواصفاته والأرقام التسلسلية المدونة في هذا العقد، ويتحمل المسؤولية الكاملة عنه منذ لحظة الاستلام.\nخامساً: الالتزام بالرد - يتعهد المستأجر بإعادة الجهاز إلى المؤجر عند انتهاء مدة الإيجار وبالحالة ذاتها التي استلمه بها (صالحاً للعمل بحالة ممتازة) مع جميع ملحقاته وفي المكان المتفق عليه، دون أي مماطلة أو تأخير.\nسادساً: مسؤولية الجهاز - يتحمل المستأجر المسؤولية الكاملة عن الجهاز من تاريخ الاستلام حتى تاريخ الإرجاع الفعلي، بما في ذلك التلف أو الفقدان أو السرقة أو الحريق أو الضياع أو أي ضرر مهما كان سببه، ويلتزم بتعويض المؤجر تعويضاً كاملاً عن كل ذلك.\nسابعاً: قيمة الجهاز - يقدر الطرفان قيمة الجهاز المذكور أعلاه بمبلغ ({0}) ريال سعودي، وتعتبر هذه القيمة أساساً ملزماً لاحتساب التعويض في حال فقدان الجهاز أو إتلافه أو عدم إعادته، ويكون للمؤجر الحق في المطالبة بها كاملة.\nثامناً: عدم التأجير من الباطن - لا يجوز للمستأجر تأجير الجهاز من الباطن أو التنازل عن هذا العقد أو نقل حيازة الجهاز إلى أي طرف آخر إلا بموافقة كتابية مسبقة من المؤجر، وتعتبر أي مخالفة لذلك مبرراً لفسخ العقد مع تحميل المستأجر جميع التبعات.\nتاسعاً: الاستخدام والموقع - يلتزم المستأجر باستخدام الجهاز وفق تعليمات التشغيل وللغرض المخصص له فقط، وعدم نقله خارج موقع الاستخدام المتفق عليه أو إخراجه من أراضي المملكة إلا بموافقة كتابية من المؤجر.\nعاشراً: عدم العبث - يلتزم المستأجر بعدم إزالة أو إتلاف الأرقام التسلسلية أو اللوحات أو الملصقات أو أي علامات دالة على ملكية المؤجر، وعدم فتح الجهاز أو تعديله أو إصلاحه إلا بواسطة المؤجر أو من يفوّضه كتابياً.\nحادي عشر: الصيانة - يتكفل المؤجر بالصيانة العامة والدورية للجهاز خلال مدة الإيجار، ويتحمل المستأجر تكاليف الصيانة الناتجة عن سوء الاستخدام أو الإهمال أو الحوادث الواقعة منه.\nثاني عشر: غرامة التأخير - في حال تأخر المستأجر عن إعادة الجهاز في الموعد المحدد دون موافقة كتابية مسبقة من المؤجر، يستحق المؤجر أجرة عن فترة التأخير تعادل المبلغ اليومي المتفق عليه عن كل يوم تأخير مع عدم الإخلال بحقه في إنهاء العقد والمطالبة بالتعويضات.\nثالث عشر: عدم سقوط الحقوق - لا يعتبر قبول المؤجر لأي دفعات متأخرة أو جزئية إبراءً للمستأجر من التزاماته ولا سقوطاً لأي حق من حقوق المؤجر، ولا يؤثر الإعفاء من شرط معين على سريان بقية الشروط.\nرابع عشر: التضامن - إذا كان المستأجر أكثر من شخص فإنهم يلتزمون بالتضامن والتكافل فيما بينهم بتنفيذ جميع التزاماتهم وفق هذا العقد.\nخامس عشر: حل النزاعات - يخضع هذا العقد وتفسيره وتنفيذه لأنظمة المملكة العربية السعودية وعلى وجه الخصوص نظام المعاملات المدنية، وتكون المحاكم المختصة في المملكة هي الجهة الوحيدة المختصة بالفصل في أي نزاع ينشأ عن هذا العقد.\nسادس عشر: الإقرار والاطلاع - يقر الطرفان بأنهما قرآ جميع بنود هذا العقد واطلعا عليها وفهماها وأقروا بصحة جميع البيانات الواردة فيه، ويحرر هذا العقد من نسختين بيد كل طرف نسخة.";
+        public const string ContractSignatureLessor = "توقيع المؤجر";
+        public const string ContractSignatureRenter = "توقيع المستأجر";
+        public const string ReceiveConfirmationText = "أقر أنا المستلم بأنني استلمت الجهاز المذكور أعلاه بحالة جيدة ومطابق لمواصفاته، وأتحمل مسؤولية حفظه واستخدامه خلال مدة الإيجار.";
+        public const string ReturnConfirmationText = "أقر أنا المستلم بأنني أرجعت الجهاز المذكور أعلاه إلى المؤجر بنفس الحالة التي استلمته بها، وتم فحصه والتأكد من سلامته.";
+        public const string RentalEndDateBeforeStart = "تاريخ الانتهاء لا يمكن أن يكون قبل تاريخ البدء";
+        public const string MissingRequiredFields = "يرجى تعبئة الحقول المطلوبة";
+        public const string ValidationTitle = "تحقق من الإدخال";
+        public const string RentalSavedSuccess = "تم حفظ الإيجار بنجاح";
+        public const string RentalUpdatedSuccess = "تم تحديث الإيجار بنجاح";
+        public const string Alert = "تنبيه";
+        public const string SelectRentalFirst = "يرجى اختيار إيجار أولاً";
+        public const string GeneratingPdf = "جارٍ إنشاء PDF...";
+        public const string ExpiringSoonRentals = "إيجارات تنتهي قريباً";
+        public const string ExpiringSoonRentalsAlert = "تنبيه: هناك {0} إيجار سينتهي خلال {1} أيام";
+        public const string HandoverReceiptButton = "إيصال استلام/إرجاع";
+
         
         // Maintenance View Fields
         public const string MaintenanceOrders = "أوامر الصيانة";
@@ -162,7 +208,7 @@ public static class Translations
         public const string Total = "الإجمالي";
         public const string ReceiptDate = "تاريخ الاستلام";
         public const string UpdateDate = "تاريخ التحديث";
-        public const string AddDeviceForSameCustomer = "➕ جهاز إضافي للعميل";
+        public const string AddDeviceForSameCustomer = "جهاز إضافي للعميل";
         public const string AddDeviceTooltip = "نسخ بيانات العميل ورقم الإيصال لسهولة إضافة جهاز جديد";
         public const string ShowPrice = "عرض سعر";
         public const string ShowPriceTooltip = "عرض سعر صيانة";
@@ -182,6 +228,62 @@ public static class Translations
         public const string PrintNow = "طباعة الآن";
         public const string ReceiptStickerExtraNote = "ملاحظة: يمكن اختيار طابعة منفصلة وضبط الإعدادات من النافذة (تكبير/إزاحة)، ولن يؤثر ذلك على أي إعدادات لطابعة استيكر الشهادات.";
         
+        // Maintenance Messages
+        public const string CloneDeviceSuccessTitle = "جهاز جديد لنفس العميل";
+        public const string CloneDeviceSuccessMessage = "تم استنساخ البيانات! قم بتغيير (الجهاز/الموديل/السيريال) حسب الحاجة، ثم اضغط على زر [حفظ] ليتم إضافته كجهاز جديد لنفس الإيصال.";
+        public const string MissingTemplateMessage = "يرجى تحديد قالب Word لهذا المستند من شاشة إدارة القوالب أولاً";
+        public const string InvalidCostMessage = "لا يمكن حفظ أمر الصيانة: قيمة التكلفة يجب ألا تكون سالبة.";
+        public const string SaveSuccessTitle = "تم الحفظ";
+        public const string SaveSuccessMessage = "تم حفظ أمر الصيانة بنجاح.";
+        public const string SaveFailedTitle = "فشل الحفظ";
+        public const string SaveFailedMessage = "تعذر حفظ أمر الصيانة: {0}";
+        public const string MissingClientNameMessage = "اسم العميل مطلوب قبل الحفظ.";
+        public const string MissingDeviceTypeMessage = "نوع الجهاز مطلوب قبل الحفظ.";
+        public const string PressEditFirstMessage = "اضغط زر [تعديل] أولاً لتعديل الأمر المحدد.";
+        public const string DeleteConfirmTitle = "تأكيد الحذف";
+        public const string DeleteConfirmMessage = "هل أنت متأكد من حذف هذا الأمر؟\nرقم الاستلام: {0}\nالعميل: {1}\nسيتم حذف الجهاز والشهادة المرتبطة نهائيًا ولا يمكن التراجع.";
+        public const string DeletedSuccessTitle = "تم الحذف";
+        public const string DeletedSuccessMessage = "تم حذف أمر الصيانة بنجاح.";
+        public const string PrintRequiresSaveTitle = "الحفظ مطلوب أولاً";
+        public const string PrintRequiresSaveMessage = "لا يمكن الطباعة بدون حفظ البيانات. يجب إدخال اسم العميل ونوع الجهاز وحفظ الأمر أولاً.";
+        public const string SaveBeforePrintPrompt = "البيانات الحالية غير محفوظة.\nهل تريد حفظها الآن ثم الطباعة؟";
+
+        // Maintenance Reports / Statistics / Financials Tab
+        public const string MaintenanceReportsTab = "التقارير والإحصائيات والمالية";
+        public const string ReportsFrom = "من تاريخ";
+        public const string ReportsTo = "إلى تاريخ";
+        public const string TotalOrders = "إجمالي الأوامر";
+        public const string OrdersInProgress = "قيد التنفيذ";
+        public const string CompletedDelivered = "مكتملة / مسلّمة";
+        public const string TotalPartsCost = "إجمالي تكلفة القطع";
+        public const string TotalLaborCost = "إجمالي تكلفة العمل";
+        public const string StatusBreakdown = "التوزيع حسب الحالة";
+        public const string MonthlyBreakdown = "التوزيع الشهري";
+        public const string ExportPdf = "تصدير PDF";
+        public const string ExportExcel = "تصدير Excel";
+        public const string MonthColumn = "الشهر";
+        public const string OrdersCount = "عدد الأوامر";
+        public const string TotalCostColumn = "إجمالي التكلفة";
+        public const string NoReportsData = "لا توجد بيانات في النطاق المحدد";
+        public const string ReportsExportFailed = "فشل تصدير التقرير";
+        public const string ReportsTitle = "تقرير الصيانة والإحصائيات والمالية";
+        public const string ReportsGeneratedOn = "تاريخ إصدار التقرير";
+        public const string ReportNumberLabel = "رقم التقرير";
+        public const string SignatureMaintenanceResponsible = "توقيع مسئول الصيانة";
+        public const string SignatureManager = "توقيع المدير";
+        public const string NameLabel = "الاسم";
+        public const string SignatureLabel = "التوقيع";
+        public const string PageLabel = "الصفحة";
+        public const string ReportDate = "تاريخ التقرير";
+        public const string ClientNameLabel = "اسم العميل";
+        public const string MaintenanceOrdersCount = "عدد أوامر الصيانة";
+        public const string CertificatesCount = "عدد الشهادات";
+        public const string TotalMaintenanceCost = "إجمالي تكلفة الصيانة";
+        public const string CertificatesHistory = "سجل الشهادات";
+        public const string SignatureCustomer = "توقيع العميل";
+        public const string SignatureDepartmentManager = "توقيع مدير القسم";
+        public const string DateColumn = "التاريخ";
+        
         // Inventory View Fields
         public const string AddEditSparePart = "إضافة / تعديل قطعة غيار";
         public const string PartCodeSKU = "كود القطعة (SKU)";
@@ -194,7 +296,7 @@ public static class Translations
         public const string SellingPrice = "سعر البيع";
         public const string PurchaseDate = "تاريخ الشراء";
         public const string Location = "الموقع";
-        public const string LowStockAlert = "⚠️ تحذير: يوجد عدد (";
+        public const string LowStockAlert = "تحذير: يوجد عدد (";
         public const string LowStockAlertEnd = ") قطع وصلت لحد النواقص ويرجى طلبها فوراً!";
         public const string ShowLowStockOnly = "عرض النواقص فقط";
         public const string SearchRefresh = "بحث / تحديث";
@@ -223,7 +325,7 @@ public static class Translations
         public const string HeaderTab = "الترويسة";
         public const string UseLogo = "استخدام الشعار";
         public const string HeaderTitle = "عنوان الترويسة";
-        public const string StickerCompanyName = "اسم الشركة";
+        public const string StickerCompanyName = "اسم المنشأة";
         public const string StickerAddress = "العنوان";
         public const string StickerPhone = "الهاتف";
         public const string HeaderFontSize = "حجم خط الترويسة";
@@ -258,7 +360,7 @@ public static class Translations
         public const string ThermalHint = "الطابعات الحرارية مميزة باللون الأزرق";
         // Sticker Designer Extra
         public const string SaveAsTemplate = "حفظ كقالب";
-        public const string ContentHeaderCompanyName = "اسم الشركة:";
+        public const string ContentHeaderCompanyName = "اسم المنشأة:";
         public const string ContentHeaderAddress = "العنوان:";
         public const string ContentHeaderPhone = "رقم الهاتف:";
         public const string LogoSettings = "إعدادات اللوجو";
@@ -274,6 +376,10 @@ public static class Translations
         public const string PositionY = "الموقع Y:";
         public const string WidthLabel = "العرض:";
         public const string HeightLabel = "الارتفاع:";
+        public const string PositionXMm = "الموقع X (مم):";
+        public const string PositionYMm = "الموقع Y (مم):";
+        public const string WidthMmLabel = "العرض (مم):";
+        public const string HeightMmLabel = "الارتفاع (مم):";
         public const string RotationLabel = "الدوران:";
         public const string FontSizeLabel = "حجم الخط:";
         public const string FontColorLabel = "لون الخط:";
@@ -288,6 +394,29 @@ public static class Translations
         public const string BindToVariableLabel = "ربط بمتغير:";
         public const string ZIndexLabel = "الترتيب (Z-Index):";
         public const string ItemVisibility = "ظهور العنصر";
+        public const string BodyFontSize = "حجم خط النصوص";
+        public const string AutoLayout = "تخطيط تلقائي";
+        public const string DeviceDataSettings = "بيانات الجهاز";
+        public const string FontSettings = "إعدادات الخط";
+        public const string ModelLabel = "الموديل:";
+        public const string CertificateNumberField = "رقم الشهادة:";
+        public const string CustomTemplatesLabel = "القوالب المخصصة";
+        public const string TestPrintSent = "تم إرسال ملصق الاختبار بنجاح.";
+        public const string TestPrintFailed = "فشل اختبار الطباعة: {0}";
+        public const string NoPrintersDetected = "لم يتم اكتشاف أي طابعة.";
+        public const string PrinterDetectionFailed = "فشل كشف الطابعات: {0}";
+        public const string LayoutSaved = "تم حفظ التخطيط.";
+        public const string LayoutResetDone = "تمت إعادة ضبط التخطيط.";
+        public const string PreviewFailed = "فشل فتح المعاينة: {0}";
+        public const string EnterTemplateName = "أدخل اسم القالب:";
+        public const string TemplateSavedMsg = "تم حفظ القالب: {0}";
+        public const string TemplateAppliedMsg = "تم تطبيق القالب: {0}";
+        public const string TemplateNameRequired = "يرجى إدخال اسم القالب.";
+        public const string SaveTemplateTitle = "حفظ كقالب";
+        public const string QrItemNotFound = "عنصر QR غير موجود في تخطيط الملصق.";
+        public const string QrGenerateFailed = "فشل توليد صورة رمز QR.";
+        public const string QrCodeSavedMsg = "تم حفظ رمز QR في: {0}";
+        public const string QrSaveError = "خطأ في توليد أو حفظ رمز QR: {0}";
 
         // Settings Access/License
         public const string CurrentStatus = "الوضع الحالي";
@@ -404,6 +533,7 @@ public static class Translations
         public const string DeviceName = "اسم الجهاز";
         public const string SerialNumber = "الرقم التسلسلي";
         public const string CalibrationDate = "تاريخ المعايرة";
+        public const string ValidUntil = "صالح حتى";
         public const string ExpiryDate = "تاريخ الانتهاء";
         public const string Status = "الحالة";
         public const string Active = "نشط";
@@ -417,6 +547,12 @@ public static class Translations
         // Cloud Upload
         public const string UploadToCloud = "رفع للسحابة";
         public const string AutoUpload = "رفع تلقائي";
+        public const string DownloadCloudBackup = "تحميل نسخة سحابية";
+        public const string UploadCloudBackup = "رفع نسخة سحابية";
+        public const string CloudConnectionStatus = "حالة الاتصال السحابي:";
+        public const string OfflineStatus = "غير متصل";
+        public const string CloudBackupList = "قائمة النسخ الاحتياطية السحابية:";
+        public const string CloudBackupUnavailable = "النسخ الاحتياطي السحابي غير متاح حالياً";
         public const string VerificationLink = "رابط التحقق";
         public const string CopyVerificationLink = "نسخ رابط التحقق";
         public const string OpenVerificationLink = "فتح رابط التحقق";
@@ -462,10 +598,10 @@ public static class Translations
         public const string License = "الترخيص";
         public const string Backup = "النسخ الاحتياطي";
         public const string CloudBackup = "النسخ الاحتياطي السحابي";
-        public const string CompanyName = "اسم الشركة";
-        public const string CompanyAddress = "عنوان الشركة";
-        public const string CompanyPhone = "هاتف الشركة";
-        public const string CompanyEmail = "بريد الشركة الإلكتروني";
+        public const string CompanyName = "اسم المنشأة";
+        public const string CompanyAddress = "عنوان المنشأة";
+        public const string CompanyPhone = "هاتف المنشأة";
+        public const string CompanyEmail = "بريد المنشأة الإلكتروني";
         public const string Logo = "الشعار";
         public const string DefaultPrinter = "الطابعة الافتراضية";
         public const string AdminPIN = "رمز المدير";
@@ -563,6 +699,7 @@ public static class Translations
         // Sticker Designer View
         public const string StickerTemplate = "قالب الملصق";
         public const string Preview = "معاينة";
+        public const string Reprint = "إعادة طباعة";
         public const string PrintSticker = "طباعة الملصق";
         public const string Customize = "تخصيص";
         public const string Text = "النص";
@@ -607,6 +744,107 @@ public static class Translations
         public const string ExpiringCertificatesAlert = "تنبيه: هناك {0} شهادة ستنتهي خلال 7 أيام";
         public const string LanguageInDevelopment = "اختيار اللغة - قيد التطوير";
         public const string ErrorOpeningHelp = "خطأ في فتح نافذة المساعدة";
+
+        // Certificates: validation messages (MessageBox)
+        public const string MsgCannotOpenPreview = "تعذر فتح المعاينة";
+        public const string MsgCannotOpenFile = "تعذر فتح الملف";
+        public const string MsgMissingData = "بيانات ناقصة";
+        public const string MsgClientNameRequired = "يرجى إدخال اسم العميل أولاً.";
+        public const string MsgModelRequired = "يرجى إدخال الموديل أولاً.";
+        public const string MsgSerialRequired = "يرجى إدخال السيريال أولاً.";
+        public const string MsgAutoLevelDeviationRequired = "يرجى إدخال قيمة معيار الانحراف (Auto Level) أولاً.";
+        public const string MsgTemplateMissingForType = "يرجى تحديد قالب Word لهذا النوع من شاشة إدارة القوالب أولاً";
+        public const string MsgTemplateMissing = "قالب غير موجود";
+        public const string MsgSaveMethod = "طريقة الحفظ";
+        public const string MsgArchiveSavePrompt = "تم تحميل هذه الشهادة من الأرشيف.\nهل تريد تعديل الشهادة الحالية (استبدالها) أم حفظها كشهادة جديدة؟\n\nنعم = تعديل الشهادة الحالية\nلا = حفظ كشهادة جديدة\nإلغاء = إلغاء العملية";
+
+        // Certificates: archive context menu
+        public const string EditRename = "تعديل / إعادة تسمية";
+        public const string Open = "فتح";
+
+        // Certificates: status bar messages
+        public const string StSelectWordTemplateFirst = "يرجى تحديد قالب Word أولاً من إدارة القوالب.";
+        public const string StFailedToCreateWordFile = "فشل إنشاء ملف Word.";
+        public const string StCloudNotConfigured = "الرفع للسحابة غير مُفعّل: يرجى ضبط CloudApiBase و CloudApiKey في ملف الإعدادات.";
+        public const string StHelpPrintFailed = "تعذر الطباعة: {0}";
+        public const string StHelpExportFailed = "تعذر التصدير: {0}";
+        public const string StUploadFailed = "تعذر رفع الشهادة: {0}";
+        public const string StUploadHttpFailed = "فشل الرفع: {0} {1}. {2}";
+        public const string StUploadedWithUrl = "تم رفع الشهادة: {0}";
+        public const string StUploadedOk = "تم رفع الشهادة بنجاح.";
+        public const string StUploadedPrefix = "تم رفع الشهادة";
+        public const string StSavedButNoWord = "تم حفظ الشهادة، لكن تعذر الرفع: يرجى تحديد قالب Word أولاً من إدارة القوالب.";
+        public const string StSavedButNoWordFile = "تم حفظ الشهادة، لكن تعذر إنشاء ملف Word للرفع.";
+        public const string StSavedButNoPdf = "تم حفظ الشهادة، لكن تعذر إنشاء ملف PDF للرفع.";
+        public const string StUpdatedUploaded = "تم تحديث الملف المرفوع بنجاح: {0}";
+        public const string StAutoUploaded = "تم رفع الشهادة تلقائياً بنجاح: {0}";
+        public const string StUpdatedUploadedPlain = "تم تحديث الملف المرفوع بنجاح.";
+        public const string StAutoUploadedPlain = "تم رفع الشهادة تلقائياً بنجاح.";
+        public const string StCreatedPdf = "تم إنشاء PDF: {0}";
+        public const string StPdfExportFailed = "تعذر تصدير PDF: {0}";
+        public const string StPreparingPreview = "جارٍ تجهيز المعاينة...";
+        public const string StSaving = "جارٍ الحفظ...";
+        public const string StUploadingCloud = "جارٍ رفع الشهادة للسحابة...";
+        public const string StDeleting = "جارٍ الحذف...";
+        public const string StPdfPreviewFailedLibreOffice = "تعذر معاينة PDF: يرجى تثبيت LibreOffice أو ضبط LIBREOFFICE_PROGRAM.";
+        public const string StBgFromTextFailed = "تعذر توليد خلفية من الملف النصي.";
+        public const string StBgImageSelected = "تم اختيار صورة خلفية للقالب.";
+        public const string StUploadTemplateFirst = "قم برفع قالب أولاً ثم اضغط معاينة.";
+        public const string StDocxPreviewCreated = "تم إنشاء معاينة DOCX.";
+        public const string StPreviewDocxOnly = "المعاينة تعتمد على قوالب Word (DOCX) فقط.";
+        public const string StPreviewErrorDetails = "حدث خطأ أثناء إنشاء المعاينة (تفاصيل في last-pdf-error.txt): {0}";
+        public const string StPreparingPdfPreview = "جاري تجهيز معاينة PDF...";
+        public const string StTemplateLoaded = "تم تحميل القالب: {0}";
+        public const string StTemplateLoadFailed = "تعذر تحميل القالب المحدد.";
+        public const string StTemplateSaveCancelled = "ألغيت حفظ القالب.";
+        public const string StTemplateSaved = "تم حفظ القالب.";
+        public const string StTemplateSaveFailed = "تعذر حفظ القالب.";
+        public const string StTemplateCreated = "تم إنشاء وحفظ قالب جديد.";
+        public const string StTemplateCreateFailed = "تعذر إنشاء القالب.";
+        public const string StFilePrepareFailed = "تعذر تجهيز الملف: {0}";
+        public const string StWordTemplateMissing = "قالب Word غير موجود. يرجى إعادة رفع القالب من إدارة القوالب.";
+        public const string StSendingSticker = "جارٍ إرسال الملصق...";
+        public const string StStickerSentWindows = "تم إرسال الملصق عبر تعريف Windows.";
+        public const string StStickerSentLayout = "تم إرسال ملصق {0} (Layout) للطابعة.";
+        public const string StStickerSendFailed = "فشل إرسال الملصق: {0}";
+        public const string StPreparingStickerPreview = "جارٍ إنشاء معاينة الملصق...";
+        public const string StStickerPreviewOpened = "تم فتح معاينة الاستيكر وفق نموذج التصميم الحقيقي.";
+        public const string StStickerPreviewFailed = "فشل المعاينة: {0}";
+        public const string StFieldsAutoDistributed = "تم توزيع الحقول تلقائيًا.";
+        public const string StFieldRemoved = "تمت إزالة الحقل من التصميم.";
+        public const string LoadingData = "جارٍ التحميل...";
+        public const string NoDataAvailable = "لا توجد بيانات";
+        public const string NoSearchResults = "لا توجد نتائج مطابقة";
+        public const string StLayoutReset = "تمت إعادة ضبط التخطيط.";
+        public const string StVerifyLinkCopied = "تم نسخ رابط التحقق.";
+        public const string StCancelled = "تم إلغاء العملية.";
+        public const string StCertificateSaved = "تم حفظ الشهادة.";
+        public const string StCertificateNumberDuplicate = "رقم الشهادة مكرر! هذا الرقم مستخدم لشهادة أخرى. تم إلغاء الحفظ.";
+        public const string StSaveFailed = "تعذر الحفظ: {0}";
+
+        // Certificates: mode labels
+        public const string ModeNew = "وضع: جديد";
+        public const string ModeEdit = "وضع: تعديل";
+
+        // Certificates: layout field names
+        public const string FieldClientName = "اسم العميل";
+        public const string FieldDate = "التاريخ";
+        public const string FieldExpiryDate = "تاريخ الانتهاء";
+        public const string FieldCertNo = "رقم الشهادة";
+        public const string FieldWorkNo = "أمر العمل";
+        public const string FieldReportType = "نوع التقرير";
+        public const string FieldPhone = "الهاتف";
+        public const string FieldDeviceType = "نوع الجهاز";
+        public const string FieldBrand = "الماركة";
+        public const string FieldModel = "الموديل";
+        public const string FieldSerial = "السيريال";
+        public const string FieldTableStart = "بداية الجدول";
+        public const string FieldGeneric = "حقل";
+
+        // Certificates: template hub document types
+        public const string DocTypeInvoice = "إيصال استلام فردى";
+        public const string DocTypeRentalReceipt = "إقرار استلام جهاز إيجار";
+        public const string BrandMiscChineseDevices = "مختلف الاجهزة الصينيه";
     }
 
     public static class English
@@ -619,6 +857,7 @@ public static class Translations
         public const string Inventory = "Inventory";
         public const string DeviceHistory = "Device History";
         public const string StickerDesigner = "Sticker Designer";
+        public const string ReceiptStickerDesigner = "Receipt Sticker Designer";
         public const string Settings = "Settings";
         public const string Rentals = "Rentals";
         public const string Search = "Search";
@@ -671,15 +910,25 @@ public static class Translations
         public const string BottomMargin = "Bottom Margin (mm)";
         public const string RightMargin = "Right Margin (mm)";
         public const string LeftMargin = "Left Margin (mm)";
-        public const string CompanyShort = "Company Short";
-        public const string CompanyNameField = "Company Name";
-        public const string CompanyPhoneField = "Company Phone";
+        public const string CompanyShort = "Establishment Short";
+        public const string CompanyNameField = "Establishment Name";
+        public const string CompanyPhoneField = "Establishment Phone";
+        public const string CompanyCommercialRecord = "Commercial Registration";
+        public const string CompanyTaxNumber = "Tax Number";
+        public const string CompanyNationalAddress = "National Address";
+        public const string ContractRepresentativeName = "Establishment Representative Name";
+        public const string ContractRepresentativeId = "Representative ID Number";
+        public const string ContractRepresentativePhone = "Representative Mobile";
+        public const string CertNumberPrefix = "Certificate Number Prefix";
         public const string AppIcon = "App Icon";
         public const string UploadIcon = "Upload Icon";
         public const string LibreOfficePath = "LibreOffice Path";
         public const string Select = "Select";
         public const string UploadHeader = "Upload Header";
         public const string UploadFooter = "Upload Footer";
+        public const string CompanyLogo = "Establishment Logo";
+        public const string UploadLogo = "Upload Logo";
+        public const string ShowLogoInHeader = "Show logo in document header";
         public const string SaveReportSettings = "Save Report Settings";
         public const string WebVerification = "Web Verification";
         public const string BaseUrl = "Base URL";
@@ -722,7 +971,7 @@ public static class Translations
         public const string Issue = "Issue";
         public const string Expiry = "Expiry";
         public const string Refresh = "Refresh";
-        public const string CompanyClientName = "Company/Client Name";
+        public const string CompanyClientName = "Establishment/Client Name";
         public const string CalibrationAlertTooltip = "Alert: Devices have expired or are about to expire";
         public const string ClientsSearchSmartTooltip = "Smart search by name or phone";
         public const string RefreshCustomersListTooltip = "Refresh customers list";
@@ -731,7 +980,7 @@ public static class Translations
         public const string ExpiredRental = "Expired Rental";
         public const string CreateNewRental = "Create New Rental";
         public const string NewRentalForm = "New Rental";
-        public const string Company = "Company";
+        public const string Company = "Establishment";
         public const string TaxNumberField = "Tax Number";
         public const string IdNumber = "ID/Residence Number";
         public const string Serial2Optional = "Serial 2 (Optional)";
@@ -755,6 +1004,40 @@ public static class Translations
         public const string CurrentlyActive = "Currently Active";
         public const string ExpiredStatus = "Expired";
         public const string TotalIncome = "Total Income";
+
+        // Rentals View - Contracts, Receipts & Alerts
+        public const string DailyPrice = "Daily Price";
+        public const string MonthlyPrice = "Monthly Price";
+        public const string DeviceValue = "Device Value (SAR)";
+        public const string RentalContract = "Rental Contract";
+        public const string PrintRentalContract = "Print Rental Contract";
+        public const string ReceiveReceiptTitle = "Device Receive Acknowledgment";
+        public const string ReturnReceiptTitle = "Device Return Acknowledgment";
+        public const string ContractNumberLabel = "Contract Number";
+        public const string RentalPeriod = "Rental Period";
+        public const string FirstParty = "First Party (Lessor)";
+        public const string SecondParty = "Second Party (Lessee)";
+        public const string RepresentativeOf = "Representative of the First Party";
+        public const string RentalDaysCountLabel = "Days Count";
+        public const string PaymentSummary = "Payment Summary";
+        public const string ContractTermsTitle = "Terms and Conditions";
+        public const string RentalContractTerms = "First: Contract Validity - This contract is effective and binding on both parties from its date of execution, and their signatures constitute full acknowledgment and acceptance of all its terms.\nSecond: The Parties - The First Party is the lessor mentioned above, represented in signing this contract by the representative stated above; the Second Party is the lessee mentioned above.\nThird: Device Ownership - Both parties acknowledge that the rented device remains the exclusive property of the lessor throughout and after the rental term, and this contract does not transfer or convey ownership of the device to the lessee or any third party.\nFourth: Receipt Acknowledgment - The lessee acknowledges and confirms that he/she received the aforementioned device on the contract start date in working condition, in excellent condition and free of defects, having personally inspected it and verified its condition and conformity with its specifications and the serial numbers stated in this contract, and bears full responsibility for it from the moment of receipt.\nFifth: Obligation to Return - The lessee undertakes to return the device to the lessor upon expiry of the rental term in the same condition in which it was received (working and in excellent condition) together with all its accessories and at the agreed location, without any delay.\nSixth: Device Liability - The lessee bears full responsibility for the device from the date of receipt until its actual return, including damage, loss, theft, fire, destruction or any harm regardless of its cause, and shall fully compensate the lessor for all of the foregoing.\nSeventh: Device Value - The parties estimate the value of the aforementioned device at ({0}) Saudi Riyals, and this value constitutes a binding basis for calculating compensation in the event of loss, damage or non-return of the device, which the lessor is entitled to claim in full.\nEighth: No Subleasing - The lessee may not sublease the device, assign this contract or transfer possession of the device to any third party without the prior written consent of the lessor, and any violation thereof is grounds for terminating the contract with all consequences borne by the lessee.\nNinth: Use and Location - The lessee shall use the device in accordance with the operating instructions and solely for its intended purpose, and shall not move it outside the agreed place of use or take it out of the Kingdom without the lessor's written consent.\nTenth: No Tampering - The lessee shall not remove or damage the serial numbers, plates, stickers or any marks indicating the lessor's ownership, and shall not open, modify or repair the device except by the lessor or by a person authorized in writing by the lessor.\nEleventh: Maintenance - The lessor shall carry out general and periodic maintenance of the device during the rental term, and the lessee shall bear the costs of maintenance resulting from misuse, negligence or accidents caused by the lessee.\nTwelfth: Late Return Penalty - If the lessee delays returning the device beyond the agreed date without the lessor's prior written consent, the lessor is entitled to a fee for the delay period equal to the agreed daily rate for each day of delay, without prejudice to the lessor's right to terminate the contract and claim damages.\nThirteenth: No Waiver - The lessor's acceptance of late or partial payments shall not constitute a release of the lessee from obligations nor a waiver of any of the lessor's rights, and waiver of one term shall not affect the enforceability of the remaining terms.\nFourteenth: Joint Liability - If the lessee consists of more than one person, they shall be jointly and severally liable for performing all their obligations under this contract.\nFifteenth: Dispute Resolution - This contract, its interpretation and performance are governed by the laws of the Kingdom of Saudi Arabia, in particular the Civil Transactions Law, and the competent courts in the Kingdom shall have exclusive jurisdiction over any dispute arising out of this contract.\nSixteenth: Acknowledgment - Both parties confirm that they have read, understood and acknowledged all the terms and the accuracy of all data contained in this contract, which is executed in two copies, one for each party.";
+        public const string ContractSignatureLessor = "Lessor Signature";
+        public const string ContractSignatureRenter = "Renter Signature";
+        public const string ReceiveConfirmationText = "I, the receiver, confirm that I have received the above-mentioned device in good condition matching its specifications, and I am responsible for its safekeeping and use during the rental period.";
+        public const string ReturnConfirmationText = "I, the receiver, confirm that I have returned the above-mentioned device to the lessor in the same condition in which I received it, and it was inspected and confirmed to be in good condition.";
+        public const string RentalEndDateBeforeStart = "End date cannot be before start date";
+        public const string MissingRequiredFields = "Please fill in the required fields";
+        public const string ValidationTitle = "Input Validation";
+        public const string RentalSavedSuccess = "Rental saved successfully";
+        public const string RentalUpdatedSuccess = "Rental updated successfully";
+        public const string Alert = "Alert";
+        public const string SelectRentalFirst = "Please select a rental first";
+        public const string GeneratingPdf = "Generating PDF...";
+        public const string ExpiringSoonRentals = "Expiring Soon";
+        public const string ExpiringSoonRentalsAlert = "Alert: {0} rentals expire within {1} days";
+        public const string HandoverReceiptButton = "Receive/Return Receipt";
+
         
         // Maintenance View Fields
         public const string MaintenanceOrders = "Maintenance Orders";
@@ -768,7 +1051,7 @@ public static class Translations
         public const string Total = "Total";
         public const string ReceiptDate = "Receipt Date";
         public const string UpdateDate = "Update Date";
-        public const string AddDeviceForSameCustomer = "➕ Add Device for Same Customer";
+        public const string AddDeviceForSameCustomer = "Add Device for Same Customer";
         public const string AddDeviceTooltip = "Copy customer data and receipt number for easy device addition";
         public const string ShowPrice = "Show Price";
         public const string ShowPriceTooltip = "Show maintenance price";
@@ -788,6 +1071,62 @@ public static class Translations
         public const string PrintNow = "Print Now";
         public const string ReceiptStickerExtraNote = "Note: You can choose a separate printer and adjust settings (scale/offset) in this window; this will not affect any settings of the certificate sticker printer.";
         
+        // Maintenance Messages
+        public const string CloneDeviceSuccessTitle = "New Device for Same Customer";
+        public const string CloneDeviceSuccessMessage = "Data has been copied! Change (device/model/serial) as needed, then press [Save] to add it as a new device on the same receipt.";
+        public const string MissingTemplateMessage = "Please specify a Word template for this document from the template management screen first";
+        public const string InvalidCostMessage = "Cannot save the work order: cost values must not be negative.";
+        public const string SaveSuccessTitle = "Saved";
+        public const string SaveSuccessMessage = "The work order was saved successfully.";
+        public const string SaveFailedTitle = "Save failed";
+        public const string SaveFailedMessage = "Failed to save the work order: {0}";
+        public const string MissingClientNameMessage = "Customer name is required before saving.";
+        public const string MissingDeviceTypeMessage = "Device type is required before saving.";
+        public const string PressEditFirstMessage = "Press [Edit] first to modify the selected order.";
+        public const string DeleteConfirmTitle = "Confirm deletion";
+        public const string DeleteConfirmMessage = "Are you sure you want to delete this order?\nReceipt No.: {0}\nCustomer: {1}\nThe device and its linked certificate will be permanently deleted. This cannot be undone.";
+        public const string DeletedSuccessTitle = "Deleted";
+        public const string DeletedSuccessMessage = "The work order was deleted successfully.";
+        public const string PrintRequiresSaveTitle = "Save required first";
+        public const string PrintRequiresSaveMessage = "You cannot print without saving the data. Enter the customer name and device type, then save the order first.";
+        public const string SaveBeforePrintPrompt = "The current data is not saved yet.\nDo you want to save it now and then print?";
+
+        // Maintenance Reports / Statistics / Financials Tab
+        public const string MaintenanceReportsTab = "Reports, Statistics & Financials";
+        public const string ReportsFrom = "From Date";
+        public const string ReportsTo = "To Date";
+        public const string TotalOrders = "Total Orders";
+        public const string OrdersInProgress = "In Progress";
+        public const string CompletedDelivered = "Completed / Delivered";
+        public const string TotalPartsCost = "Total Parts Cost";
+        public const string TotalLaborCost = "Total Labor Cost";
+        public const string StatusBreakdown = "Breakdown by Status";
+        public const string MonthlyBreakdown = "Monthly Breakdown";
+        public const string ExportPdf = "Export PDF";
+        public const string ExportExcel = "Export Excel";
+        public const string MonthColumn = "Month";
+        public const string OrdersCount = "Order Count";
+        public const string TotalCostColumn = "Total Cost";
+        public const string NoReportsData = "No data in the selected range";
+        public const string ReportsExportFailed = "Failed to export the report";
+        public const string ReportsTitle = "Maintenance Statistics & Financial Report";
+        public const string ReportsGeneratedOn = "Report Generated On";
+        public const string ReportNumberLabel = "Report Number";
+        public const string SignatureMaintenanceResponsible = "Maintenance Supervisor Signature";
+        public const string SignatureManager = "Manager Signature";
+        public const string NameLabel = "Name";
+        public const string SignatureLabel = "Signature";
+        public const string PageLabel = "Page";
+        public const string ReportDate = "Report Date";
+        public const string ClientNameLabel = "Client Name";
+        public const string MaintenanceOrdersCount = "Maintenance Orders Count";
+        public const string CertificatesCount = "Certificates Count";
+        public const string TotalMaintenanceCost = "Total Maintenance Cost";
+        public const string CertificatesHistory = "Certificates History";
+        public const string SignatureCustomer = "Customer Signature";
+        public const string SignatureDepartmentManager = "Department Manager Signature";
+        public const string DateColumn = "Date";
+        
         // Inventory View Fields
         public const string AddEditSparePart = "Add / Edit Spare Part";
         public const string PartCodeSKU = "Part Code (SKU)";
@@ -800,7 +1139,7 @@ public static class Translations
         public const string SellingPrice = "Selling Price";
         public const string PurchaseDate = "Purchase Date";
         public const string Location = "Location";
-        public const string LowStockAlert = "⚠️ Warning: (";
+        public const string LowStockAlert = "Warning: (";
         public const string LowStockAlertEnd = ") items have reached minimum threshold, please order immediately!";
         public const string ShowLowStockOnly = "Show Low Stock Only";
         public const string SearchRefresh = "Search / Refresh";
@@ -829,7 +1168,7 @@ public static class Translations
         public const string HeaderTab = "Header";
         public const string UseLogo = "Use Logo";
         public const string HeaderTitle = "Header Title";
-        public const string StickerCompanyName = "Company Name";
+        public const string StickerCompanyName = "Establishment Name";
         public const string StickerAddress = "Address";
         public const string StickerPhone = "Phone";
         public const string HeaderFontSize = "Header Font Size";
@@ -864,7 +1203,7 @@ public static class Translations
         public const string ThermalHint = "Thermal printers are highlighted in blue";
         // Sticker Designer Extra
         public const string SaveAsTemplate = "Save as Template";
-        public const string ContentHeaderCompanyName = "Company Name:";
+        public const string ContentHeaderCompanyName = "Establishment Name:";
         public const string ContentHeaderAddress = "Address:";
         public const string ContentHeaderPhone = "Phone:";
         public const string LogoSettings = "Logo Settings";
@@ -880,6 +1219,10 @@ public static class Translations
         public const string PositionY = "Position Y:";
         public const string WidthLabel = "Width:";
         public const string HeightLabel = "Height:";
+        public const string PositionXMm = "Position X (mm):";
+        public const string PositionYMm = "Position Y (mm):";
+        public const string WidthMmLabel = "Width (mm):";
+        public const string HeightMmLabel = "Height (mm):";
         public const string RotationLabel = "Rotation:";
         public const string FontSizeLabel = "Font Size:";
         public const string FontColorLabel = "Font Color:";
@@ -894,6 +1237,29 @@ public static class Translations
         public const string BindToVariableLabel = "Bind to Variable:";
         public const string ZIndexLabel = "Z-Index:";
         public const string ItemVisibility = "Item Visibility";
+        public const string BodyFontSize = "Body Font Size";
+        public const string AutoLayout = "Auto Layout";
+        public const string DeviceDataSettings = "Device Data";
+        public const string FontSettings = "Font Settings";
+        public const string ModelLabel = "Model:";
+        public const string CertificateNumberField = "Certificate No.:";
+        public const string CustomTemplatesLabel = "Custom Templates";
+        public const string TestPrintSent = "Test print sent successfully.";
+        public const string TestPrintFailed = "Test print failed: {0}";
+        public const string NoPrintersDetected = "No printers detected.";
+        public const string PrinterDetectionFailed = "Printer detection failed: {0}";
+        public const string LayoutSaved = "Layout saved.";
+        public const string LayoutResetDone = "Layout reset.";
+        public const string PreviewFailed = "Failed to open preview: {0}";
+        public const string EnterTemplateName = "Enter template name:";
+        public const string TemplateSavedMsg = "Template saved: {0}";
+        public const string TemplateAppliedMsg = "Template applied: {0}";
+        public const string TemplateNameRequired = "Please enter a template name.";
+        public const string SaveTemplateTitle = "Save as Template";
+        public const string QrItemNotFound = "QR item not found in sticker layout.";
+        public const string QrGenerateFailed = "Failed to generate QR code image.";
+        public const string QrCodeSavedMsg = "QR Code saved to {0}";
+        public const string QrSaveError = "Error generating or saving QR code: {0}";
 
         // Settings Access/License
         public const string CurrentStatus = "Current Status";
@@ -1006,6 +1372,7 @@ public static class Translations
         public const string DeviceName = "Device Name";
         public const string SerialNumber = "Serial Number";
         public const string CalibrationDate = "Calibration Date";
+        public const string ValidUntil = "Valid until";
         public const string ExpiryDate = "Expiry Date";
         public const string Status = "Status";
         public const string Active = "Active";
@@ -1071,10 +1438,21 @@ public static class Translations
         public const string License = "License";
         public const string Backup = "Backup";
         public const string CloudBackup = "Cloud Backup";
-        public const string CompanyName = "Company Name";
-        public const string CompanyAddress = "Company Address";
-        public const string CompanyPhone = "Company Phone";
-        public const string CompanyEmail = "Company Email";
+        public const string UploadToCloud = "Upload to Cloud";
+        public const string AutoUpload = "Auto Upload";
+        public const string VerificationLink = "Verification Link";
+        public const string CopyVerificationLink = "Copy Verification Link";
+        public const string OpenVerificationLink = "Open Verification Link";
+        public const string DownloadCloudBackup = "Download Cloud Backup";
+        public const string UploadCloudBackup = "Upload Cloud Backup";
+        public const string CloudConnectionStatus = "Cloud Connection Status:";
+        public const string OfflineStatus = "Offline";
+        public const string CloudBackupList = "Cloud Backup List:";
+        public const string CloudBackupUnavailable = "Cloud backup is currently unavailable";
+        public const string CompanyName = "Establishment Name";
+        public const string CompanyAddress = "Establishment Address";
+        public const string CompanyPhone = "Establishment Phone";
+        public const string CompanyEmail = "Establishment Email";
         public const string Logo = "Logo";
         public const string DefaultPrinter = "Default Printer";
         public const string AdminPIN = "Admin PIN";
@@ -1172,6 +1550,7 @@ public static class Translations
         // Sticker Designer View
         public const string StickerTemplate = "Sticker Template";
         public const string Preview = "Preview";
+        public const string Reprint = "Reprint";
         public const string PrintSticker = "Print Sticker";
         public const string Customize = "Customize";
         public const string Text = "Text";
@@ -1216,18 +1595,128 @@ public static class Translations
         public const string ExpiringCertificatesAlert = "Alert: {0} certificates expiring within 7 days";
         public const string LanguageInDevelopment = "Language selection - Under development";
         public const string ErrorOpeningHelp = "Error opening help window";
+
+        // Certificates: validation messages (MessageBox)
+        public const string MsgCannotOpenPreview = "Cannot open preview";
+        public const string MsgCannotOpenFile = "Cannot open file";
+        public const string MsgMissingData = "Missing data";
+        public const string MsgClientNameRequired = "Please enter the client name first.";
+        public const string MsgModelRequired = "Please enter the model first.";
+        public const string MsgSerialRequired = "Please enter the serial first.";
+        public const string MsgAutoLevelDeviationRequired = "Please enter the Auto Level deviation rate first.";
+        public const string MsgTemplateMissingForType = "Please select a Word template for this type from Template Management first";
+        public const string MsgTemplateMissing = "Template not found";
+        public const string MsgSaveMethod = "Save method";
+        public const string MsgArchiveSavePrompt = "This certificate was loaded from the archive.\nDo you want to edit the current certificate (replace it) or save it as a new one?\n\nYes = edit current certificate\nNo = save as new certificate\nCancel = cancel operation";
+
+        // Certificates: archive context menu
+        public const string EditRename = "Edit / Rename";
+        public const string Open = "Open";
+
+        // Certificates: status bar messages
+        public const string StSelectWordTemplateFirst = "Please select a Word template first from Template Management.";
+        public const string StFailedToCreateWordFile = "Failed to create Word file.";
+        public const string StCloudNotConfigured = "Cloud upload is disabled: configure CloudApiBase and CloudApiKey in the config file.";
+        public const string StHelpPrintFailed = "Could not print: {0}";
+        public const string StHelpExportFailed = "Could not export: {0}";
+        public const string StUploadFailed = "Could not upload certificate: {0}";
+        public const string StUploadHttpFailed = "Upload failed: {0} {1}. {2}";
+        public const string StUploadedWithUrl = "Certificate uploaded: {0}";
+        public const string StUploadedOk = "Certificate uploaded successfully.";
+        public const string StUploadedPrefix = "Certificate uploaded";
+        public const string StSavedButNoWord = "Certificate saved, but upload failed: select a Word template first from Template Management.";
+        public const string StSavedButNoWordFile = "Certificate saved, but could not create Word file for upload.";
+        public const string StSavedButNoPdf = "Certificate saved, but could not create PDF file for upload.";
+        public const string StUpdatedUploaded = "Uploaded file updated successfully: {0}";
+        public const string StAutoUploaded = "Certificate auto-uploaded successfully: {0}";
+        public const string StUpdatedUploadedPlain = "Uploaded file updated successfully.";
+        public const string StAutoUploadedPlain = "Certificate auto-uploaded successfully.";
+        public const string StCreatedPdf = "PDF created: {0}";
+        public const string StPdfExportFailed = "Could not export PDF: {0}";
+        public const string StPreparingPreview = "Preparing preview...";
+        public const string StSaving = "Saving...";
+        public const string StUploadingCloud = "Uploading certificate to cloud...";
+        public const string StDeleting = "Deleting...";
+        public const string StPdfPreviewFailedLibreOffice = "PDF preview failed: install LibreOffice or set LIBREOFFICE_PROGRAM.";
+        public const string StBgFromTextFailed = "Could not generate background from text file.";
+        public const string StBgImageSelected = "Background image selected for the template.";
+        public const string StUploadTemplateFirst = "Upload a template first, then preview.";
+        public const string StDocxPreviewCreated = "DOCX preview created.";
+        public const string StPreviewDocxOnly = "Preview supports Word (DOCX) templates only.";
+        public const string StPreviewErrorDetails = "Error while creating preview (details in last-pdf-error.txt): {0}";
+        public const string StPreparingPdfPreview = "Preparing PDF preview...";
+        public const string StTemplateLoaded = "Template loaded: {0}";
+        public const string StTemplateLoadFailed = "Could not load the selected template.";
+        public const string StTemplateSaveCancelled = "Template save cancelled.";
+        public const string StTemplateSaved = "Template saved.";
+        public const string StTemplateSaveFailed = "Could not save template.";
+        public const string StTemplateCreated = "New template created and saved.";
+        public const string StTemplateCreateFailed = "Could not create template.";
+        public const string StFilePrepareFailed = "Could not prepare file: {0}";
+        public const string StWordTemplateMissing = "Word template is missing. Re-upload it from Template Management.";
+        public const string StSendingSticker = "Sending sticker...";
+        public const string StStickerSentWindows = "Sticker sent via Windows driver.";
+        public const string StStickerSentLayout = "Sticker {0} (Layout) sent to printer.";
+        public const string StStickerSendFailed = "Failed to send sticker: {0}";
+        public const string StPreparingStickerPreview = "Creating sticker preview...";
+        public const string StStickerPreviewOpened = "Sticker preview opened using the real design.";
+        public const string StStickerPreviewFailed = "Preview failed: {0}";
+        public const string StFieldsAutoDistributed = "Fields distributed automatically.";
+        public const string StFieldRemoved = "Field removed from design.";
+        public const string LoadingData = "Loading...";
+        public const string NoDataAvailable = "No data available";
+        public const string NoSearchResults = "No matching results";
+        public const string StLayoutReset = "Layout reset.";
+        public const string StVerifyLinkCopied = "Verification link copied.";
+        public const string StCancelled = "Operation cancelled.";
+        public const string StCertificateSaved = "Certificate saved.";
+        public const string StCertificateNumberDuplicate = "Certificate number is a duplicate! This number is already used by another certificate. Save cancelled.";
+        public const string StSaveFailed = "Could not save: {0}";
+
+        // Certificates: mode labels
+        public const string ModeNew = "Mode: New";
+        public const string ModeEdit = "Mode: Edit";
+
+        // Certificates: layout field names
+        public const string FieldClientName = "Client Name";
+        public const string FieldDate = "Date";
+        public const string FieldExpiryDate = "Expiry Date";
+        public const string FieldCertNo = "Certificate No.";
+        public const string FieldWorkNo = "Work Order";
+        public const string FieldReportType = "Report Type";
+        public const string FieldPhone = "Phone";
+        public const string FieldDeviceType = "Device Type";
+        public const string FieldBrand = "Brand";
+        public const string FieldModel = "Model";
+        public const string FieldSerial = "Serial";
+        public const string FieldTableStart = "Table Start";
+        public const string FieldGeneric = "Field";
+
+        // Certificates: template hub document types
+        public const string DocTypeInvoice = "Individual Receipt";
+        public const string DocTypeRentalReceipt = "Rental Device Receipt";
+        public const string BrandMiscChineseDevices = "Various Chinese devices";
+    }
+
+    private static readonly Dictionary<string, string> ArabicTable = LoadTable(typeof(Arabic));
+    private static readonly Dictionary<string, string> EnglishTable = LoadTable(typeof(English));
+
+    public static IReadOnlyCollection<string> Keys => ArabicTable.Keys;
+
+    private static Dictionary<string, string> LoadTable(Type type)
+    {
+        var table = new Dictionary<string, string>(StringComparer.Ordinal);
+        foreach (var field in type.GetFields(BindingFlags.Public | BindingFlags.Static))
+        {
+            if (field.IsLiteral && field.FieldType == typeof(string))
+                table[field.Name] = (string)field.GetValue(null)!;
+        }
+        return table;
     }
 
     public static string Get(string key)
     {
-        var language = Services.LanguageService.Instance.CurrentCulture.TwoLetterISOLanguageName;
-        var translations = language == "ar" ? typeof(Arabic) : typeof(English);
-        
-        var field = translations.GetField(key);
-        if (field != null)
-        {
-            return field.GetValue(null)?.ToString() ?? key;
-        }
-        return key;
+        var table = Services.LanguageService.Instance.IsRTL ? ArabicTable : EnglishTable;
+        return table.TryGetValue(key, out var value) ? value : key;
     }
 }

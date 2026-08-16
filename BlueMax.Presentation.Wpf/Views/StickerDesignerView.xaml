@@ -9,7 +9,7 @@
              xmlns:viewmodels="clr-namespace:BlueMax.Presentation.Wpf.ViewModels"
              mc:Ignorable="d"
              d:DataContext="{d:DesignInstance Type=vm:StickerDesignerViewModel}"
-             Background="#F5F5F5"
+             Background="{DynamicResource SurfaceWindowBrush}"
              FlowDirection="RightToLeft">
     <UserControl.Resources>
         <converters:BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
@@ -30,15 +30,17 @@
                        Foreground="{Binding FontColor, Converter={StaticResource StringToBrushConverter}}"
                        TextWrapping="Wrap"
                        TextAlignment="{Binding TextAlignment}"
+                       HorizontalAlignment="Stretch"
+                       VerticalAlignment="Stretch"
                        FontWeight="{Binding IsBold, Converter={StaticResource BooleanToFontWeightConverter}}"
                        FontStyle="{Binding IsItalic, Converter={StaticResource BooleanToFontStyleConverter}}"
                        TextDecorations="{Binding IsUnderline, Converter={StaticResource BooleanToTextDecorationsConverter}}"/>
         </DataTemplate>
         <DataTemplate x:Key="LineTemplate">
-            <Rectangle Width="{Binding Width}" Height="{Binding Height}" Fill="Black"/>
+            <Rectangle Width="{Binding Width}" Height="{Binding Height}" Fill="{Binding FontColor, Converter={StaticResource StringToBrushConverter}}"/>
         </DataTemplate>
         <DataTemplate x:Key="QrTemplate">
-            <Image Source="{Binding DisplayText, Converter={StaticResource QrCodeConverter}}"
+            <Image Source="{Binding DisplayText, Converter={StaticResource QrCodeConverter}, IsAsync=True}"
                    Stretch="Uniform"
                    Margin="2"
                    SnapsToDevicePixels="True"/>
@@ -65,8 +67,8 @@
             </Setter>
             <Style.Triggers>
                 <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="BorderBrush" Value="#16A085"/>
-                    <Setter Property="Background" Value="#1016A085"/>
+                    <Setter Property="BorderBrush" Value="{DynamicResource SuccessTealBrush}"/>
+                    <Setter Property="Background" Value="{DynamicResource OverlaySuccessBrush}"/>
                 </Trigger>
             </Style.Triggers>
         </Style>
@@ -76,22 +78,44 @@
             <Setter Property="Height" Value="10"/>
             <Style.Triggers>
                 <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="Background" Value="#16A085"/>
+                    <Setter Property="Background" Value="{DynamicResource SuccessTealBrush}"/>
                 </Trigger>
             </Style.Triggers>
         </Style>
     </UserControl.Resources>
 
     <Grid>
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="0.3*"/>
-            <ColumnDefinition Width="*"/>
-        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header / Back button -->
+        <Grid Grid.Row="0" Margin="0,0,0,10">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Style="{StaticResource CapsuleButtonStyle}"
+                        Command="{Binding DataContext.ShowMaintenanceCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                        Visibility="{Binding IsReceipt, Converter={StaticResource BooleanToVisibilityConverter}}">
+                    <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=Back}" />
+                </Button>
+                <Button Style="{StaticResource CapsuleButtonStyle}" Margin="8,0,0,0"
+                        Command="{Binding DataContext.ShowCertificatesCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                        Visibility="{Binding IsCertificate, Converter={StaticResource BooleanToVisibilityConverter}}">
+                    <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=Back}" />
+                </Button>
+            </StackPanel>
+        </Grid>
+
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="0.9*"/>
+                <ColumnDefinition Width="1.1*"/>
+            </Grid.ColumnDefinitions>
 
         <!-- Left Panel - Preview -->
-        <Border Grid.Column="0" Margin="0,0,8,0" BorderBrush="#E5E7EB" BorderThickness="1" CornerRadius="12" Background="White">
+        <Border Grid.Column="0" Margin="0,0,8,0" BorderBrush="{DynamicResource BorderLightBrush}" BorderThickness="1" CornerRadius="12" Background="White">
             <Border.Effect>
-                <DropShadowEffect Color="#000000" Opacity="0.05" BlurRadius="10" ShadowDepth="0"/>
+                <DropShadowEffect Color="{DynamicResource Black}" Opacity="0.05" BlurRadius="10" ShadowDepth="0"/>
             </Border.Effect>
             <Grid>
                 <Grid.RowDefinitions>
@@ -99,26 +123,26 @@
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
 
-                <Border Grid.Row="0" Background="#F9FAFB" Padding="20,16" BorderBrush="#E5E7EB" BorderThickness="0,0,0,1">
+                <Border Grid.Row="0" Background="{DynamicResource SurfaceSoftBrush}" Padding="20,16" BorderBrush="{DynamicResource BorderLightBrush}" BorderThickness="0,0,0,1">
                     <Grid>
                         <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=StickerPreview}" 
-                                   FontSize="18" FontWeight="SemiBold" Foreground="#111827" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                                   FontSize="18" FontWeight="SemiBold" Foreground="{DynamicResource TextStrongBrush}" HorizontalAlignment="Left" VerticalAlignment="Center"/>
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
                             <Button Content="-" Command="{Binding ZoomOutCommand}" Width="36" Height="36" Margin="0,0,8,0" 
-                                    Background="White" BorderBrush="#D1D5DB" BorderThickness="1" FontSize="18" FontWeight="Bold" Cursor="Hand"/>
+                                    Background="White" BorderBrush="{DynamicResource BorderMediumBrush}" BorderThickness="1" FontSize="18" FontWeight="Bold" Cursor="Hand"/>
                             <TextBlock Text="{Binding Zoom, StringFormat={}{0:F1}x}" FontSize="14" FontWeight="SemiBold" 
-                                       Foreground="#374151" VerticalAlignment="Center" Margin="0,0,8,0" Width="40" TextAlignment="Center"/>
+                                       Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,0,8,0" Width="40" TextAlignment="Center"/>
                             <Button Content="+" Command="{Binding ZoomInCommand}" Width="36" Height="36" 
-                                    Background="White" BorderBrush="#D1D5DB" BorderThickness="1" FontSize="18" FontWeight="Bold" Cursor="Hand"/>
+                                    Background="White" BorderBrush="{DynamicResource BorderMediumBrush}" BorderThickness="1" FontSize="18" FontWeight="Bold" Cursor="Hand"/>
                         </StackPanel>
                     </Grid>
                 </Border>
 
-                <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" 
-                              Padding="24" Background="#F3F4F6">
-                    <Border Background="White" BorderBrush="#E5E7EB" BorderThickness="1" CornerRadius="8" Padding="16">
+                <ScrollViewer x:Name="PreviewScroller" Grid.Row="1" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" 
+                              Padding="24" Background="{DynamicResource SurfaceAltBrush}">
+                    <Border Background="White" BorderBrush="{DynamicResource BorderLightBrush}" BorderThickness="1" CornerRadius="8" Padding="16">
                         <Border.Effect>
-                            <DropShadowEffect Color="#000000" Opacity="0.08" BlurRadius="15" ShadowDepth="0"/>
+                            <DropShadowEffect Color="{DynamicResource Black}" Opacity="0.08" BlurRadius="15" ShadowDepth="0"/>
                         </Border.Effect>
                         <Grid Width="{Binding CanvasWidthPx}" Height="{Binding CanvasHeightPx}" Background="White" FlowDirection="LeftToRight">
                             <Grid.LayoutTransform>
@@ -143,20 +167,38 @@
                                     <Style TargetType="ContentPresenter">
                                         <Setter Property="Canvas.Left" Value="{Binding X}"/>
                                         <Setter Property="Canvas.Top" Value="{Binding Y}"/>
+                                        <Setter Property="Panel.ZIndex" Value="{Binding ZIndex}"/>
                                         <Setter Property="Visibility" Value="{Binding IsVisible, Converter={StaticResource BooleanToVisibilityConverter}}"/>
                                     </Style>
                                 </ItemsControl.ItemContainerStyle>
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate>
-                                        <Grid Width="{Binding Width}" Height="{Binding Height}" FlowDirection="RightToLeft">
+                                        <Grid Width="{Binding Width}" Height="{Binding Height}" FlowDirection="LeftToRight">
+                                            <Border BorderThickness="1">
+                                                <Border.Style>
+                                                    <Style TargetType="Border">
+                                                        <Setter Property="BorderBrush" Value="Transparent"/>
+                                                        <Setter Property="Background" Value="Transparent"/>
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                                                                <Setter Property="BorderBrush" Value="{DynamicResource SuccessTealBrush}"/>
+                                                                <Setter Property="Background" Value="{DynamicResource OverlaySuccessBrush}"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Border.Style>
+                                            </Border>
                                             <Thumb Name="DragThumb" Style="{StaticResource DesignerThumbStyle}"
                                                    Tag="{Binding}"
                                                    Cursor="SizeAll"
                                                    IsHitTestVisible="{Binding DataContext.EditEnabled, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
                                                    DragDelta="StickerThumb_OnDragDelta"
-                                                   MouseLeftButtonDown="StickerThumb_OnMouseLeftButtonDown"/>
+                                                   MouseLeftButtonDown="StickerThumb_OnMouseLeftButtonDown"
+                                                   MouseEnter="StickerThumb_OnMouseEnter"/>
                                             <ContentControl Content="{Binding}"
                                                             ContentTemplateSelector="{StaticResource StickerTemplateSelector}"
+                                                            HorizontalContentAlignment="Stretch"
+                                                            VerticalContentAlignment="Stretch"
                                                             IsHitTestVisible="False"/>
                                             <Thumb Name="ResizeThumb"
                                                    Style="{StaticResource ResizeThumbStyle}"
@@ -164,7 +206,8 @@
                                                    VerticalAlignment="Bottom"
                                                    Tag="{Binding}"
                                                    IsHitTestVisible="{Binding DataContext.EditEnabled, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
-                                                   DragDelta="StickerResizeThumb_OnDragDelta"/>
+                                                   DragDelta="StickerResizeThumb_OnDragDelta"
+                                                   MouseEnter="StickerThumb_OnMouseEnter"/>
                                         </Grid>
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>
@@ -176,9 +219,9 @@
         </Border>
 
         <!-- Right Panel - Tools -->
-        <Border Grid.Column="1" Background="White" Margin="8,0,0,0" BorderBrush="#E5E7EB" BorderThickness="1" CornerRadius="12">
+        <Border Grid.Column="1" Background="White" Margin="8,0,0,0" BorderBrush="{DynamicResource BorderLightBrush}" BorderThickness="1" CornerRadius="12">
             <Border.Effect>
-                <DropShadowEffect Color="#000000" Opacity="0.05" BlurRadius="10" ShadowDepth="0"/>
+                <DropShadowEffect Color="{DynamicResource Black}" Opacity="0.05" BlurRadius="10" ShadowDepth="0"/>
             </Border.Effect>
             <Grid>
                 <Grid.RowDefinitions>
@@ -187,7 +230,7 @@
                 </Grid.RowDefinitions>
                 
                 <TextBlock Grid.Row="0" Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=StickerDesigner}" 
-                           FontSize="22" FontWeight="SemiBold" Foreground="#111827" Margin="20,20,20,16"/>
+                           FontSize="22" FontWeight="SemiBold" Foreground="{DynamicResource TextStrongBrush}" Margin="20,20,20,16"/>
                 
                 <TabControl Grid.Row="1" BorderThickness="0" Padding="8,0,8,8" Background="Transparent">
                     <TabControl.Resources>
@@ -197,7 +240,7 @@
                             <Setter Property="FontWeight" Value="SemiBold"/>
                             <Setter Property="Background" Value="Transparent"/>
                             <Setter Property="BorderBrush" Value="Transparent"/>
-                            <Setter Property="Foreground" Value="#6B7280"/>
+                            <Setter Property="Foreground" Value="{DynamicResource TextHintBrush}"/>
                             <Setter Property="Template">
                                 <Setter.Value>
                                     <ControlTemplate TargetType="TabItem">
@@ -209,11 +252,11 @@
                                         </Border>
                                         <ControlTemplate.Triggers>
                                             <Trigger Property="IsSelected" Value="True">
-                                                <Setter Property="Foreground" Value="#3B82F6"/>
-                                                <Setter Property="Background" Value="#EFF6FF"/>
+                                                <Setter Property="Foreground" Value="{DynamicResource InfoBlueBrush}"/>
+                                                <Setter Property="Background" Value="{DynamicResource SurfaceSelectedBrush}"/>
                                             </Trigger>
                                             <Trigger Property="IsMouseOver" Value="True">
-                                                <Setter Property="Foreground" Value="#3B82F6"/>
+                                                <Setter Property="Foreground" Value="{DynamicResource InfoBlueBrush}"/>
                                             </Trigger>
                                         </ControlTemplate.Triggers>
                                     </ControlTemplate>
@@ -227,59 +270,85 @@
                         <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="12">
                             <StackPanel>
                                 <!-- Page Settings -->
-                                <Border Background="#F9FAFB" BorderBrush="#E5E7EB" BorderThickness="1" CornerRadius="8" Padding="16" Margin="0,0,0,16">
+                                <Border Background="{DynamicResource SurfaceSoftBrush}" BorderBrush="{DynamicResource BorderLightBrush}" BorderThickness="1" CornerRadius="8" Padding="16" Margin="0,0,0,16">
                                     <StackPanel>
                                         <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=PageTab}" 
-                                                   FontSize="14" FontWeight="SemiBold" Foreground="#374151" Margin="0,0,0,12"/>
+                                                   FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,12"/>
                                         <Grid Margin="0,0,0,8">
                                             <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=WidthMm}" 
-                                                       FontSize="12" Foreground="#6B7280" VerticalAlignment="Center"/>
+                                                       FontSize="12" Foreground="{DynamicResource TextHintBrush}" VerticalAlignment="Center"/>
                                             <TextBox Text="{Binding StickerWidthMm, UpdateSourceTrigger=LostFocus}" 
-                                                     Height="36" Padding="10,8" FontSize="13" BorderBrush="#D1D5DB" BorderThickness="1" 
+                                                     Height="36" Padding="10,8" FontSize="13" BorderBrush="{DynamicResource BorderMediumBrush}" BorderThickness="1" 
                                                      Background="White" HorizontalAlignment="Right" Width="120"/>
                                         </Grid>
                                         <Grid>
                                             <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=HeightMm}" 
-                                                       FontSize="12" Foreground="#6B7280" VerticalAlignment="Center"/>
+                                                       FontSize="12" Foreground="{DynamicResource TextHintBrush}" VerticalAlignment="Center"/>
                                             <TextBox Text="{Binding StickerHeightMm, UpdateSourceTrigger=LostFocus}" 
-                                                     Height="36" Padding="10,8" FontSize="13" BorderBrush="#D1D5DB" BorderThickness="1" 
+                                                     Height="36" Padding="10,8" FontSize="13" BorderBrush="{DynamicResource BorderMediumBrush}" BorderThickness="1" 
                                                      Background="White" HorizontalAlignment="Right" Width="120"/>
                                         </Grid>
-                                        <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=SaveAsTemplate}" FontSize="12" Foreground="#6B7280" Margin="0,8,0,4"/>
+                                        <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=SaveAsTemplate}" FontSize="12" Foreground="{DynamicResource TextHintBrush}" Margin="0,8,0,4"/>
                                         <WrapPanel>
                                             <Button Content="50x30" Command="{Binding ApplySizeTemplateCommand}" CommandParameter="50x30" 
-                                                    Background="#E5E7EB" Foreground="#374151" Height="32" FontSize="12" 
+                                                    Background="{DynamicResource BorderLightBrush}" Foreground="{DynamicResource TextSecondaryBrush}" Height="32" FontSize="12" 
                                                     BorderThickness="0" Margin="0,0,8,8" Padding="12,0" Cursor="Hand"/>
                                             <Button Content="60x40" Command="{Binding ApplySizeTemplateCommand}" CommandParameter="60x40" 
-                                                    Background="#E5E7EB" Foreground="#374151" Height="32" FontSize="12" 
+                                                    Background="{DynamicResource BorderLightBrush}" Foreground="{DynamicResource TextSecondaryBrush}" Height="32" FontSize="12" 
                                                     BorderThickness="0" Margin="0,0,8,8" Padding="12,0" Cursor="Hand"/>
                                             <Button Content="70x50" Command="{Binding ApplySizeTemplateCommand}" CommandParameter="70x50" 
-                                                    Background="#E5E7EB" Foreground="#374151" Height="32" FontSize="12" 
+                                                    Background="{DynamicResource BorderLightBrush}" Foreground="{DynamicResource TextSecondaryBrush}" Height="32" FontSize="12" 
                                                     BorderThickness="0" Margin="0,0,8,8" Padding="12,0" Cursor="Hand"/>
                                             <Button Content="80x60" Command="{Binding ApplySizeTemplateCommand}" CommandParameter="80x60" 
-                                                    Background="#E5E7EB" Foreground="#374151" Height="32" FontSize="12" 
+                                                    Background="{DynamicResource BorderLightBrush}" Foreground="{DynamicResource TextSecondaryBrush}" Height="32" FontSize="12" 
                                                     BorderThickness="0" Margin="0,0,8,8" Padding="12,0" Cursor="Hand"/>
                                             <Button Content="100x70" Command="{Binding ApplySizeTemplateCommand}" CommandParameter="100x70" 
-                                                    Background="#E5E7EB" Foreground="#374151" Height="32" FontSize="12" 
+                                                    Background="{DynamicResource BorderLightBrush}" Foreground="{DynamicResource TextSecondaryBrush}" Height="32" FontSize="12" 
                                                     BorderThickness="0" Margin="0,0,8,8" Padding="12,0" Cursor="Hand"/>
                                             <Button Content="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=SaveAsTemplate}" Command="{Binding SaveCustomTemplateCommand}" 
-                                                    Background="#10B981" Foreground="White" Height="32" FontSize="12" 
+                                                    Background="{DynamicResource SuccessBrush}" Foreground="White" Height="32" FontSize="12" 
                                                     BorderThickness="0" Padding="12,0" Cursor="Hand"/>
                                         </WrapPanel>
+                                        <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=CustomTemplatesLabel}" 
+                                                   FontSize="12" Foreground="{DynamicResource TextHintBrush}" Margin="0,8,0,4"/>
+                                        <ListBox ItemsSource="{Binding CustomTemplates}" Height="110" FontSize="13" Margin="0,0,0,4"
+                                                 ScrollViewer.VerticalScrollBarVisibility="Auto">
+                                            <ListBox.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Grid>
+                                                        <TextBlock Text="{Binding Name}" Foreground="{DynamicResource TextStrongBrush}" VerticalAlignment="Center"/>
+                                                        <TextBlock Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12" HorizontalAlignment="Right" VerticalAlignment="Center">
+                                                            <Run Text="{Binding WidthMm, StringFormat={}{0:0.#}}"/>
+                                                            <Run Text="x"/>
+                                                            <Run Text="{Binding HeightMm, StringFormat={}{0:0.#}}"/>
+                                                            <Run Text=" مم"/>
+                                                        </TextBlock>
+                                                    </Grid>
+                                                </DataTemplate>
+                                            </ListBox.ItemTemplate>
+                                            <ListBox.ItemContainerStyle>
+                                                <Style TargetType="ListBoxItem">
+                                                    <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                                                    <Setter Property="Padding" Value="6,4"/>
+                                                    <EventSetter Event="MouseLeftButtonUp" Handler="CustomTemplateItem_MouseLeftButtonUp"/>
+                                                </Style>
+                                            </ListBox.ItemContainerStyle>
+                                        </ListBox>
+                                        <TextBlock Text="{Binding StatusMessage}" FontSize="12" Foreground="{DynamicResource SuccessTealBrush}" TextWrapping="Wrap"/>
                                     </StackPanel>
                                 </Border>
 
                                 <!-- Grid Settings -->
-                                <Border Background="#F9FAFB" BorderBrush="#E5E7EB" BorderThickness="1" CornerRadius="8" Padding="16" Margin="0,0,0,16">
+                                <Border Background="{DynamicResource SurfaceSoftBrush}" BorderBrush="{DynamicResource BorderLightBrush}" BorderThickness="1" CornerRadius="8" Padding="16" Margin="0,0,0,16">
                                     <StackPanel>
                                         <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=GridTab}" 
-                                                   FontSize="14" FontWeight="SemiBold" Foreground="#374151" Margin="0,0,0,12"/>
+                                                   FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,12"/>
                                         <CheckBox Content="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=ShowPreviewGrid}" 
-                                                  IsChecked="{Binding ShowGrid}" Margin="0,6" FontSize="13" Foreground="#4B5563"/>
+                                                  IsChecked="{Binding ShowGrid}" Margin="0,6" FontSize="13" Foreground="{DynamicResource TextMutedBrush}"/>
                                         <CheckBox Content="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=SnapToGrid}" 
-                                                  IsChecked="{Binding SnapToGrid}" Margin="0,6" FontSize="13" Foreground="#4B5563"/>
+                                                  IsChecked="{Binding SnapToGrid}" Margin="0,6" FontSize="13" Foreground="{DynamicResource TextMutedBrush}"/>
                                         <CheckBox Content="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=EnableMouseEditing}" 
-                                                  IsChecked="{Binding EditEnabled}" Margin="0,6" FontSize="13" Foreground="#4B5563"/>
+                                                  IsChecked="{Binding EditEnabled}" Margin="0,6" FontSize="13" Foreground="{DynamicResource TextMutedBrush}"/>
                                     </StackPanel>
                                 </Border>
                             </StackPanel>
@@ -291,64 +360,118 @@
                         <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="12">
                             <StackPanel>
                                 <!-- Header Settings -->
-                                <Border Background="#F9FAFB" BorderBrush="#E5E7EB" BorderThickness="1" CornerRadius="8" Padding="16" Margin="0,0,0,16">
+                                <Border Background="{DynamicResource SurfaceSoftBrush}" BorderBrush="{DynamicResource BorderLightBrush}" BorderThickness="1" CornerRadius="8" Padding="16" Margin="0,0,0,16">
                                     <StackPanel>
                                         <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=HeaderTab}" 
-                                                   FontSize="14" FontWeight="SemiBold" Foreground="#374151" Margin="0,0,0,12"/>
+                                                   FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,12"/>
                                         <CheckBox Content="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=UseLogo}" 
-                                                  IsChecked="{Binding UseLogo}" Margin="0,6" FontSize="13" Foreground="#4B5563"/>
+                                                  IsChecked="{Binding UseLogo}" Margin="0,6" FontSize="13" Foreground="{DynamicResource TextMutedBrush}"/>
                                         <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=HeaderTitle}" 
-                                                   FontSize="12" Foreground="#6B7280" Margin="0,8,0,4"/>
-                                        <TextBox Text="{Binding CompanyHeader}" Height="36" Padding="10,8" FontSize="13" 
-                                                 BorderBrush="#D1D5DB" BorderThickness="1" Background="White" Margin="0,0,0,8"/>
+                                                   FontSize="12" Foreground="{DynamicResource TextHintBrush}" Margin="0,8,0,4"/>
+                                        <TextBox Text="{Binding CompanyHeader}" Height="36" Padding="10,8" FontSize="13" IsReadOnly="True"
+                                                 BorderBrush="{DynamicResource BorderMediumBrush}" BorderThickness="1" Background="White" Margin="0,0,0,8"/>
                                         <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=StickerCompanyName}" 
-                                                   FontSize="12" Foreground="#6B7280" Margin="0,0,0,4"/>
-                                        <TextBox Text="{Binding CompanyName}" Height="36" Padding="10,8" FontSize="13" 
-                                                 BorderBrush="#D1D5DB" BorderThickness="1" Background="White"/>
+                                                   FontSize="12" Foreground="{DynamicResource TextHintBrush}" Margin="0,0,0,4"/>
+                                        <TextBox Text="{Binding CompanyName}" Height="36" Padding="10,8" FontSize="13" IsReadOnly="True"
+                                                 BorderBrush="{DynamicResource BorderMediumBrush}" BorderThickness="1" Background="White"/>
                                     </StackPanel>
                                 </Border>
 
-                                <!-- Content Settings -->
-                                <Border Background="#F9FAFB" BorderBrush="#E5E7EB" BorderThickness="1" CornerRadius="8" Padding="16" Margin="0,0,0,16">
+                                <!-- Device Data Settings -->
+                                <Border Background="{DynamicResource SurfaceSoftBrush}" BorderBrush="{DynamicResource BorderLightBrush}" BorderThickness="1" CornerRadius="8" Padding="16" Margin="0,0,0,16">
+                                    <StackPanel>
+                                        <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=DeviceDataSettings}" 
+                                                   FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,12"/>
+                                        <!-- Receipt-only fields (maintenance receipt sticker designer) -->
+                                        <StackPanel Visibility="{Binding IsReceipt, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                            <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=ReceiptNumber}" FontSize="12" Foreground="{DynamicResource TextHintBrush}" Margin="0,0,0,4"/>
+                                            <TextBox Text="{Binding ReceiptNumber}" Height="36" Padding="10,8" FontSize="13" 
+                                                     BorderBrush="{DynamicResource BorderMediumBrush}" BorderThickness="1" Background="White" Margin="0,0,0,8"/>
+                                            <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=ClientNameField}" FontSize="12" Foreground="{DynamicResource TextHintBrush}" Margin="0,0,0,4"/>
+                                            <TextBox Text="{Binding CustomerName}" Height="36" Padding="10,8" FontSize="13" 
+                                                     BorderBrush="{DynamicResource BorderMediumBrush}" BorderThickness="1" Background="White" Margin="0,0,0,8"/>
+                                            <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=ReceiptDate}" FontSize="12" Foreground="{DynamicResource TextHintBrush}" Margin="0,0,0,4"/>
+                                            <DatePicker SelectedDate="{Binding ReceiptDate, UpdateSourceTrigger=PropertyChanged}" Height="36" FontSize="13" 
+                                                        BorderBrush="{DynamicResource BorderMediumBrush}" BorderThickness="1" Background="White" Margin="0,0,0,8"/>
+                                        </StackPanel>
+                                        <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=Brand}" FontSize="12" Foreground="{DynamicResource TextHintBrush}" Margin="0,0,0,4"/>
+                                        <TextBox Text="{Binding Brand}" Height="36" Padding="10,8" FontSize="13" 
+                                                 BorderBrush="{DynamicResource BorderMediumBrush}" BorderThickness="1" Background="White" Margin="0,0,0,8"/>
+                                        <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=ModelLabel}" FontSize="12" Foreground="{DynamicResource TextHintBrush}" Margin="0,0,0,4"/>
+                                        <TextBox Text="{Binding Model}" Height="36" Padding="10,8" FontSize="13" 
+                                                 BorderBrush="{DynamicResource BorderMediumBrush}" BorderThickness="1" Background="White" Margin="0,0,0,8"/>
+                                        <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=Serial}" FontSize="12" Foreground="{DynamicResource TextHintBrush}" Margin="0,0,0,4"/>
+                                        <TextBox Text="{Binding Serial}" Height="36" Padding="10,8" FontSize="13" 
+                                                 BorderBrush="{DynamicResource BorderMediumBrush}" BorderThickness="1" Background="White" Margin="0,0,0,8"/>
+                                        <!-- Certificate-only fields (certificate sticker designer) -->
+                                        <StackPanel Visibility="{Binding IsCertificate, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                            <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=CertificateNumberField}" FontSize="12" Foreground="{DynamicResource TextHintBrush}" Margin="0,0,0,4"/>
+                                            <TextBox Text="{Binding CertificateNumber}" Height="36" Padding="10,8" FontSize="13" 
+                                                     BorderBrush="{DynamicResource BorderMediumBrush}" BorderThickness="1" Background="White" Margin="0,0,0,8"/>
+                                            <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=CalibrationDate}" FontSize="12" Foreground="{DynamicResource TextHintBrush}" Margin="0,0,0,4"/>
+                                            <DatePicker SelectedDate="{Binding CalDate, UpdateSourceTrigger=PropertyChanged}" Height="36" FontSize="13" 
+                                                        BorderBrush="{DynamicResource BorderMediumBrush}" BorderThickness="1" Background="White" Margin="0,0,0,8"/>
+                                            <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=ExpiryDate}" FontSize="12" Foreground="{DynamicResource TextHintBrush}" Margin="0,0,0,4"/>
+                                            <DatePicker SelectedDate="{Binding ExpDate, UpdateSourceTrigger=PropertyChanged}" Height="36" FontSize="13" 
+                                                        BorderBrush="{DynamicResource BorderMediumBrush}" BorderThickness="1" Background="White"/>
+                                        </StackPanel>
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- Footer Settings -->
+                                <Border Background="{DynamicResource SurfaceSoftBrush}" BorderBrush="{DynamicResource BorderLightBrush}" BorderThickness="1" CornerRadius="8" Padding="16" Margin="0,0,0,16">
                                     <StackPanel>
                                         <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=ContentTab}" 
-                                                   FontSize="14" FontWeight="SemiBold" Foreground="#374151" Margin="0,0,0,12"/>
-                                        <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=ContentHeaderCompanyName}" FontSize="12" Foreground="#6B7280" Margin="0,0,0,4"/>
-                                        <TextBox Text="{Binding CompanyName}" Height="36" Padding="10,8" FontSize="13" 
-                                                 BorderBrush="#D1D5DB" BorderThickness="1" Background="White" Margin="0,0,0,8"/>
-                                        <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=ContentHeaderAddress}" FontSize="12" Foreground="#6B7280" Margin="0,0,0,4"/>
-                                        <TextBox Text="{Binding CompanyAddress}" Height="36" Padding="10,8" FontSize="13" 
-                                                 BorderBrush="#D1D5DB" BorderThickness="1" Background="White" Margin="0,0,0,8"/>
-                                        <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=ContentHeaderPhone}" FontSize="12" Foreground="#6B7280" Margin="0,0,0,4"/>
-                                        <TextBox Text="{Binding CompanyPhone}" Height="36" Padding="10,8" FontSize="13" 
-                                                 BorderBrush="#D1D5DB" BorderThickness="1" Background="White"/>
+                                                   FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,12"/>
+                                        <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=ContentHeaderAddress}" FontSize="12" Foreground="{DynamicResource TextHintBrush}" Margin="0,0,0,4"/>
+                                        <TextBox Text="{Binding CompanyAddress}" Height="36" Padding="10,8" FontSize="13" IsReadOnly="True"
+                                                 BorderBrush="{DynamicResource BorderMediumBrush}" BorderThickness="1" Background="White" Margin="0,0,0,8"/>
+                                        <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=ContentHeaderPhone}" FontSize="12" Foreground="{DynamicResource TextHintBrush}" Margin="0,0,0,4"/>
+                                        <TextBox Text="{Binding CompanyPhone}" Height="36" Padding="10,8" FontSize="13" IsReadOnly="True"
+                                                 BorderBrush="{DynamicResource BorderMediumBrush}" BorderThickness="1" Background="White"/>
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- Font Settings -->
+                                <Border Background="{DynamicResource SurfaceSoftBrush}" BorderBrush="{DynamicResource BorderLightBrush}" BorderThickness="1" CornerRadius="8" Padding="16" Margin="0,0,0,16">
+                                    <StackPanel>
+                                        <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=FontSettings}" 
+                                                   FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,12"/>
+                                        <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=HeaderFontSize}" FontSize="12" Foreground="{DynamicResource TextHintBrush}" Margin="0,0,0,4"/>
+                                        <TextBox Text="{Binding HeaderFontSize, UpdateSourceTrigger=PropertyChanged}" Height="36" Padding="10,8" FontSize="13" 
+                                                 BorderBrush="{DynamicResource BorderMediumBrush}" BorderThickness="1" Background="White" Margin="0,0,0,8"/>
+                                        <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=BodyFontSize}" FontSize="12" Foreground="{DynamicResource TextHintBrush}" Margin="0,0,0,4"/>
+                                        <TextBox Text="{Binding BodyFontSize, UpdateSourceTrigger=PropertyChanged}" Height="36" Padding="10,8" FontSize="13" 
+                                                 BorderBrush="{DynamicResource BorderMediumBrush}" BorderThickness="1" Background="White"/>
                                     </StackPanel>
                                 </Border>
 
                                 <!-- Logo Settings -->
-                                <Border Background="#F9FAFB" BorderBrush="#E5E7EB" BorderThickness="1" CornerRadius="8" Padding="16" Margin="0,0,0,16">
+                                <Border Background="{DynamicResource SurfaceSoftBrush}" BorderBrush="{DynamicResource BorderLightBrush}" BorderThickness="1" CornerRadius="8" Padding="16" Margin="0,0,0,16">
                                     <StackPanel>
                                         <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=LogoSettings}" 
-                                                   FontSize="14" FontWeight="SemiBold" Foreground="#374151" Margin="0,0,0,12"/>
+                                                   FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,12"/>
                                         <CheckBox Content="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=UseLogoText}" 
-                                                  IsChecked="{Binding UseLogo}" Margin="0,6" FontSize="13" Foreground="#4B5563"/>
+                                                  IsChecked="{Binding UseLogo}" Margin="0,6" FontSize="13" Foreground="{DynamicResource TextMutedBrush}"/>
                                         <Button Content="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=PickLogo}" 
                                                 Command="{Binding PickLogoCommand}" 
-                                                Background="#3B82F6" Foreground="White" Height="36" FontSize="13" FontWeight="SemiBold" 
+                                                Background="{DynamicResource InfoBlueBrush}" Foreground="White" Height="36" FontSize="13" FontWeight="SemiBold" 
                                                 BorderThickness="0" Margin="0,8,0,0" Cursor="Hand"/>
                                     </StackPanel>
                                 </Border>
 
-                                <!-- QR Settings -->
-                                <Border Background="#F9FAFB" BorderBrush="#E5E7EB" BorderThickness="1" CornerRadius="8" Padding="16" Margin="0,0,0,16">
+                                <!-- QR Settings (certificate sticker only; the receipt sticker has no QR) -->
+                                <Border Background="{DynamicResource SurfaceSoftBrush}" BorderBrush="{DynamicResource BorderLightBrush}" BorderThickness="1" CornerRadius="8" Padding="16" Margin="0,0,0,16"
+                                        Visibility="{Binding IsCertificate, Converter={StaticResource BooleanToVisibilityConverter}}">
                                     <StackPanel>
                                         <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=QrLabel}" 
-                                                   FontSize="14" FontWeight="SemiBold" Foreground="#374151" Margin="0,0,0,12"/>
+                                                   FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,12"/>
                                         <CheckBox Content="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=ShowQrInPreview}" 
-                                                  IsChecked="{Binding ShowQr}" Margin="0,6" FontSize="13" Foreground="#4B5563"/>
-                                        <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=QrSizeMm}" FontSize="12" Foreground="#6B7280" Margin="0,8,0,4"/>
+                                                  IsChecked="{Binding ShowQr}" Margin="0,6" FontSize="13" Foreground="{DynamicResource TextMutedBrush}"/>
+                                        <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=QrSizeMm}" FontSize="12" Foreground="{DynamicResource TextHintBrush}" Margin="0,8,0,4"/>
                                         <TextBox Text="{Binding QrSizeMm, UpdateSourceTrigger=PropertyChanged}" Height="36" Padding="10,8" FontSize="13" 
-                                                 BorderBrush="#D1D5DB" BorderThickness="1" Background="White" Margin="0,0,0,8"/>
+                                                 BorderBrush="{DynamicResource BorderMediumBrush}" BorderThickness="1" Background="White" Margin="0,0,0,8"/>
+                                        <TextBlock Text="{Binding QrDebugInfo}" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" Margin="0,4,0,0"/>
                                     </StackPanel>
                                 </Border>
                             </StackPanel>
@@ -360,56 +483,56 @@
                         <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="12">
                             <StackPanel>
                                 <!-- Add Items -->
-                                <Border Background="#F9FAFB" BorderBrush="#E5E7EB" BorderThickness="1" CornerRadius="8" Padding="16" Margin="0,0,0,16">
+                                <Border Background="{DynamicResource SurfaceSoftBrush}" BorderBrush="{DynamicResource BorderLightBrush}" BorderThickness="1" CornerRadius="8" Padding="16" Margin="0,0,0,16">
                                     <StackPanel>
                                         <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=AddItems}" 
-                                                   FontSize="14" FontWeight="SemiBold" Foreground="#374151" Margin="0,0,0,12"/>
+                                                   FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,12"/>
                                         <StackPanel Orientation="Horizontal">
                                             <Button Content="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=AddTextItem}" Command="{Binding AddTextItemCommand}" 
-                                                    Background="#3B82F6" Foreground="White" Height="36" FontSize="13" FontWeight="SemiBold" 
+                                                    Background="{DynamicResource InfoBlueBrush}" Foreground="White" Height="36" FontSize="13" FontWeight="SemiBold" 
                                                     BorderThickness="0" Margin="0,0,8,0" Padding="16,0" Cursor="Hand"/>
                                             <Button Content="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=AddLineItem}" Command="{Binding AddLineItemCommand}" 
-                                                    Background="#6B7280" Foreground="White" Height="36" FontSize="13" FontWeight="SemiBold" 
+                                                    Background="{DynamicResource TextHintBrush}" Foreground="White" Height="36" FontSize="13" FontWeight="SemiBold" 
                                                     BorderThickness="0" Margin="0,0,8,0" Padding="16,0" Cursor="Hand"/>
                                             <Button Content="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=DeleteSelectedItem}" Command="{Binding DeleteSelectedItemCommand}" 
-                                                    Background="#EF4444" Foreground="White" Height="36" FontSize="13" FontWeight="SemiBold" 
+                                                    Background="{DynamicResource DangerBrush}" Foreground="White" Height="36" FontSize="13" FontWeight="SemiBold" 
                                                     BorderThickness="0" Padding="16,0" Cursor="Hand"/>
                                         </StackPanel>
                                     </StackPanel>
                                 </Border>
 
                                 <!-- Selected Item Properties -->
-                                <Border Background="#F9FAFB" BorderBrush="#E5E7EB" BorderThickness="1" CornerRadius="8" Padding="16" Margin="0,0,0,16">
+                                <Border Background="{DynamicResource SurfaceSoftBrush}" BorderBrush="{DynamicResource BorderLightBrush}" BorderThickness="1" CornerRadius="8" Padding="16" Margin="0,0,0,16">
                                     <ScrollViewer VerticalScrollBarVisibility="Auto" MaxHeight="400">
                                         <StackPanel>
                                             <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=SelectedItemProperties}" 
-                                                       FontSize="14" FontWeight="SemiBold" Foreground="#374151" Margin="0,0,0,12"/>
-                                            <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=ItemNameLabel}" FontSize="12" Foreground="#6B7280" Margin="0,0,0,4"/>
-                                            <TextBlock Text="{Binding SelectedStickerItem.Key}" FontSize="13" FontWeight="SemiBold" Foreground="#111827" Margin="0,0,0,8"/>
+                                                       FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,12"/>
+                                            <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=ItemNameLabel}" FontSize="12" Foreground="{DynamicResource TextHintBrush}" Margin="0,0,0,4"/>
+                                            <TextBlock Text="{Binding SelectedStickerItem.Key}" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource TextStrongBrush}" Margin="0,0,0,8"/>
                                             
-                                            <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=PositionX}" FontSize="12" Foreground="#6B7280" Margin="0,0,0,4"/>
-                                            <TextBox Text="{Binding SelectedStickerItem.X, UpdateSourceTrigger=PropertyChanged}" Height="32" Padding="8" FontSize="12" 
-                                                     BorderBrush="#D1D5DB" BorderThickness="1" Background="White" Margin="0,0,0,8"/>
+                                            <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=PositionXMm}" FontSize="12" Foreground="{DynamicResource TextHintBrush}" Margin="0,0,0,4"/>
+                                            <TextBox Text="{Binding SelectedItemXMm, UpdateSourceTrigger=PropertyChanged}" Height="32" Padding="8" FontSize="12" 
+                                                     BorderBrush="{DynamicResource BorderMediumBrush}" BorderThickness="1" Background="White" Margin="0,0,0,8"/>
                                             
-                                            <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=PositionY}" FontSize="12" Foreground="#6B7280" Margin="0,0,0,4"/>
-                                            <TextBox Text="{Binding SelectedStickerItem.Y, UpdateSourceTrigger=PropertyChanged}" Height="32" Padding="8" FontSize="12" 
-                                                     BorderBrush="#D1D5DB" BorderThickness="1" Background="White" Margin="0,0,0,8"/>
+                                            <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=PositionYMm}" FontSize="12" Foreground="{DynamicResource TextHintBrush}" Margin="0,0,0,4"/>
+                                            <TextBox Text="{Binding SelectedItemYMm, UpdateSourceTrigger=PropertyChanged}" Height="32" Padding="8" FontSize="12" 
+                                                     BorderBrush="{DynamicResource BorderMediumBrush}" BorderThickness="1" Background="White" Margin="0,0,0,8"/>
                                             
-                                            <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=WidthLabel}" FontSize="12" Foreground="#6B7280" Margin="0,0,0,4"/>
-                                            <TextBox Text="{Binding SelectedStickerItem.Width, UpdateSourceTrigger=PropertyChanged}" Height="32" Padding="8" FontSize="12" 
-                                                     BorderBrush="#D1D5DB" BorderThickness="1" Background="White" Margin="0,0,0,8"/>
+                                            <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=WidthMmLabel}" FontSize="12" Foreground="{DynamicResource TextHintBrush}" Margin="0,0,0,4"/>
+                                            <TextBox Text="{Binding SelectedItemWidthMm, UpdateSourceTrigger=PropertyChanged}" Height="32" Padding="8" FontSize="12" 
+                                                     BorderBrush="{DynamicResource BorderMediumBrush}" BorderThickness="1" Background="White" Margin="0,0,0,8"/>
                                             
-                                            <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=HeightLabel}" FontSize="12" Foreground="#6B7280" Margin="0,0,0,4"/>
-                                            <TextBox Text="{Binding SelectedStickerItem.Height, UpdateSourceTrigger=PropertyChanged}" Height="32" Padding="8" FontSize="12" 
-                                                     BorderBrush="#D1D5DB" BorderThickness="1" Background="White" Margin="0,0,0,8"/>
+                                            <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=HeightMmLabel}" FontSize="12" Foreground="{DynamicResource TextHintBrush}" Margin="0,0,0,4"/>
+                                            <TextBox Text="{Binding SelectedItemHeightMm, UpdateSourceTrigger=PropertyChanged}" Height="32" Padding="8" FontSize="12" 
+                                                     BorderBrush="{DynamicResource BorderMediumBrush}" BorderThickness="1" Background="White" Margin="0,0,0,8"/>
                                             
-                                            <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=FontSizeLabel}" FontSize="12" Foreground="#6B7280" Margin="0,0,0,4"/>
+                                            <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=FontSizeLabel}" FontSize="12" Foreground="{DynamicResource TextHintBrush}" Margin="0,0,0,4"/>
                                             <TextBox Text="{Binding SelectedStickerItem.FontSize, UpdateSourceTrigger=PropertyChanged}" Height="32" Padding="8" FontSize="12" 
-                                                     BorderBrush="#D1D5DB" BorderThickness="1" Background="White" Margin="0,0,0,8"/>
+                                                     BorderBrush="{DynamicResource BorderMediumBrush}" BorderThickness="1" Background="White" Margin="0,0,0,8"/>
                                             
-                                            <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=FontFamilyLabel}" FontSize="12" Foreground="#6B7280" Margin="0,0,0,4"/>
+                                            <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=FontFamilyLabel}" FontSize="12" Foreground="{DynamicResource TextHintBrush}" Margin="0,0,0,4"/>
                                             <ComboBox SelectedValue="{Binding SelectedStickerItem.FontFamily, UpdateSourceTrigger=PropertyChanged}" SelectedValuePath="Content" Height="32" Padding="8" FontSize="12" 
-                                                      BorderBrush="#D1D5DB" BorderThickness="1" Background="White" Margin="0,0,0,8">
+                                                      BorderBrush="{DynamicResource BorderMediumBrush}" BorderThickness="1" Background="White" Margin="0,0,0,8">
                                                 <ComboBoxItem Content="Segoe UI"/>
                                                 <ComboBoxItem Content="Arial"/>
                                                 <ComboBoxItem Content="Times New Roman"/>
@@ -417,35 +540,35 @@
                                                 <ComboBoxItem Content="Cairo"/>
                                             </ComboBox>
                                             
-                                            <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=FontColorLabel}" FontSize="12" Foreground="#6B7280" Margin="0,0,0,4"/>
+                                            <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=FontColorLabel}" FontSize="12" Foreground="{DynamicResource TextHintBrush}" Margin="0,0,0,4"/>
                                             <Grid Margin="0,0,0,8">
                                                 <TextBox Text="{Binding SelectedStickerItem.FontColor, UpdateSourceTrigger=PropertyChanged}" Height="32" Padding="8,8,40,8" FontSize="12" 
-                                                         BorderBrush="#D1D5DB" BorderThickness="1" Background="White"/>
+                                                         BorderBrush="{DynamicResource BorderMediumBrush}" BorderThickness="1" Background="White"/>
                                                 <Border Width="24" Height="24" Margin="0,0,8,0" HorizontalAlignment="Right" VerticalAlignment="Center" 
-                                                        BorderBrush="#D1D5DB" BorderThickness="1" Background="{Binding SelectedStickerItem.FontColor, Converter={StaticResource StringToBrushConverter}}"/>
+                                                        BorderBrush="{DynamicResource BorderMediumBrush}" BorderThickness="1" Background="{Binding SelectedStickerItem.FontColor, Converter={StaticResource StringToBrushConverter}}"/>
                                             </Grid>
                                             
-                                            <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=AlignmentLabel}" FontSize="12" Foreground="#6B7280" Margin="0,0,0,4"/>
+                                            <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=AlignmentLabel}" FontSize="12" Foreground="{DynamicResource TextHintBrush}" Margin="0,0,0,4"/>
                                             <ComboBox SelectedValue="{Binding SelectedStickerItem.TextAlignment, UpdateSourceTrigger=PropertyChanged}" SelectedValuePath="Content" Height="32" Padding="8" FontSize="12" 
-                                                      BorderBrush="#D1D5DB" BorderThickness="1" Background="White" Margin="0,0,0,8">
+                                                      BorderBrush="{DynamicResource BorderMediumBrush}" BorderThickness="1" Background="White" Margin="0,0,0,8">
                                                 <ComboBoxItem Content="Right"/>
                                                 <ComboBoxItem Content="Center"/>
                                                 <ComboBoxItem Content="Left"/>
                                             </ComboBox>
                                             
                                             <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
-                                                <CheckBox Content="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=BoldLabel}" IsChecked="{Binding SelectedStickerItem.IsBold}" Margin="0,0,12,0" FontSize="13" Foreground="#4B5563"/>
-                                                <CheckBox Content="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=ItalicLabel}" IsChecked="{Binding SelectedStickerItem.IsItalic}" Margin="0,0,12,0" FontSize="13" Foreground="#4B5563"/>
-                                                <CheckBox Content="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=UnderlineLabel}" IsChecked="{Binding SelectedStickerItem.IsUnderline}" FontSize="13" Foreground="#4B5563"/>
+                                                <CheckBox Content="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=BoldLabel}" IsChecked="{Binding SelectedStickerItem.IsBold}" Margin="0,0,12,0" FontSize="13" Foreground="{DynamicResource TextMutedBrush}"/>
+                                                <CheckBox Content="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=ItalicLabel}" IsChecked="{Binding SelectedStickerItem.IsItalic}" Margin="0,0,12,0" FontSize="13" Foreground="{DynamicResource TextMutedBrush}"/>
+                                                <CheckBox Content="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=UnderlineLabel}" IsChecked="{Binding SelectedStickerItem.IsUnderline}" FontSize="13" Foreground="{DynamicResource TextMutedBrush}"/>
                                             </StackPanel>
                                             
-                                            <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=TextLabel}" FontSize="12" Foreground="#6B7280" Margin="0,0,0,4"/>
+                                            <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=TextLabel}" FontSize="12" Foreground="{DynamicResource TextHintBrush}" Margin="0,0,0,4"/>
                                             <TextBox Text="{Binding SelectedStickerItem.DisplayText, UpdateSourceTrigger=PropertyChanged}" Height="32" Padding="8" FontSize="12" 
-                                                     BorderBrush="#D1D5DB" BorderThickness="1" Background="White" Margin="0,0,0,8"/>
+                                                     BorderBrush="{DynamicResource BorderMediumBrush}" BorderThickness="1" Background="White" Margin="0,0,0,8"/>
                                             
-                                            <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=BindToVariableLabel}" FontSize="12" Foreground="#6B7280" Margin="0,0,0,4"/>
+                                            <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=BindToVariableLabel}" FontSize="12" Foreground="{DynamicResource TextHintBrush}" Margin="0,0,0,4"/>
                                             <ComboBox SelectedValue="{Binding SelectedStickerItem.VariableBinding, UpdateSourceTrigger=PropertyChanged}" SelectedValuePath="Content" Height="32" Padding="8" FontSize="12" 
-                                                      BorderBrush="#D1D5DB" BorderThickness="1" Background="White" Margin="0,0,0,8">
+                                                      BorderBrush="{DynamicResource BorderMediumBrush}" BorderThickness="1" Background="White" Margin="0,0,0,8">
                                                 <ComboBoxItem Content=""/>
                                                 <ComboBoxItem Content="brand"/>
                                                 <ComboBoxItem Content="model"/>
@@ -453,13 +576,17 @@
                                                 <ComboBoxItem Content="cert_value"/>
                                                 <ComboBoxItem Content="cal_value"/>
                                                 <ComboBoxItem Content="exp_value"/>
+                                                <ComboBoxItem Content="receipt_number"/>
+                                                <ComboBoxItem Content="customer"/>
+                                                <ComboBoxItem Content="device_type"/>
+                                                <ComboBoxItem Content="date"/>
                                             </ComboBox>
                                             
-                                            <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=ZIndexLabel}" FontSize="12" Foreground="#6B7280" Margin="0,0,0,4"/>
+                                            <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=ZIndexLabel}" FontSize="12" Foreground="{DynamicResource TextHintBrush}" Margin="0,0,0,4"/>
                                             <TextBox Text="{Binding SelectedStickerItem.ZIndex, UpdateSourceTrigger=PropertyChanged}" Height="32" Padding="8" FontSize="12" 
-                                                     BorderBrush="#D1D5DB" BorderThickness="1" Background="White" Margin="0,0,0,8"/>
+                                                     BorderBrush="{DynamicResource BorderMediumBrush}" BorderThickness="1" Background="White" Margin="0,0,0,8"/>
                                             
-                                            <CheckBox Content="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=ItemVisibility}" IsChecked="{Binding SelectedStickerItem.IsVisible}" Margin="0,6" FontSize="13" Foreground="#4B5563"/>
+                                            <CheckBox Content="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=ItemVisibility}" IsChecked="{Binding SelectedStickerItem.IsVisible}" Margin="0,6" FontSize="13" Foreground="{DynamicResource TextMutedBrush}"/>
                                         </StackPanel>
                                     </ScrollViewer>
                                 </Border>
@@ -473,7 +600,7 @@
                             <StackPanel>
                                 <Button Content="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=SaveLayout}" 
                                         Command="{Binding SaveLayoutCommand}" 
-                                        Background="#10B981" Foreground="White" Height="44" FontSize="14" FontWeight="SemiBold" 
+                                        Background="{DynamicResource SuccessBrush}" Foreground="White" Height="44" FontSize="14" FontWeight="SemiBold" 
                                         BorderThickness="0" Margin="0,0,0,8" Cursor="Hand">
                                     <Button.Style>
                                         <Style TargetType="Button">
@@ -490,7 +617,7 @@
                                             </Setter>
                                             <Style.Triggers>
                                                 <Trigger Property="IsMouseOver" Value="True">
-                                                    <Setter Property="Background" Value="#059669"/>
+                                                    <Setter Property="Background" Value="{DynamicResource SuccessHoverBrush}"/>
                                                 </Trigger>
                                             </Style.Triggers>
                                         </Style>
@@ -498,7 +625,7 @@
                                 </Button>
                                 <Button Content="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=ResetLayout}" 
                                         Command="{Binding ResetLayoutCommand}" 
-                                        Background="#6B7280" Foreground="White" Height="44" FontSize="14" FontWeight="SemiBold" 
+                                        Background="{DynamicResource TextHintBrush}" Foreground="White" Height="44" FontSize="14" FontWeight="SemiBold" 
                                         BorderThickness="0" Margin="0,0,0,8" Cursor="Hand">
                                     <Button.Style>
                                         <Style TargetType="Button">
@@ -515,7 +642,7 @@
                                             </Setter>
                                             <Style.Triggers>
                                                 <Trigger Property="IsMouseOver" Value="True">
-                                                    <Setter Property="Background" Value="#4B5563"/>
+                                                    <Setter Property="Background" Value="{DynamicResource TextMutedBrush}"/>
                                                 </Trigger>
                                             </Style.Triggers>
                                         </Style>
@@ -523,7 +650,7 @@
                                 </Button>
                                 <Button Content="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=TestPrint}" 
                                         Command="{Binding TestPrintCommand}" 
-                                        Background="#F59E0B" Foreground="White" Height="44" FontSize="14" FontWeight="SemiBold" 
+                                        Background="{DynamicResource WarningBrush}" Foreground="White" Height="44" FontSize="14" FontWeight="SemiBold" 
                                         BorderThickness="0" Cursor="Hand">
                                     <Button.Style>
                                         <Style TargetType="Button">
@@ -540,7 +667,7 @@
                                             </Setter>
                                             <Style.Triggers>
                                                 <Trigger Property="IsMouseOver" Value="True">
-                                                    <Setter Property="Background" Value="#D97706"/>
+                                                    <Setter Property="Background" Value="{DynamicResource WarningHoverBrush}"/>
                                                 </Trigger>
                                             </Style.Triggers>
                                         </Style>
@@ -548,7 +675,7 @@
                                 </Button>
                                 <Button Content="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=DetectStickerPrinter}" 
                                         Command="{Binding DetectPrintersCommand}" 
-                                        Background="#6366F1" Foreground="White" Height="44" FontSize="14" FontWeight="SemiBold" 
+                                        Background="{DynamicResource PrimaryBrush}" Foreground="White" Height="44" FontSize="14" FontWeight="SemiBold" 
                                         BorderThickness="0" Margin="0,8,0,0" Cursor="Hand">
                                     <Button.Style>
                                         <Style TargetType="Button">
@@ -565,17 +692,124 @@
                                             </Setter>
                                             <Style.Triggers>
                                                 <Trigger Property="IsMouseOver" Value="True">
-                                                    <Setter Property="Background" Value="#4F46E5"/>
+                                                    <Setter Property="Background" Value="{DynamicResource PrimaryHoverBrush}"/>
                                                 </Trigger>
                                             </Style.Triggers>
                                         </Style>
                                     </Button.Style>
                                 </Button>
+                                <Button Content="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=AutoLayout}" 
+                                        Command="{Binding AutoLayoutCommand}" 
+                                        Background="{DynamicResource InfoBlueBrush}" Foreground="White" Height="44" FontSize="14" FontWeight="SemiBold" 
+                                        BorderThickness="0" Margin="0,8,0,0" Cursor="Hand">
+                                    <Button.Style>
+                                        <Style TargetType="Button">
+                                            <Setter Property="Template">
+                                                <Setter.Value>
+                                                    <ControlTemplate TargetType="Button">
+                                                        <Border Background="{TemplateBinding Background}" 
+                                                                CornerRadius="8" 
+                                                                Padding="{TemplateBinding Padding}">
+                                                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                        </Border>
+                                                    </ControlTemplate>
+                                                </Setter.Value>
+                                            </Setter>
+                                            <Style.Triggers>
+                                                <Trigger Property="IsMouseOver" Value="True">
+                                                    <Setter Property="Background" Value="{DynamicResource PrimaryHoverBrush}"/>
+                                                </Trigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Button.Style>
+                                </Button>
+                                <Button Content="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=StickerPreview}" 
+                                        Command="{Binding PreviewCommand}" 
+                                        Background="{DynamicResource WarningBrush}" Foreground="White" Height="44" FontSize="14" FontWeight="SemiBold" 
+                                        BorderThickness="0" Margin="0,8,0,0" Cursor="Hand">
+                                    <Button.Style>
+                                        <Style TargetType="Button">
+                                            <Setter Property="Template">
+                                                <Setter.Value>
+                                                    <ControlTemplate TargetType="Button">
+                                                        <Border Background="{TemplateBinding Background}" 
+                                                                CornerRadius="8" 
+                                                                Padding="{TemplateBinding Padding}">
+                                                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                        </Border>
+                                                    </ControlTemplate>
+                                                </Setter.Value>
+                                            </Setter>
+                                            <Style.Triggers>
+                                                <Trigger Property="IsMouseOver" Value="True">
+                                                    <Setter Property="Background" Value="{DynamicResource WarningHoverBrush}"/>
+                                                </Trigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Button.Style>
+                                </Button>
+                                <Button Content="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=GenerateAndSaveQr}" 
+                                        Command="{Binding GenerateAndSaveQrCodeCommand}" 
+                                        Background="{DynamicResource TextHintBrush}" Foreground="White" Height="44" FontSize="14" FontWeight="SemiBold" 
+                                        BorderThickness="0" Margin="0,8,0,0" Cursor="Hand"
+                                        Visibility="{Binding IsCertificate, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                    <Button.Style>
+                                        <Style TargetType="Button">
+                                            <Setter Property="Template">
+                                                <Setter.Value>
+                                                    <ControlTemplate TargetType="Button">
+                                                        <Border Background="{TemplateBinding Background}" 
+                                                                CornerRadius="8" 
+                                                                Padding="{TemplateBinding Padding}">
+                                                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                        </Border>
+                                                    </ControlTemplate>
+                                                </Setter.Value>
+                                            </Setter>
+                                            <Style.Triggers>
+                                                <Trigger Property="IsMouseOver" Value="True">
+                                                    <Setter Property="Background" Value="{DynamicResource TextMutedBrush}"/>
+                                                </Trigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Button.Style>
+                                </Button>
+                                <Border Background="{DynamicResource SurfaceSoftBrush}" BorderBrush="{DynamicResource BorderLightBrush}" BorderThickness="1" CornerRadius="8" Padding="16" Margin="0,12,0,0">
+                                    <StackPanel>
+                                        <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=CustomTemplatesLabel}" 
+                                                   FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,8"/>
+                                        <ListBox ItemsSource="{Binding CustomTemplates}" Height="120" FontSize="13" Margin="0,0,0,8"
+                                                 ScrollViewer.VerticalScrollBarVisibility="Auto">
+                                            <ListBox.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Grid>
+                                                        <TextBlock Text="{Binding Name}" Foreground="{DynamicResource TextStrongBrush}" VerticalAlignment="Center"/>
+                                                        <TextBlock Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12" HorizontalAlignment="Right" VerticalAlignment="Center">
+                                                            <Run Text="{Binding WidthMm, StringFormat={}{0:0.#}}"/>
+                                                            <Run Text="x"/>
+                                                            <Run Text="{Binding HeightMm, StringFormat={}{0:0.#}}"/>
+                                                            <Run Text=" مم"/>
+                                                        </TextBlock>
+                                                    </Grid>
+                                                </DataTemplate>
+                                            </ListBox.ItemTemplate>
+                                            <ListBox.ItemContainerStyle>
+                                                <Style TargetType="ListBoxItem">
+                                                    <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                                                    <Setter Property="Padding" Value="6,4"/>
+                                                    <EventSetter Event="MouseLeftButtonUp" Handler="CustomTemplateItem_MouseLeftButtonUp"/>
+                                                </Style>
+                                            </ListBox.ItemContainerStyle>
+                                        </ListBox>
+                                        <TextBlock Text="{Binding StatusMessage}" FontSize="12" Foreground="{DynamicResource SuccessTealBrush}" TextWrapping="Wrap" Margin="0,4,0,0"/>
+                                    </StackPanel>
+                                </Border>
                             </StackPanel>
                         </ScrollViewer>
                     </TabItem>
                 </TabControl>
             </Grid>
         </Border>
+        </Grid>
     </Grid>
 </UserControl>

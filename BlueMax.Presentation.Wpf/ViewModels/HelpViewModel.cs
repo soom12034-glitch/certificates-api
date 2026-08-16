@@ -1,9 +1,14 @@
 using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Diagnostics;
+using System.IO;
 using System.Windows;
 using System.Windows.Input;
+using Microsoft.Win32;
 using BlueMax.Presentation.Wpf.Services;
+using QuestPDF.Fluent;
+using QuestPDF.Infrastructure;
 
 namespace BlueMax.Presentation.Wpf.ViewModels
 {
@@ -349,7 +354,7 @@ Use a unified naming style, e.g.:
                         ? @"**إنشاء إيجار جديد**
 1. املأ بيانات العميل:
    - اسم العميل
-   - الشركة
+   - المنشأة
    - الهاتف
    - الرقم الضريبي
    - رقم الهوية/الإقامة
@@ -596,8 +601,8 @@ Use a unified naming style, e.g.:
 - إعداد طابعة ZPL للملصقات
 - اختبار الطباعة
 
-**إعدادات الشركة**
-- اسم الشركة
+**إعدادات المنشأة**
+- اسم المنشأة
 - الشعار
 - العنوان
 - رقم الهاتف
@@ -746,14 +751,96 @@ A: See the Support section for contact information."
 
         void PrintHelp()
         {
-            MessageBox.Show("جاري طباعة دليل المساعدة...", "طباعة", MessageBoxButton.OK, MessageBoxImage.Information);
-            // TODO: Implement printing functionality
+            try
+            {
+                var content = SelectedContent;
+                if (content == null)
+                    return;
+
+                var pdfPath = BuildHelpPdf(content);
+                if (string.IsNullOrWhiteSpace(pdfPath) || !File.Exists(pdfPath))
+                    return;
+
+                var psi = new ProcessStartInfo(pdfPath) { UseShellExecute = true, Verb = "print" };
+                Process.Start(psi);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(string.Format(Resources.Translations.Get("StHelpPrintFailed"), ex.Message), Resources.Translations.Get("Error"), MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
         }
 
         void ExportToPdf()
         {
-            MessageBox.Show("جاري تصدير دليل المساعدة كـ PDF...", "تصدير", MessageBoxButton.OK, MessageBoxImage.Information);
-            // TODO: Implement PDF export functionality
+            try
+            {
+                var content = SelectedContent;
+                if (content == null)
+                    return;
+
+                var sfd = new SaveFileDialog
+                {
+                    Filter = "PDF Files|*.pdf",
+                    FileName = "BlueMax-Help.pdf"
+                };
+                if (sfd.ShowDialog() != true)
+                    return;
+
+                var pdfPath = BuildHelpPdf(content, sfd.FileName);
+                if (string.IsNullOrWhiteSpace(pdfPath))
+                    return;
+
+                Process.Start(new ProcessStartInfo(pdfPath) { UseShellExecute = true });
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(string.Format(Resources.Translations.Get("StHelpExportFailed"), ex.Message), Resources.Translations.Get("Error"), MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
+        }
+
+        static string BuildHelpPdf(HelpContent content, string? outputPath = null)
+        {
+            outputPath ??= Path.Combine(Path.GetTempPath(), $"BlueMax_Help_{Guid.NewGuid():N}.pdf");
+
+            QuestPDF.Settings.License = LicenseType.Community;
+            Document.Create(container =>
+            {
+                container.Page(page =>
+                {
+                    page.Size(595, 842);
+                    page.Margin(2, Unit.Centimetre);
+                    page.DefaultTextStyle(x => x.FontSize(11));
+
+                    page.Header().Element(c => c.AlignCenter().Text(content.Title ?? "").Bold().FontSize(18));
+                    page.Content().Element(c => c.Column(col =>
+                    {
+                        foreach (var rawLine in (content.Content ?? "").Split('\n'))
+                        {
+                            var line = rawLine.TrimEnd('\r');
+                            var trimmed = line.Trim();
+                            if (trimmed.StartsWith("**", StringComparison.Ordinal) && trimmed.EndsWith("**", StringComparison.Ordinal))
+                            {
+                                col.Item().PaddingTop(6).Text(trimmed.Trim('*').Trim()).Bold().FontSize(13);
+                            }
+                            else if (string.IsNullOrWhiteSpace(line))
+                            {
+                                col.Item().PaddingTop(6);
+                            }
+                            else
+                            {
+                                col.Item().PaddingBottom(3).Text(line);
+                            }
+                        }
+                    }));
+                    page.Footer().AlignCenter().Text(x =>
+                    {
+                        x.Span("Page ");
+                        x.CurrentPageNumber();
+                    });
+                });
+            }).GeneratePdf(outputPath);
+
+            return outputPath;
         }
 
         void CloseWindow()

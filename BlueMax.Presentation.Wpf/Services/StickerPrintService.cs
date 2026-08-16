@@ -12,6 +12,7 @@ using ZXing;
 using ZXing.Common;
 using ZXing.Windows.Compatibility;
 using BlueMax.Infrastructure;
+using BlueMax.Presentation.Wpf.Resources;
 using BlueMax.Presentation.Wpf.ViewModels;
 
 namespace BlueMax.Presentation.Wpf.Services
@@ -33,9 +34,32 @@ namespace BlueMax.Presentation.Wpf.Services
         }
     }
 
+    /// <summary>
+    /// The minimal print contract consumed by <see cref="StickerPrintService"/>.
+    /// Both the certificate sticker designer and the (fully isolated) maintenance
+    /// receipt sticker designer implement it, so one identical printing mechanism
+    /// serves both while each kind supplies its own data via <see cref="ResolveValueKey"/>.
+    /// </summary>
+    public interface IStickerPrintModel
+    {
+        double StickerWidthMm { get; }
+        double StickerHeightMm { get; }
+        System.Collections.Generic.IEnumerable<StickerItem> StickerItems { get; }
+        string LogoPath { get; }
+        string CompanyName { get; }
+        string CompanyHeader { get; }
+        string CompanyAddress { get; }
+        string CompanyPhone { get; }
+        StickerItem? FindItem(string key);
+
+        /// <summary>Resolves the display content for a data item key (e.g. "brand_value").</summary>
+        string ResolveValueKey(string itemKey);
+    }
+
     public class StickerPrintService
     {
-        public async Task PrintStickerAsync(StickerDesignerViewModel viewModel, PrinterSettings printerSettings)
+        const double PixelToMm = 0.264583;
+        public async Task PrintStickerAsync(IStickerPrintModel viewModel, PrinterSettings printerSettings)
         {
             if (string.Equals(printerSettings.Protocol, "Windows", StringComparison.OrdinalIgnoreCase))
             {
@@ -51,7 +75,7 @@ namespace BlueMax.Presentation.Wpf.Services
             }
         }
 
-        async Task SendRawAsync(StickerDesignerViewModel viewModel, PrinterSettings settings, bool isTspl)
+        async Task SendRawAsync(IStickerPrintModel viewModel, PrinterSettings settings, bool isTspl)
         {
             var printerName = settings.PrinterName ?? "";
             if (string.IsNullOrWhiteSpace(printerName))
@@ -103,7 +127,7 @@ namespace BlueMax.Presentation.Wpf.Services
             return Encoding.UTF8;
         }
 
-        async Task PrintStickerWithWindowsDriverAsync(StickerDesignerViewModel viewModel, PrinterSettings settings)
+        async Task PrintStickerWithWindowsDriverAsync(IStickerPrintModel viewModel, PrinterSettings settings)
         {
             var printerName = settings.PrinterName ?? "";
             if (string.IsNullOrWhiteSpace(printerName))
@@ -134,7 +158,6 @@ namespace BlueMax.Presentation.Wpf.Services
                     g.InterpolationMode = InterpolationMode.HighQualityBicubic;
                     g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
 
-                    const double PixelToMm = 0.264583;
                     var bodyFontSize = ResolveBodyFontSize(viewModel);
                     foreach (var item in viewModel.StickerItems.Where(x => x.IsVisible))
                     {
@@ -157,7 +180,7 @@ namespace BlueMax.Presentation.Wpf.Services
                             case "company": content = viewModel.CompanyName; useBodyFont = true; break;
                             case "header": content = viewModel.CompanyHeader; useBodyFont = true; break;
                             case "address": content = viewModel.CompanyAddress; useBodyFont = true; break;
-                            case "phone": content = string.IsNullOrWhiteSpace(viewModel.CompanyPhone) ? "" : $"Tel: {viewModel.CompanyPhone}"; useBodyFont = true; break;
+                            case "phone": content = string.IsNullOrWhiteSpace(viewModel.CompanyPhone) ? "" : $"{StickerText.PhoneLabel} {StickerText.ToEnglishDigits(viewModel.CompanyPhone)}"; useBodyFont = true; break;
                             case "qr":
                                 var qrText = viewModel.FindItem("qr")?.DisplayText ?? "";
                                 if (!string.IsNullOrWhiteSpace(qrText))
@@ -179,12 +202,18 @@ namespace BlueMax.Presentation.Wpf.Services
                             case "exp_label":
                                 content = item.DisplayText;
                                 break;
-                            case "brand_value": content = viewModel.Brand; break;
-                            case "model_value": content = viewModel.Model; break;
-                            case "serial_value": content = viewModel.Serial; break;
-                            case "cert_value": content = viewModel.CertificateNumber; break;
-                            case "date_value": content = viewModel.CalDate.ToString("dd-MM-yyyy"); break;
-                            case "exp_value": content = viewModel.ExpDate.ToString("dd-MM-yyyy"); break;
+                            case "brand_value":
+                            case "model_value":
+                            case "serial_value":
+                            case "cert_value":
+                            case "date_value":
+                            case "exp_value":
+                            case "cal_value":
+                            case "receipt_number_value":
+                            case "customer_value":
+                            case "device_type_value":
+                                content = viewModel.ResolveValueKey(item.Key);
+                                break;
                             default:
                                 content = item.DisplayText;
                                 break;
@@ -195,15 +224,14 @@ namespace BlueMax.Presentation.Wpf.Services
                         var effectiveFontSize = useBodyFont ? bodyFontSize : item.FontSize;
                         var fontSizePt = Math.Max(6, effectiveFontSize * 0.75);
                         var fittedSizePt = useBodyFont
-                            ? FitFontSize(g, content, wMm, fontSizePt)
+                            ? FitFontSize(g, content, wMm, fontSizePt, ResolveFontFamily(item.FontFamily))
                             : fontSizePt;
-                        using var font = new Font("Arial", (float)fittedSizePt, FontStyle.Regular);
-                        using var brush = new SolidBrush(Color.Black);
+                        using var font = new Font(ResolveFontFamily(item.FontFamily), (float)fittedSizePt, ResolveFontStyle(item.IsBold, item.IsItalic, item.IsUnderline));
+                        using var brush = new SolidBrush(ColorTranslator.FromHtml(ResolveHtmlColor(item.FontColor)));
                         var format = new StringFormat
                         {
                             Alignment = ToGdiAlignment(item.TextAlignment),
-                            LineAlignment = StringAlignment.Near,
-                            FormatFlags = StringFormatFlags.DirectionRightToLeft
+                            LineAlignment = StringAlignment.Near
                         };
                         g.DrawString(content, font, brush, new RectangleF(xMm, yMm, wMm, hMm), format);
                     }
@@ -250,12 +278,12 @@ namespace BlueMax.Presentation.Wpf.Services
         }
 
         // TextAlignment values ("Right", "Center", "Left") map to GDI StringAlignment
-        // in a RightToLeft context: Near = right edge, Far = left edge.
+        // in a LeftToRight context: Near = left edge, Far = right edge.
         static StringAlignment ToGdiAlignment(string alignment) => alignment switch
         {
             "Center" => StringAlignment.Center,
-            "Left" => StringAlignment.Far,
-            _ => StringAlignment.Near
+            "Left" => StringAlignment.Near,
+            _ => StringAlignment.Far
         };
 
         // TSPL BLOCK alignment: 0 = Left, 1 = Center, 2 = Right.
@@ -274,7 +302,7 @@ namespace BlueMax.Presentation.Wpf.Services
             _ => 2
         };
 
-        static double ResolveBodyFontSize(StickerDesignerViewModel viewModel)
+        static double ResolveBodyFontSize(IStickerPrintModel viewModel)
         {
             var keys = new[]
             {
@@ -295,19 +323,19 @@ namespace BlueMax.Presentation.Wpf.Services
             return fallback?.FontSize ?? 12;
         }
 
-        static double FitFontSize(Graphics g, string text, float maxWidthMm, double baseSizePt)
+        static double FitFontSize(Graphics g, string text, float maxWidthMm, double baseSizePt, string fontFamily = "Arial")
         {
             if (string.IsNullOrWhiteSpace(text))
                 return baseSizePt;
             var size = baseSizePt;
+            var family = ResolveFontFamily(fontFamily);
             for (int i = 0; i < 10; i++)
             {
-                using var f = new Font("Arial", (float)size, FontStyle.Regular);
+                using var f = new Font(family, (float)size, FontStyle.Regular);
                 var format = new StringFormat(StringFormatFlags.NoWrap)
                 {
                     Alignment = StringAlignment.Near,
-                    LineAlignment = StringAlignment.Near,
-                    FormatFlags = StringFormatFlags.DirectionRightToLeft | StringFormatFlags.NoWrap
+                    LineAlignment = StringAlignment.Near
                 };
                 var measured = g.MeasureString(text, f, new SizeF(maxWidthMm, 1000f), format);
                 if (measured.Width <= maxWidthMm)
@@ -317,7 +345,38 @@ namespace BlueMax.Presentation.Wpf.Services
             return Math.Max(6, size);
         }
 
-        public string GenerateTspl(StickerDesignerViewModel viewModel, PrinterSettings settings)
+        static string ResolveFontFamily(string? requested)
+        {
+            if (string.IsNullOrWhiteSpace(requested))
+                return "Arial";
+            try
+            {
+                using var test = new Font(requested, 10f);
+                return test.Name;
+            }
+            catch
+            {
+                return "Arial";
+            }
+        }
+
+        static FontStyle ResolveFontStyle(bool bold, bool italic, bool underline)
+        {
+            var style = FontStyle.Regular;
+            if (bold) style |= FontStyle.Bold;
+            if (italic) style |= FontStyle.Italic;
+            if (underline) style |= FontStyle.Underline;
+            return style;
+        }
+
+        static string ResolveHtmlColor(string? colorHex)
+        {
+            if (string.IsNullOrWhiteSpace(colorHex))
+                return "#000000";
+            return colorHex.StartsWith("#") ? colorHex : $"#{colorHex}";
+        }
+
+        public string GenerateTspl(IStickerPrintModel viewModel, PrinterSettings settings)
         {
             var dpmm = settings.DotsPerMm <= 0 ? 8 : settings.DotsPerMm;
             var widthMm = Math.Max(1, viewModel.StickerWidthMm);
@@ -325,7 +384,6 @@ namespace BlueMax.Presentation.Wpf.Services
             var widthDots = (int)Math.Round((double)widthMm * dpmm);
             var heightDots = (int)Math.Round((double)heightMm * dpmm);
 
-            const double PixelToMm = 0.264583;
             int ToDots(double px) => (int)Math.Round(px * PixelToMm * dpmm);
             static string TsplEscape(string s) => (s ?? "").Replace("\"", "\\\"");
 
@@ -363,7 +421,7 @@ namespace BlueMax.Presentation.Wpf.Services
                     case "company": content = viewModel.CompanyName; break;
                     case "header": content = viewModel.CompanyHeader; break;
                     case "address": content = viewModel.CompanyAddress; break;
-                    case "phone": content = string.IsNullOrWhiteSpace(viewModel.CompanyPhone) ? "" : $"Tel: {viewModel.CompanyPhone}"; break;
+                    case "phone": content = string.IsNullOrWhiteSpace(viewModel.CompanyPhone) ? "" : $"{StickerText.PhoneLabel} {StickerText.ToEnglishDigits(viewModel.CompanyPhone)}"; break;
                     case "qr":
                         // QRCODE x,y,ECC,cellwidth,mode,rotation,"content"
                         // cellwidth 1-10
@@ -381,12 +439,18 @@ namespace BlueMax.Presentation.Wpf.Services
                         content = item.DisplayText;
                         break;
 
-                    case "brand_value": content = viewModel.Brand; break;
-                    case "model_value": content = viewModel.Model; break;
-                    case "serial_value": content = viewModel.Serial; break;
-                    case "cert_value": content = viewModel.CertificateNumber; break;
-                    case "date_value": content = viewModel.CalDate.ToString("dd-MM-yyyy"); break;
-                    case "exp_value": content = viewModel.ExpDate.ToString("dd-MM-yyyy"); break;
+                    case "brand_value":
+                    case "model_value":
+                    case "serial_value":
+                    case "cert_value":
+                    case "date_value":
+                    case "exp_value":
+                    case "cal_value":
+                    case "receipt_number_value":
+                    case "customer_value":
+                    case "device_type_value":
+                        content = viewModel.ResolveValueKey(item.Key);
+                        break;
 
                     default:
                         content = item.DisplayText;
@@ -408,7 +472,7 @@ namespace BlueMax.Presentation.Wpf.Services
             return string.Join("\n", commands);
         }
 
-        public string GenerateZpl(StickerDesignerViewModel viewModel, PrinterSettings settings)
+        public string GenerateZpl(IStickerPrintModel viewModel, PrinterSettings settings)
         {
             var dpmm = settings.DotsPerMm <= 0 ? 8 : settings.DotsPerMm;
             var widthMm = Math.Max(1, viewModel.StickerWidthMm);
@@ -417,7 +481,6 @@ namespace BlueMax.Presentation.Wpf.Services
             var heightDots = (int)Math.Round((double)heightMm * dpmm);
 
             // Designer uses 0.264583 mm per pixel (96 DPI screen pixels)
-            const double PixelToMm = 0.264583;
             
             // Helper to convert Screen Pixels (from Designer) to Printer Dots
             int ToDots(double px) => (int)Math.Round(px * PixelToMm * dpmm);
@@ -435,7 +498,6 @@ namespace BlueMax.Presentation.Wpf.Services
 
                 string content = "";
                 bool isImage = false;
-                bool isBold = false;
 
                 switch (item.Key.ToLowerInvariant())
                 {
@@ -449,7 +511,6 @@ namespace BlueMax.Presentation.Wpf.Services
                     case "company":
                         content = viewModel.CompanyName;
                         isImage = true;
-                        isBold = true;
                         break;
                     case "header":
                         content = viewModel.CompanyHeader;
@@ -460,7 +521,7 @@ namespace BlueMax.Presentation.Wpf.Services
                         isImage = true;
                         break;
                     case "phone":
-                        content = string.IsNullOrWhiteSpace(viewModel.CompanyPhone) ? "" : $"Tel: {viewModel.CompanyPhone}";
+                        content = string.IsNullOrWhiteSpace(viewModel.CompanyPhone) ? "" : $"{StickerText.PhoneLabel} {StickerText.ToEnglishDigits(viewModel.CompanyPhone)}";
                         isImage = true;
                         break;
                     case "qr":
@@ -479,13 +540,19 @@ namespace BlueMax.Presentation.Wpf.Services
                         content = item.DisplayText;
                         break;
 
-                    case "brand_value": content = viewModel.Brand; break;
-                    case "model_value": content = viewModel.Model; break;
-                    case "serial_value": content = viewModel.Serial; break;
-                    case "cert_value": content = viewModel.CertificateNumber; break;
-                    case "date_value": content = viewModel.CalDate.ToString("dd-MM-yyyy"); break;
-                    case "exp_value": content = viewModel.ExpDate.ToString("dd-MM-yyyy"); break;
-                    
+                    case "brand_value":
+                    case "model_value":
+                    case "serial_value":
+                    case "cert_value":
+                    case "date_value":
+                    case "exp_value":
+                    case "cal_value":
+                    case "receipt_number_value":
+                    case "customer_value":
+                    case "device_type_value":
+                        content = viewModel.ResolveValueKey(item.Key);
+                        break;
+
                     default:
                         content = item.DisplayText;
                         break;
@@ -495,25 +562,10 @@ namespace BlueMax.Presentation.Wpf.Services
 
                 if (isImage)
                 {
-                     // Use StickerImageHelper with Far alignment (Left in RTL context)
-                     // Pass widthDots as max width, and x as position.
-                     // The helper creates a bitmap of size widthDots x heightDots.
-                     // With Far alignment (Left), the text starts at 0 inside the bitmap.
-                     // We place the bitmap at x,y.
-                     // So text starts at x.
-                     // Wait, if bitmap width is widthDots, and we place at x, and text is at 0 (Left of bitmap).
-                     // Then text is at x.
-                     // BUT, the bitmap extends to x + widthDots.
-                     // If x > 0, x + widthDots > widthDots.
-                     // The printer might clip or wrap or error if image goes out of bounds.
-                     // Ideally, bitmap width should be widthDots - x.
-                     // Or just enough for the text.
-                     // But calculating text width requires Graphics.MeasureString.
-                     // Let's try passing widthDots - x.
-                     
-                     int availableWidth = Math.Max(10, widthDots - x);
+                     // Render text to a monochrome bitmap sized to the item's own width so it is not truncated.
+                     int availableWidth = Math.Max(10, ToDots(item.Width));
                      var alignment = ToGdiAlignment(item.TextAlignment);
-                     var imgZpl = StickerImageHelper.GenerateTextAsZplImage(content, availableWidth, x, y, h, (int)item.FontSize, isBold, alignment);
+                     var imgZpl = StickerImageHelper.GenerateTextAsZplImage(content, availableWidth, x, y, h, (int)item.FontSize, item.IsBold, alignment, item.FontFamily, item.IsItalic, item.IsUnderline);
                      zplCommands.Add(imgZpl);
                 }
                 else

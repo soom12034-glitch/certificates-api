@@ -11,6 +11,9 @@ public static class WindowHelper
     {
         if (window == null) return;
 
+        // Keep the active language direction (RTL/LTR) consistent on this window.
+        Services.LanguageService.Instance.ApplyFlowDirection(window);
+
         // Apply immediately if loaded, otherwise wait for load
         if (window.IsLoaded)
         {

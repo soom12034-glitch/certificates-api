@@ -1,7 +1,9 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Linq;
+using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using BlueMax.Infrastructure;
 using BlueMax.Domain;
@@ -26,69 +28,87 @@ public sealed class DeviceHistoryViewModel : ViewModelBase
  
     public RelayCommand SearchHistoryCommand { get; }
  
-    void SearchHistory()
+    async void SearchHistory()
     {
         var q = (SerialQuery ?? "").Trim();
         Timeline.Clear();
         if (string.IsNullOrWhiteSpace(q))
             return;
- 
-        using var db = CreateDbContext();
-        db.Database.EnsureCreated();
- 
-        var certs = db.Certificates
-            .AsNoTracking()
-            .Where(c => c.SerialText.Contains(q))
-            .Select(c => new DeviceHistoryItem
-            {
-                Date = c.IssueDate,
-                Type = "Calibration",
-                Title = string.IsNullOrWhiteSpace(c.CertificateNumber) ? "Certificate" : $"Certificate {c.CertificateNumber}",
-                Notes = $"{c.DeviceType} {c.Brand} {c.Model} • {c.ClientName}",
-                Reference = $"CERT:{c.Id}"
-            })
-            .ToList();
- 
-        var works = db.WorkOrders
-            .AsNoTracking()
-            .Where(w => w.SerialNumber.Contains(q))
-            .Select(w => new
-            {
-                Item = new DeviceHistoryItem
-                {
-                    Date = w.ReceivedDate,
-                    Type = "Maintenance",
-                    Title = $"WorkOrder #{w.Id} - {w.Status}",
-                    Notes = $"{w.DeviceType} {w.Model} • {w.CustomerName}",
-                    Reference = $"WO:{w.Id}"
-                },
-                UpdateDate = w.UpdatedDate
-            })
-            .ToList();
- 
-        foreach (var w in works)
+
+        if (IsBusy) return;
+        SetBusy(T("LoadingData"));
+        try
         {
-            Timeline.Add(w.Item);
-            if (w.UpdateDate != default && w.UpdateDate.Date != w.Item.Date.Date)
+            var result = await Task.Run(() =>
             {
-                Timeline.Add(new DeviceHistoryItem
+                using var db = CreateDbContext();
+                db.Database.EnsureCreated();
+
+                var certs = db.Certificates
+                    .AsNoTracking()
+                    .Where(c => c.SerialText.Contains(q))
+                    .Select(c => new DeviceHistoryItem
+                    {
+                        Date = c.IssueDate,
+                        Type = "Calibration",
+                        Title = string.IsNullOrWhiteSpace(c.CertificateNumber) ? "Certificate" : $"Certificate {c.CertificateNumber}",
+                        Notes = $"{c.DeviceType} {c.Brand} {c.Model} • {c.ClientName}",
+                        Reference = $"CERT:{c.Id}"
+                    })
+                    .ToList();
+
+                var works = db.WorkOrders
+                    .AsNoTracking()
+                    .Where(w => w.SerialNumber.Contains(q))
+                    .Select(w => new
+                    {
+                        Item = new DeviceHistoryItem
+                        {
+                            Date = w.ReceivedDate,
+                            Type = "Maintenance",
+                            Title = $"WorkOrder #{w.Id} - {w.Status}",
+                            Notes = $"{w.DeviceType} {w.Model} • {w.CustomerName}",
+                            Reference = $"WO:{w.Id}"
+                        },
+                        UpdateDate = w.UpdatedDate
+                    })
+                    .ToList();
+
+                var list = new List<DeviceHistoryItem>();
+                foreach (var w in works)
                 {
-                    Date = w.UpdateDate,
-                    Type = "Maintenance Update",
-                    Title = $"WorkOrder #{w.Item.Reference?.Split(':').Last()} - Updated",
-                    Notes = w.Item.Notes,
-                    Reference = w.Item.Reference ?? string.Empty
-                });
-            }
+                    list.Add(w.Item);
+                    if (w.UpdateDate != default && w.UpdateDate.Date != w.Item.Date.Date)
+                    {
+                        list.Add(new DeviceHistoryItem
+                        {
+                            Date = w.UpdateDate,
+                            Type = "Maintenance Update",
+                            Title = $"WorkOrder #{w.Item.Reference?.Split(':').Last()} - Updated",
+                            Notes = w.Item.Notes,
+                            Reference = w.Item.Reference ?? string.Empty
+                        });
+                    }
+                }
+
+                foreach (var c in certs)
+                    list.Add(c);
+
+                return list;
+            });
+
+            Timeline.Clear();
+            foreach (var t in result.OrderByDescending(t => t.Date))
+                Timeline.Add(t);
         }
- 
-        foreach (var c in certs)
-            Timeline.Add(c);
- 
-        var sorted = Timeline.OrderByDescending(t => t.Date).ToList();
-        Timeline.Clear();
-        foreach (var t in sorted)
-            Timeline.Add(t);
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"SearchHistory failed: {ex}");
+        }
+        finally
+        {
+            SetIdle();
+        }
     }
  
     static AppDbContext CreateDbContext()

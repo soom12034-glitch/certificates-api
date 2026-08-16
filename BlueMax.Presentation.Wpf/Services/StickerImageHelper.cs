@@ -58,7 +58,7 @@ namespace BlueMax.Presentation.Wpf.Services
             return data;
         }
 
-        public static string GenerateTextAsZplImage(string text, int widthDots, int x, int y, int heightDots = 40, int fontSize = 16, bool bold = true, StringAlignment alignment = StringAlignment.Center)
+        public static string GenerateTextAsZplImage(string text, int widthDots, int x, int y, int heightDots = 40, int fontSize = 16, bool bold = true, StringAlignment alignment = StringAlignment.Center, string fontFamily = "Arial", bool italic = false, bool underline = false)
         {
             if (string.IsNullOrWhiteSpace(text)) return "";
 
@@ -68,7 +68,12 @@ namespace BlueMax.Presentation.Wpf.Services
                 g.Clear(Color.White);
                 g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.SingleBitPerPixelGridFit;
 
-                using (var font = new Font("Arial", fontSize, bold ? FontStyle.Bold : FontStyle.Regular))
+                var style = FontStyle.Regular;
+                if (bold) style |= FontStyle.Bold;
+                if (italic) style |= FontStyle.Italic;
+                if (underline) style |= FontStyle.Underline;
+
+                using (var font = new Font(ResolveFontFamily(fontFamily), fontSize, style))
                 using (var brush = new SolidBrush(Color.Black))
                 {
                     var format = new StringFormat
@@ -82,6 +87,21 @@ namespace BlueMax.Presentation.Wpf.Services
                 }
                 
                 return ConvertBitmapToZpl(bitmap, x, y);
+            }
+        }
+
+        static string ResolveFontFamily(string requested)
+        {
+            try
+            {
+                using (var test = new Font(requested, 10f))
+                {
+                    return test.Name;
+                }
+            }
+            catch
+            {
+                return "Arial";
             }
         }
 

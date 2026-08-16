@@ -10,6 +10,9 @@ using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using BlueMax.Domain;
 using BlueMax.Infrastructure;
+using BlueMax.Presentation.Wpf.Services;
+using QuestPDF.Fluent;
+using QuestPDF.Infrastructure;
 
 namespace BlueMax.Presentation.Wpf.ViewModels;
 
@@ -28,6 +31,9 @@ public sealed class RentalsViewModel : ViewModelBase
     DateTime _startDate = DateTime.Today;
     DateTime _endDate = DateTime.Today.AddDays(1);
     string _rentalType = "Daily";
+    decimal _dailyPrice;
+    decimal _monthlyPrice;
+    decimal _deviceValue;
     decimal _price;
     decimal _paidAmount;
     decimal _remainingAmount;
@@ -38,6 +44,7 @@ public sealed class RentalsViewModel : ViewModelBase
     Task? _ensureDbCreatedTask;
     bool _isEditMode;
     int? _currentRentalId;
+    System.Windows.Threading.DispatcherTimer? _alertTimer;
 
     public RentalsViewModel()
     {
@@ -49,10 +56,12 @@ public sealed class RentalsViewModel : ViewModelBase
 
         NewRentalCommand = new RelayCommand(_ => ClearInputs());
         EditRentalCommand = new RelayCommand(_ => EditSelectedRental(), _ => SelectedRental != null);
-        SaveRentalCommand = new RelayCommand(_ => SaveRental(), _ => CanSaveRental());
+        SaveRentalCommand = new RelayCommand(_ => SaveRental());
         DeleteRentalCommand = new RelayCommand(_ => DeleteRental(), _ => SelectedRental != null);
         CompleteRentalCommand = new RelayCommand(_ => CompleteRental(), _ => SelectedRental != null);
         PrintRentalReceiptCommand = new RelayCommand(_ => PrintRentalReceipt());
+        PrintRentalContractCommand = new RelayCommand(_ => PrintRentalContract(), _ => SelectedRental != null);
+        PrintRentalHandoverCommand = new RelayCommand(p => PrintRentalHandover(string.Equals(p?.ToString(), "Return", StringComparison.OrdinalIgnoreCase)), _ => SelectedRental != null);
         OpenSelectedRentalFileCommand = new RelayCommand(_ => OpenSelectedRentalFile(), _ => SelectedRental != null);
         SearchCommand = new RelayCommand(_ => SearchRentals());
 
@@ -63,6 +72,8 @@ public sealed class RentalsViewModel : ViewModelBase
             CheckExpiredRentals();
         }
         catch { }
+
+        StartAlertTimer();
     }
 
     static AppDbContext CreateDbContext()
@@ -179,6 +190,9 @@ public sealed class RentalsViewModel : ViewModelBase
                 {SelectColumn("StartDate", "''")},
                 {SelectColumn("EndDate", "''")},
                 {SelectColumn("RentalType", "'Daily'")},
+                {SelectColumn("DailyPrice", "0")},
+                {SelectColumn("MonthlyPrice", "0")},
+                {SelectColumn("DeviceValue", "0")},
                 {SelectColumn("Price", "0")},
                 {SelectColumn("PaidAmount", "0")},
                 {SelectColumn("RemainingAmount", "0")},
@@ -210,6 +224,9 @@ public sealed class RentalsViewModel : ViewModelBase
                 StartDate = ReadDateTime(reader, "StartDate", DateTime.Today),
                 EndDate = ReadDateTime(reader, "EndDate", DateTime.Today.AddDays(1)),
                 RentalType = ReadString(reader, "RentalType"),
+                DailyPrice = ReadDecimal(reader, "DailyPrice"),
+                MonthlyPrice = ReadDecimal(reader, "MonthlyPrice"),
+                DeviceValue = ReadDecimal(reader, "DeviceValue"),
                 Price = ReadDecimal(reader, "Price"),
                 PaidAmount = ReadDecimal(reader, "PaidAmount"),
                 RemainingAmount = ReadDecimal(reader, "RemainingAmount"),
@@ -280,12 +297,14 @@ public sealed class RentalsViewModel : ViewModelBase
         {
             if (!SetProperty(ref _selectedRental, value))
                 return;
+            RaiseSelectionCommandStates();
             if (value == null)
             {
                 ClearInputs();
                 return;
             }
             _isEditMode = false;
+            _currentRentalId = value.Id;
             CustomerName = value.CustomerName;
             Company = value.Company;
             Phone = value.Phone;
@@ -299,12 +318,16 @@ public sealed class RentalsViewModel : ViewModelBase
             StartDate = value.StartDate;
             EndDate = value.EndDate;
             RentalType = value.RentalType;
+            DailyPrice = value.DailyPrice;
+            MonthlyPrice = value.MonthlyPrice;
+            DeviceValue = value.DeviceValue;
             Price = value.Price;
             PaidAmount = value.PaidAmount;
             RemainingAmount = value.RemainingAmount;
             Status = value.Status;
             Notes = value.Notes;
-            _currentRentalId = value.Id;
+            OnPropertyChanged(nameof(IsInputsLocked));
+            OnPropertyChanged(nameof(IsInputsEditable));
         }
     }
 
@@ -388,19 +411,70 @@ public sealed class RentalsViewModel : ViewModelBase
     public DateTime StartDate
     {
         get => _startDate;
-        set => SetProperty(ref _startDate, value);
+        set
+        {
+            if (SetProperty(ref _startDate, value))
+                RecalculatePrice();
+        }
     }
 
     public DateTime EndDate
     {
         get => _endDate;
-        set => SetProperty(ref _endDate, value);
+        set
+        {
+            if (SetProperty(ref _endDate, value))
+                RecalculatePrice();
+        }
     }
 
     public string RentalType
     {
         get => _rentalType;
-        set => SetProperty(ref _rentalType, value);
+        set
+        {
+            if (SetProperty(ref _rentalType, value))
+            {
+                RecalculatePrice();
+                SaveRentalCommand.RaiseCanExecuteChanged();
+            }
+        }
+    }
+
+    public decimal DailyPrice
+    {
+        get => _dailyPrice;
+        set
+        {
+            if (SetProperty(ref _dailyPrice, value))
+            {
+                RecalculatePrice();
+                SaveRentalCommand.RaiseCanExecuteChanged();
+            }
+        }
+    }
+
+    public decimal MonthlyPrice
+    {
+        get => _monthlyPrice;
+        set
+        {
+            if (SetProperty(ref _monthlyPrice, value))
+            {
+                RecalculatePrice();
+                SaveRentalCommand.RaiseCanExecuteChanged();
+            }
+        }
+    }
+
+    public decimal DeviceValue
+    {
+        get => _deviceValue;
+        set
+        {
+            if (SetProperty(ref _deviceValue, value))
+                SaveRentalCommand.RaiseCanExecuteChanged();
+        }
     }
 
     public decimal Price
@@ -450,8 +524,8 @@ public sealed class RentalsViewModel : ViewModelBase
         set => SetProperty(ref _searchText, value);
     }
 
-    public bool IsInputsLocked => _isEditMode;
-    public bool IsInputsEditable => !_isEditMode;
+    public bool IsInputsLocked => _currentRentalId.HasValue && !_isEditMode;
+    public bool IsInputsEditable => !IsInputsLocked;
 
     public ObservableCollection<RentalItem> ActiveRentals => new ObservableCollection<RentalItem>(Rentals.Where(r => r.Status == "Active"));
 
@@ -468,12 +542,40 @@ public sealed class RentalsViewModel : ViewModelBase
     public RelayCommand DeleteRentalCommand { get; }
     public RelayCommand CompleteRentalCommand { get; }
     public RelayCommand PrintRentalReceiptCommand { get; }
+    public RelayCommand PrintRentalContractCommand { get; }
+    public RelayCommand PrintRentalHandoverCommand { get; }
     public RelayCommand OpenSelectedRentalFileCommand { get; }
     public RelayCommand SearchCommand { get; }
 
     void CalculateRemainingAmount()
     {
         RemainingAmount = Price - PaidAmount;
+    }
+
+    void RecalculatePrice()
+    {
+        var days = Math.Max(1, (EndDate.Date - StartDate.Date).Days);
+        if (string.Equals(RentalType, "Monthly", StringComparison.OrdinalIgnoreCase))
+        {
+            var months = Math.Max(1, (int)Math.Ceiling(days / 30d));
+            Price = MonthlyPrice * months;
+        }
+        else
+        {
+            Price = DailyPrice * days;
+        }
+    }
+
+    public int RentalDaysCount => Math.Max(1, (EndDate.Date - StartDate.Date).Days);
+
+    void RaiseSelectionCommandStates()
+    {
+        EditRentalCommand.RaiseCanExecuteChanged();
+        DeleteRentalCommand.RaiseCanExecuteChanged();
+        CompleteRentalCommand.RaiseCanExecuteChanged();
+        PrintRentalContractCommand.RaiseCanExecuteChanged();
+        PrintRentalHandoverCommand.RaiseCanExecuteChanged();
+        OpenSelectedRentalFileCommand.RaiseCanExecuteChanged();
     }
 
     void ClearInputs()
@@ -492,12 +594,17 @@ public sealed class RentalsViewModel : ViewModelBase
         StartDate = DateTime.Today;
         EndDate = DateTime.Today.AddDays(1);
         RentalType = "Daily";
+        DailyPrice = 0;
+        MonthlyPrice = 0;
+        DeviceValue = 0;
         Price = 0;
         PaidAmount = 0;
         RemainingAmount = 0;
         Status = "Active";
         Notes = "";
         SelectedRental = null;
+        OnPropertyChanged(nameof(IsInputsLocked));
+        OnPropertyChanged(nameof(IsInputsEditable));
     }
 
     void EditSelectedRental()
@@ -505,24 +612,41 @@ public sealed class RentalsViewModel : ViewModelBase
         if (SelectedRental == null)
             return;
         _isEditMode = true;
+        OnPropertyChanged(nameof(IsInputsLocked));
+        OnPropertyChanged(nameof(IsInputsEditable));
     }
 
-    bool CanSaveRental()
+    string? GetValidationMessage()
     {
-        var isValid = !string.IsNullOrWhiteSpace(CustomerName) &&
-               !string.IsNullOrWhiteSpace(DeviceType) &&
-               !string.IsNullOrWhiteSpace(Serial) &&
-               Price > 0;
-        return isValid;
+        var missing = new System.Collections.Generic.List<string>();
+        if (string.IsNullOrWhiteSpace(CustomerName))
+            missing.Add(T("ClientNameField"));
+        if (string.IsNullOrWhiteSpace(DeviceType))
+            missing.Add(T("DeviceType"));
+        if (string.IsNullOrWhiteSpace(Serial))
+            missing.Add(T("SerialField"));
+        if (EndDate.Date < StartDate.Date)
+            return T("RentalEndDateBeforeStart");
+        if (missing.Count > 0)
+            return T("MissingRequiredFields") + ": " + string.Join(", ", missing);
+        return null;
     }
 
     void SaveRental()
     {
+        var validationMessage = GetValidationMessage();
+        if (validationMessage != null)
+        {
+            MessageBox.Show(validationMessage, T("ValidationTitle"), MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
         try
         {
             using var db = CreateDbContext();
             db.Database.EnsureCreated();
-            
+            db.EnsureSchemaCompatible();
+
             if (_currentRentalId.HasValue)
             {
                 var rental = db.Rentals.FirstOrDefault(r => r.Id == _currentRentalId.Value);
@@ -541,13 +665,16 @@ public sealed class RentalsViewModel : ViewModelBase
                     rental.StartDate = StartDate;
                     rental.EndDate = EndDate;
                     rental.RentalType = RentalType;
+                    rental.DailyPrice = DailyPrice;
+                    rental.MonthlyPrice = MonthlyPrice;
+                    rental.DeviceValue = DeviceValue;
                     rental.Price = Price;
                     rental.PaidAmount = PaidAmount;
                     rental.RemainingAmount = RemainingAmount;
                     rental.Status = Status;
                     rental.Notes = Notes;
                     db.SaveChanges();
-                    MessageBox.Show("تم تحديث الإيجار بنجاح", "نجاح", MessageBoxButton.OK, MessageBoxImage.Information);
+                    MessageBox.Show(T("RentalUpdatedSuccess"), T("Success"), MessageBoxButton.OK, MessageBoxImage.Information);
                 }
             }
             else
@@ -568,6 +695,9 @@ public sealed class RentalsViewModel : ViewModelBase
                     StartDate = StartDate,
                     EndDate = EndDate,
                     RentalType = RentalType,
+                    DailyPrice = DailyPrice,
+                    MonthlyPrice = MonthlyPrice,
+                    DeviceValue = DeviceValue,
                     Price = Price,
                     PaidAmount = PaidAmount,
                     RemainingAmount = RemainingAmount,
@@ -577,7 +707,7 @@ public sealed class RentalsViewModel : ViewModelBase
                 };
                 db.Rentals.Add(rental);
                 db.SaveChanges();
-                MessageBox.Show("تم حفظ الإيجار بنجاح", "نجاح", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show(T("RentalSavedSuccess"), T("Success"), MessageBoxButton.OK, MessageBoxImage.Information);
             }
 
             RefreshRentals();
@@ -649,6 +779,539 @@ public sealed class RentalsViewModel : ViewModelBase
         }
     }
 
+    async void PrintRentalContract()
+    {
+        try
+        {
+            if (SelectedRental == null)
+            {
+                MessageBox.Show(T("SelectRentalFirst"), T("Alert"), MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            SetBusy(T("GeneratingPdf"));
+            try
+            {
+                var pdfPath = await Task.Run(() => BuildRentalContractPdf(SelectedRental));
+                OpenOrPrintPdf(pdfPath, T("RentalContract"));
+            }
+            finally
+            {
+                SetIdle();
+            }
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"خطأ في إنشاء عقد الإيجار: {ex.Message}", "خطأ", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    async void PrintRentalHandover(bool isReturn)
+    {
+        try
+        {
+            if (SelectedRental == null)
+            {
+                MessageBox.Show(T("SelectRentalFirst"), T("Alert"), MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            SetBusy(T("GeneratingPdf"));
+            try
+            {
+                var pdfPath = await Task.Run(() => BuildRentalHandoverPdf(SelectedRental, isReturn));
+                OpenOrPrintPdf(pdfPath, isReturn ? T("ReturnReceiptTitle") : T("ReceiveReceiptTitle"));
+            }
+            finally
+            {
+                SetIdle();
+            }
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"خطأ في إنشاء الإيصال: {ex.Message}", "خطأ", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    void OpenOrPrintPdf(string pdfPath, string docType)
+    {
+        if (string.IsNullOrWhiteSpace(pdfPath) || !File.Exists(pdfPath))
+            return;
+
+        var a4Printer = GetA4PrinterName();
+        if (!string.IsNullOrWhiteSpace(a4Printer) && IsPrinterInstalled(a4Printer))
+        {
+            try
+            {
+                var psi = new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = pdfPath,
+                    Verb = "printto",
+                    Arguments = $"\"{a4Printer}\"",
+                    UseShellExecute = true,
+                    CreateNoWindow = true
+                };
+                System.Diagnostics.Process.Start(psi);
+                return;
+            }
+            catch
+            {
+            }
+        }
+
+        try
+        {
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo { FileName = pdfPath, UseShellExecute = true });
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(ex.Message, "تعذر فتح الملف", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    static Dictionary<string, string> BuildPdfHeaderData()
+    {
+        var report = new BlueMax.Infrastructure.ReportDesignerSettingsStore().Load();
+        return new Dictionary<string, string>
+        {
+            ["CompanyName"] = report.CompanyName?.Trim() ?? "",
+            ["CompanyHeader"] = report.CompanyHeader?.Trim() ?? "",
+            ["CompanyAddress"] = report.CompanyAddress?.Trim() ?? "",
+            ["CompanyPhone"] = report.CompanyPhone?.Trim() ?? "",
+            ["CompanyCommercialRecord"] = report.CompanyCommercialRecord?.Trim() ?? "",
+            ["CompanyTaxNumber"] = report.CompanyTaxNumber?.Trim() ?? "",
+            ["CompanyNationalAddress"] = report.CompanyNationalAddress?.Trim() ?? "",
+            ["ContractRepresentativeName"] = report.ContractRepresentativeName?.Trim() ?? "",
+            ["ContractRepresentativeId"] = report.ContractRepresentativeId?.Trim() ?? "",
+            ["ContractRepresentativePhone"] = report.ContractRepresentativePhone?.Trim() ?? "",
+            ["LogoPath"] = (report.ShowLogo && !string.IsNullOrWhiteSpace(report.LogoPath) && File.Exists(report.LogoPath)) ? report.LogoPath : "",
+            ["GeneratedOn"] = DateTime.Now.ToString("yyyy-MM-dd HH:mm")
+        };
+    }
+
+    string BuildRentalContractPdf(RentalItem rental)
+    {
+        var dir = AppPaths.RentalsOutput;
+        var rentalNo = (rental.RentalNumber ?? "").Trim();
+        if (string.IsNullOrWhiteSpace(rentalNo))
+            rentalNo = "RENTAL";
+        var pdfPath = System.IO.Path.Combine(dir, $"RentalContract_{rentalNo}_{DateTime.Now:yyyyMMdd_HHmmss}.pdf");
+
+        QuestPDF.Settings.License = QuestPDF.Infrastructure.LicenseType.Community;
+        QuestPdfFonts.EnsureCairoRegistered();
+
+        var header = BuildPdfHeaderData();
+        var companyName = header["CompanyName"];
+        var companyHeader = header["CompanyHeader"];
+        var companyAddress = header["CompanyAddress"];
+        var companyPhone = header["CompanyPhone"];
+        var companyCommercialRecord = header["CompanyCommercialRecord"];
+        var companyTaxNumber = header["CompanyTaxNumber"];
+        var companyNationalAddress = header["CompanyNationalAddress"];
+        var representativeName = header["ContractRepresentativeName"];
+        var representativeId = header["ContractRepresentativeId"];
+        var representativePhone = header["ContractRepresentativePhone"];
+        var logoPath = header["LogoPath"];
+        var hasLogo = !string.IsNullOrWhiteSpace(logoPath);
+        var reportNumber = rentalNo;
+        var generatedOn = header["GeneratedOn"];
+
+        var deviceText = string.Join(" ", new[] { rental.DeviceType, rental.Brand, rental.Model }.Where(x => !string.IsNullOrWhiteSpace(x)));
+        var periodDays = Math.Max(1, (rental.EndDate.Date - rental.StartDate.Date).Days);
+
+        Document.Create(container =>
+        {
+            container.Page(page =>
+            {
+                page.Size(595, 842);
+                page.Margin(1.5f, QuestPDF.Infrastructure.Unit.Centimetre);
+                page.DefaultTextStyle(x => x.FontFamily("Cairo").FontSize(9).FontColor("#1F2937"));
+
+                page.Header().Element(h => h.Column(letterhead =>
+                {
+                    letterhead.Item().Row(row =>
+                    {
+                        if (hasLogo)
+                        {
+                            row.ConstantItem(92).Element(logo =>
+                            {
+                                try
+                                {
+                                    logo.Width(92).Height(64).AlignLeft().AlignTop().Image(logoPath);
+                                }
+                                catch
+                                {
+                                }
+                            });
+                        }
+                        row.RelativeItem().PaddingTop(2).Column(info =>
+                        {
+                            info.Spacing(2);
+                            if (companyName.Length > 0)
+                                info.Item().AlignRight().Text(companyName).DirectionFromRightToLeft().Bold().FontSize(17).FontColor("#0F3A5F");
+                            if (companyHeader.Length > 0)
+                                info.Item().AlignRight().Text(companyHeader).DirectionFromRightToLeft().FontSize(11).FontColor("#374151");
+                            var contact = new System.Collections.Generic.List<(string Label, string Value)>();
+                            if (companyAddress.Length > 0)
+                                contact.Add(("", companyAddress));
+                            if (companyPhone.Length > 0)
+                                contact.Add((T("PhoneNumber"), companyPhone));
+                            if (companyCommercialRecord.Length > 0)
+                                contact.Add((T("CompanyCommercialRecord"), companyCommercialRecord));
+                            if (companyTaxNumber.Length > 0)
+                                contact.Add((T("CompanyTaxNumber"), companyTaxNumber));
+                            if (companyNationalAddress.Length > 0)
+                                contact.Add((T("CompanyNationalAddress"), companyNationalAddress));
+                            if (contact.Count > 0)
+                                info.Item().Element(c => BuildHeaderContactLine(c, contact));
+                        });
+                    });
+                    letterhead.Item().PaddingTop(4).Height(3).Background("#0F3A5F");
+                    letterhead.Item().PaddingTop(1).Height(1).Background("#D1D5DB");
+                }));
+
+                page.Content().Element(content =>
+                {
+                    content.Column(col =>
+                    {
+                        col.Spacing(6);
+
+                        col.Item().PaddingTop(2).AlignCenter().Text(T("RentalContract")).DirectionFromRightToLeft().Bold().FontSize(16).FontColor("#0F3A5F");
+                        col.Item().Row(metaRow =>
+                        {
+                            metaRow.RelativeItem();
+                            metaRow.AutoItem().Text(generatedOn).DirectionFromLeftToRight().FontSize(8).FontColor("#6B7280");
+                            metaRow.AutoItem().Text(T("ReportsGeneratedOn") + ": ").DirectionFromRightToLeft().FontSize(8).FontColor("#6B7280");
+                            metaRow.AutoItem().Text("    |    ").FontSize(8).FontColor("#6B7280");
+                            metaRow.AutoItem().Text(reportNumber).DirectionFromLeftToRight().FontSize(8).FontColor("#6B7280");
+                            metaRow.AutoItem().Text(T("ContractNumberLabel") + ": ").DirectionFromRightToLeft().FontSize(8).FontColor("#6B7280");
+                        });
+
+                        col.Item().PaddingTop(4).Row(meta =>
+                        {
+                            meta.Spacing(6);
+                            meta.RelativeItem().Element(c => BuildRentalPartyBox(c, T("FirstParty"), new List<(string, string)>
+                            {
+                                (T("Company"), companyName),
+                                (T("CompanyCommercialRecord"), companyCommercialRecord),
+                                (T("CompanyTaxNumber"), companyTaxNumber),
+                                (T("CompanyNationalAddress"), companyNationalAddress),
+                                (T("RepresentativeOf"), representativeName),
+                                (T("IdNumber"), representativeId),
+                                (T("PhoneNumber"), representativePhone)
+                            }));
+                            meta.RelativeItem().Element(c => BuildRentalPartyBox(c, T("SecondParty"), new List<(string, string)>
+                            {
+                                (T("ClientNameField"), rental.CustomerName),
+                                (T("Company"), rental.Company ?? ""),
+                                (T("IdNumber"), rental.IdNumber ?? ""),
+                                (T("PhoneNumber"), rental.Phone ?? "")
+                            }));
+                        });
+
+                        col.Item().PaddingTop(4).Text(T("DeviceDetails")).DirectionFromRightToLeft().Bold().FontSize(11).FontColor("#0F3A5F");
+                        col.Item().Table(table =>
+                        {
+                            table.ColumnsDefinition(c =>
+                            {
+                                c.RelativeColumn(1.2f);
+                                c.RelativeColumn(2f);
+                                c.RelativeColumn(1.2f);
+                                c.RelativeColumn(2f);
+                            });
+                            table.Header(h =>
+                            {
+                                BuildRentalTableHeaderCell(h.Cell(), T("DeviceType"));
+                                BuildRentalTableHeaderCell(h.Cell(), T("Device"));
+                                BuildRentalTableHeaderCell(h.Cell(), T("MainSerial"));
+                                BuildRentalTableHeaderCell(h.Cell(), T("Serial2Optional"));
+                            });
+                            table.Cell().Border(0.5f).BorderColor("#E5E7EB").Padding(3).AlignCenter().Text(rental.DeviceType).DirectionFromRightToLeft().FontSize(9);
+                            table.Cell().Border(0.5f).BorderColor("#E5E7EB").Padding(3).Text(deviceText).DirectionFromRightToLeft().FontSize(9);
+                            table.Cell().Border(0.5f).BorderColor("#E5E7EB").Padding(3).AlignCenter().Text(rental.Serial).DirectionFromRightToLeft().FontSize(9);
+                            table.Cell().Border(0.5f).BorderColor("#E5E7EB").Padding(3).AlignCenter().Text(rental.Serial2 ?? "").DirectionFromRightToLeft().FontSize(9);
+                        });
+
+                        col.Item().PaddingTop(4).Text(T("RentalPeriod")).DirectionFromRightToLeft().Bold().FontSize(11).FontColor("#0F3A5F");
+                        col.Item().Table(table =>
+                        {
+                            table.ColumnsDefinition(c =>
+                            {
+                                c.RelativeColumn(1.2f);
+                                c.RelativeColumn(1.2f);
+                                c.RelativeColumn(1.2f);
+                                c.RelativeColumn(1.2f);
+                            });
+                            table.Header(h =>
+                            {
+                                BuildRentalTableHeaderCell(h.Cell(), T("RentalType"));
+                                BuildRentalTableHeaderCell(h.Cell(), T("StartDateField"));
+                                BuildRentalTableHeaderCell(h.Cell(), T("EndDateField"));
+                                BuildRentalTableHeaderCell(h.Cell(), T("RentalDaysCountLabel"));
+                            });
+                            table.Cell().Border(0.5f).BorderColor("#E5E7EB").Padding(3).AlignCenter().Text(rental.RentalType).DirectionFromRightToLeft().FontSize(9);
+                            table.Cell().Border(0.5f).BorderColor("#E5E7EB").Padding(3).AlignCenter().Text(rental.StartDate.ToString("yyyy-MM-dd")).FontSize(9);
+                            table.Cell().Border(0.5f).BorderColor("#E5E7EB").Padding(3).AlignCenter().Text(rental.EndDate.ToString("yyyy-MM-dd")).FontSize(9);
+                            table.Cell().Border(0.5f).BorderColor("#E5E7EB").Padding(3).AlignCenter().Text(periodDays.ToString()).FontSize(9);
+                        });
+
+                        col.Item().PaddingTop(4).Text(T("PaymentSummary")).DirectionFromRightToLeft().Bold().FontSize(11).FontColor("#0F3A5F");
+                        col.Item().Table(table =>
+                        {
+                            table.ColumnsDefinition(c =>
+                            {
+                                c.RelativeColumn(1.2f);
+                                c.RelativeColumn(1.2f);
+                                c.RelativeColumn(1.2f);
+                                c.RelativeColumn(1.2f);
+                            });
+                            table.Header(h =>
+                            {
+                                BuildRentalTableHeaderCell(h.Cell(), T("DeviceValue"));
+                                BuildRentalTableHeaderCell(h.Cell(), T("DailyPrice"));
+                                BuildRentalTableHeaderCell(h.Cell(), T("MonthlyPrice"));
+                                BuildRentalTableHeaderCell(h.Cell(), T("PriceField"));
+                            });
+                            table.Cell().Border(0.5f).BorderColor("#E5E7EB").Padding(3).AlignCenter().Text(rental.DeviceValue.ToString("N2")).Bold().FontColor("#0F3A5F").FontSize(9);
+                            table.Cell().Border(0.5f).BorderColor("#E5E7EB").Padding(3).AlignCenter().Text(rental.DailyPrice.ToString("N2")).FontSize(9);
+                            table.Cell().Border(0.5f).BorderColor("#E5E7EB").Padding(3).AlignCenter().Text(rental.MonthlyPrice.ToString("N2")).FontSize(9);
+                            table.Cell().Border(0.5f).BorderColor("#E5E7EB").Padding(3).AlignCenter().Text(rental.Price.ToString("N2")).Bold().FontColor("#0F3A5F").FontSize(9);
+                            table.Cell().Border(0.5f).BorderColor("#E5E7EB").Background("#F8FAFC").Padding(3).AlignCenter().Text(T("PaidAmount")).DirectionFromRightToLeft().FontSize(8).FontColor("#6B7280");
+                            table.Cell().Border(0.5f).BorderColor("#E5E7EB").Background("#F8FAFC").Padding(3).Text("").FontSize(9);
+                            table.Cell().Border(0.5f).BorderColor("#E5E7EB").Background("#F8FAFC").Padding(3).Text("").FontSize(9);
+                            table.Cell().Border(0.5f).BorderColor("#E5E7EB").Background("#F8FAFC").Padding(3).AlignCenter().Text(rental.PaidAmount.ToString("N2")).FontSize(9);
+                            table.Cell().Border(0.5f).BorderColor("#E5E7EB").Background("#E2E8F0").Padding(3).AlignCenter().Text(T("RemainingAmount")).DirectionFromRightToLeft().FontSize(8).FontColor("#6B7280");
+                            table.Cell().Border(0.5f).BorderColor("#E5E7EB").Background("#E2E8F0").Padding(3).Text("").FontSize(9);
+                            table.Cell().Border(0.5f).BorderColor("#E5E7EB").Background("#E2E8F0").Padding(3).Text("").FontSize(9);
+                            table.Cell().Border(0.5f).BorderColor("#E5E7EB").Background("#E2E8F0").Padding(3).AlignCenter().Text(rental.RemainingAmount.ToString("N2")).Bold().FontColor("#B91C1C").FontSize(9);
+                        });
+
+                        col.Item().PaddingTop(6).Text(T("ContractTermsTitle")).DirectionFromRightToLeft().Bold().FontSize(11).FontColor("#0F3A5F");
+                        col.Item().PaddingTop(2).Column(termsCol =>
+                        {
+                            termsCol.Spacing(3);
+                            foreach (var term in BuildRentalContractTerms(rental))
+                            {
+                                termsCol.Item().Text(term).DirectionFromRightToLeft().FontSize(9).FontColor("#374151");
+                            }
+                        });
+
+                        col.Item().PaddingTop(8).EnsureSpace(100).Row(signatures =>
+                        {
+                            signatures.Spacing(14);
+                            signatures.RelativeItem().Element(c => BuildRentalSignatureBox(c, T("ContractSignatureLessor")));
+                            signatures.RelativeItem().Element(c => BuildRentalSignatureBox(c, T("ContractSignatureRenter")));
+                        });
+                    });
+                });
+
+                page.Footer().Element(f => f.Column(footerCol =>
+                {
+                    footerCol.Item().LineHorizontal(0.5f).LineColor("#CBD5E1");
+                    footerCol.Item().PaddingTop(3).Row(footerRow =>
+                    {
+                        footerRow.RelativeItem().AlignLeft().Text(x => SpanOf(x, companyName).FontSize(8).FontColor("#6B7280"));
+                        footerRow.RelativeItem().AlignRight().DefaultTextStyle(s => s.FontSize(8).FontColor("#6B7280")).Text(x =>
+                        {
+                            x.Span(T("PageLabel") + " ").DirectionFromRightToLeft();
+                            x.CurrentPageNumber();
+                        });
+                    });
+                }));
+            });
+        }).GeneratePdf(pdfPath);
+
+        return pdfPath;
+    }
+
+    List<string> BuildRentalContractTerms(RentalItem rental)
+    {
+        var deviceValue = rental.DeviceValue.ToString("N2");
+        var terms = T("RentalContractTerms").Replace("{0}", deviceValue);
+        var lines = new List<string>();
+        foreach (var part in terms.Split(new[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries))
+        {
+            var trimmed = part.Trim();
+            if (trimmed.Length > 0)
+                lines.Add(trimmed);
+        }
+        return lines;
+    }
+
+    string BuildRentalHandoverPdf(RentalItem rental, bool isReturn)
+    {
+        var dir = AppPaths.RentalsOutput;
+        var rentalNo = (rental.RentalNumber ?? "").Trim();
+        if (string.IsNullOrWhiteSpace(rentalNo))
+            rentalNo = "RENTAL";
+        var mode = isReturn ? "Return" : "Receive";
+        var pdfPath = System.IO.Path.Combine(dir, $"RentalHandover_{mode}_{rentalNo}_{DateTime.Now:yyyyMMdd_HHmmss}.pdf");
+
+        QuestPDF.Settings.License = QuestPDF.Infrastructure.LicenseType.Community;
+        QuestPdfFonts.EnsureCairoRegistered();
+
+        var header = BuildPdfHeaderData();
+        var companyName = header["CompanyName"];
+        var companyHeader = header["CompanyHeader"];
+        var companyAddress = header["CompanyAddress"];
+        var companyPhone = header["CompanyPhone"];
+        var logoPath = header["LogoPath"];
+        var hasLogo = !string.IsNullOrWhiteSpace(logoPath);
+
+        var title = isReturn ? T("ReturnReceiptTitle") : T("ReceiveReceiptTitle");
+        var confirmation = isReturn ? T("ReturnConfirmationText") : T("ReceiveConfirmationText");
+        var deviceText = string.Join(" ", new[] { rental.DeviceType, rental.Brand, rental.Model }.Where(x => !string.IsNullOrWhiteSpace(x)));
+
+        Document.Create(container =>
+        {
+            container.Page(page =>
+            {
+                page.Size(595, 842);
+                page.Margin(1.5f, QuestPDF.Infrastructure.Unit.Centimetre);
+                page.DefaultTextStyle(x => x.FontFamily("Cairo").FontSize(9).FontColor("#1F2937"));
+
+                page.Header().Element(h => h.Column(letterhead =>
+                {
+                    letterhead.Item().Row(row =>
+                    {
+                        if (hasLogo)
+                        {
+                            row.ConstantItem(92).Element(logo =>
+                            {
+                                try
+                                {
+                                    logo.Width(92).Height(64).AlignLeft().AlignTop().Image(logoPath);
+                                }
+                                catch
+                                {
+                                }
+                            });
+                        }
+                        row.RelativeItem().PaddingTop(2).Column(info =>
+                        {
+                            info.Spacing(2);
+                            if (companyName.Length > 0)
+                                info.Item().AlignRight().Text(companyName).DirectionFromRightToLeft().Bold().FontSize(17).FontColor("#0F3A5F");
+                            if (companyHeader.Length > 0)
+                                info.Item().AlignRight().Text(companyHeader).DirectionFromRightToLeft().FontSize(11).FontColor("#374151");
+                            var contact = new System.Collections.Generic.List<(string Label, string Value)>();
+                            if (companyAddress.Length > 0)
+                                contact.Add(("", companyAddress));
+                            if (companyPhone.Length > 0)
+                                contact.Add((T("PhoneNumber"), companyPhone));
+                            if (contact.Count > 0)
+                                info.Item().Element(c => BuildHeaderContactLine(c, contact));
+                        });
+                    });
+                    letterhead.Item().PaddingTop(4).Height(3).Background("#0F3A5F");
+                    letterhead.Item().PaddingTop(1).Height(1).Background("#D1D5DB");
+                }));
+
+                page.Content().Element(content =>
+                {
+                    content.Column(col =>
+                    {
+                        col.Spacing(6);
+
+                        col.Item().PaddingTop(2).AlignCenter().Text(title).DirectionFromRightToLeft().Bold().FontSize(16).FontColor("#0F3A5F");
+                        col.Item().Row(metaRow =>
+                        {
+                            metaRow.RelativeItem();
+                            metaRow.AutoItem().Text(header["GeneratedOn"]).DirectionFromLeftToRight().FontSize(8).FontColor("#6B7280");
+                            metaRow.AutoItem().Text(T("ReportsGeneratedOn") + ": ").DirectionFromRightToLeft().FontSize(8).FontColor("#6B7280");
+                            metaRow.AutoItem().Text("    |    ").FontSize(8).FontColor("#6B7280");
+                            metaRow.AutoItem().Text(rentalNo).DirectionFromLeftToRight().FontSize(8).FontColor("#6B7280");
+                            metaRow.AutoItem().Text(T("RentalNumber") + ": ").DirectionFromRightToLeft().FontSize(8).FontColor("#6B7280");
+                        });
+
+                        col.Item().PaddingTop(4).Text(confirmation).DirectionFromRightToLeft().FontSize(10).FontColor("#374151");
+
+                        col.Item().PaddingTop(6).Row(meta =>
+                        {
+                            meta.Spacing(6);
+                            meta.RelativeItem().Element(c => BuildRentalMetaBox(c, T("ClientNameField"), rental.CustomerName));
+                            meta.RelativeItem().Element(c => BuildRentalMetaBox(c, T("PhoneNumber"), rental.Phone ?? ""));
+                        });
+                        col.Item().PaddingTop(4).Row(meta2 =>
+                        {
+                            meta2.Spacing(6);
+                            meta2.RelativeItem().Element(c => BuildRentalMetaBox(c, T("Device"), deviceText));
+                            meta2.RelativeItem().Element(c => BuildRentalMetaBox(c, T("MainSerial"), rental.Serial));
+                        });
+
+                        col.Item().PaddingTop(4).Row(meta3 =>
+                        {
+                            meta3.Spacing(6);
+                            meta3.RelativeItem().Element(c => BuildRentalMetaBox(c, T("StartDateField"), rental.StartDate.ToString("yyyy-MM-dd")));
+                            meta3.RelativeItem().Element(c => BuildRentalMetaBox(c, T("EndDateField"), rental.EndDate.ToString("yyyy-MM-dd")));
+                            meta3.RelativeItem().Element(c => BuildRentalMetaBox(c, T("DeviceValue"), rental.DeviceValue.ToString("N2")));
+                        });
+
+                        col.Item().PaddingTop(8).EnsureSpace(100).Row(signatures =>
+                        {
+                            signatures.Spacing(14);
+                            signatures.RelativeItem().Element(c => BuildRentalSignatureBox(c, T("ContractSignatureRenter")));
+                            signatures.RelativeItem().Element(c => BuildRentalSignatureBox(c, T("ContractSignatureLessor")));
+                        });
+                    });
+                });
+
+                page.Footer().Element(f => f.Column(footerCol =>
+                {
+                    footerCol.Item().LineHorizontal(0.5f).LineColor("#CBD5E1");
+                    footerCol.Item().PaddingTop(3).Row(footerRow =>
+                    {
+                        footerRow.RelativeItem().AlignLeft().Text(x => SpanOf(x, companyName).FontSize(8).FontColor("#6B7280"));
+                        footerRow.RelativeItem().AlignRight().DefaultTextStyle(s => s.FontSize(8).FontColor("#6B7280")).Text(x =>
+                        {
+                            x.Span(T("PageLabel") + " ").DirectionFromRightToLeft();
+                            x.CurrentPageNumber();
+                        });
+                    });
+                }));
+            });
+        }).GeneratePdf(pdfPath);
+
+        return pdfPath;
+    }
+
+    void BuildRentalMetaBox(QuestPDF.Infrastructure.IContainer container, string label, string value)
+    {
+        container.Border(0.75f).BorderColor("#CBD5E1").Background("#F8FAFC").Padding(6).Column(c =>
+        {
+            c.Item().Text(label).DirectionFromRightToLeft().FontSize(8).FontColor("#374151");
+            c.Item().PaddingTop(2).Text(x => SpanOf(x, value).FontSize(10).Bold().FontColor("#0F3A5F"));
+        });
+    }
+
+    void BuildRentalPartyBox(QuestPDF.Infrastructure.IContainer container, string title, List<(string Label, string Value)> fields)
+    {
+        container.Border(0.75f).BorderColor("#0F3A5F").Background("#F8FAFC").Padding(8).Column(c =>
+        {
+            c.Item().AlignCenter().Text(title).DirectionFromRightToLeft().Bold().FontSize(11).FontColor("#0F3A5F");
+            foreach (var (label, value) in fields)
+            {
+                if (string.IsNullOrWhiteSpace(value))
+                    continue;
+                c.Item().PaddingTop(4).Element(el => AddRtlPairRow(el, label, value, valueColor: "#1F2937", valueBold: true));
+            }
+        });
+    }
+
+    void BuildRentalTableHeaderCell(QuestPDF.Infrastructure.IContainer container, string text)
+    {
+        container.Border(0.5f).BorderColor("#0F3A5F").Background("#0F3A5F").Padding(4).AlignCenter().Text(text).DirectionFromRightToLeft().Bold().FontSize(9).FontColor("#FFFFFF");
+    }
+
+    void BuildRentalSignatureBox(QuestPDF.Infrastructure.IContainer container, string title)
+    {
+        container.Border(0.75f).BorderColor("#9CA3AF").Padding(8).Column(c =>
+        {
+            c.Item().AlignCenter().Text(title).DirectionFromRightToLeft().Bold().FontSize(11).FontColor("#0F3A5F");
+            c.Item().PaddingTop(40).LineHorizontal(0.5f).LineColor("#9CA3AF");
+        });
+    }
+
     async void PrintRentalReceipt()
     {
         try
@@ -663,7 +1326,7 @@ public sealed class RentalsViewModel : ViewModelBase
             if (string.IsNullOrWhiteSpace(rentalNo))
                 return;
 
-            var outputDir = System.IO.Path.Combine(AppContext.BaseDirectory, "Rentals_Output");
+            var outputDir = AppPaths.RentalsOutput;
             var pdfPath = System.IO.Path.Combine(outputDir, $"Rental_{rentalNo}.pdf");
             var docxPath = System.IO.Path.Combine(outputDir, $"Rental_{rentalNo}.docx");
             var openPath = System.IO.File.Exists(docxPath) ? docxPath : (System.IO.File.Exists(pdfPath) ? pdfPath : "");
@@ -686,7 +1349,7 @@ public sealed class RentalsViewModel : ViewModelBase
                     System.IO.Directory.CreateDirectory(outputDir);
 
                 var data = BuildRentalTokenData(SelectedRental);
-                var engine = new WordTemplateEngine("", outputDir);
+                var engine = new WordTemplateEngine("");
                 var generatedPath = await Task.Run(() => engine.GenerateDocumentFromPath(templatePath, data));
                 openPath = generatedPath;
             }
@@ -743,7 +1406,7 @@ public sealed class RentalsViewModel : ViewModelBase
             if (string.IsNullOrWhiteSpace(rentalNo))
                 return;
 
-            var outputDir = System.IO.Path.Combine(AppContext.BaseDirectory, "Rentals_Output");
+            var outputDir = AppPaths.RentalsOutput;
             var pdfPath = System.IO.Path.Combine(outputDir, $"Rental_{rentalNo}.pdf");
             var docxPath = System.IO.Path.Combine(outputDir, $"Rental_{rentalNo}.docx");
             var openPath = System.IO.File.Exists(docxPath) ? docxPath : (System.IO.File.Exists(pdfPath) ? pdfPath : "");
@@ -766,7 +1429,7 @@ public sealed class RentalsViewModel : ViewModelBase
                     System.IO.Directory.CreateDirectory(outputDir);
 
                 var data = BuildRentalTokenData(SelectedRental);
-                var engine = new WordTemplateEngine("", outputDir);
+                var engine = new WordTemplateEngine("");
                 var generatedPath = await Task.Run(() => engine.GenerateDocumentFromPath(templatePath, data));
                 openPath = generatedPath;
             }
@@ -916,14 +1579,28 @@ public sealed class RentalsViewModel : ViewModelBase
             ["Date"] = DateTime.Now.ToString("yyyy-MM-dd"),
             ["date"] = DateTime.Now.ToString("yyyy-MM-dd"),
 
-            ["company_logo_img"] = "",
             ["qr_code_img"] = ""
         };
+
+        var logoImagePath = "";
+        try
+        {
+            var settings = new BlueMax.Infrastructure.ReportDesignerSettingsStore().Load();
+            if (settings.ShowLogo && !string.IsNullOrWhiteSpace(settings.LogoPath) && File.Exists(settings.LogoPath))
+                logoImagePath = settings.LogoPath;
+        }
+        catch
+        {
+        }
+        data["company_logo_path"] = logoImagePath;
+        data["company_logo_img"] = string.IsNullOrWhiteSpace(logoImagePath)
+            ? ""
+            : BlueMax.Infrastructure.WordTemplateEngine.CompanyLogoMarker;
 
         // Log data for debugging
         try
         {
-            var logDir = System.IO.Path.Combine(System.AppContext.BaseDirectory, "Logs");
+            var logDir = AppPaths.LogsDir;
             System.IO.Directory.CreateDirectory(logDir);
             var logPath = System.IO.Path.Combine(logDir, "rental_tokens.log");
             var logLines = new List<string>
@@ -968,13 +1645,18 @@ public sealed class RentalsViewModel : ViewModelBase
             Rentals.Add(item);
     }
 
-    void RefreshRentals()
+    async void RefreshRentals()
     {
+        if (IsBusy) return;
+        SetBusy(T("LoadingData"));
         try
         {
-            using var db = CreateDbContext();
-            var rentals = db.Rentals.OrderByDescending(r => r.CreatedAt).ToList();
-            
+            var rentals = await Task.Run(() =>
+            {
+                using var db = CreateDbContext();
+                return db.Rentals.OrderByDescending(r => r.CreatedAt).ToList();
+            });
+
             Rentals.Clear();
             foreach (var rental in rentals)
             {
@@ -996,6 +1678,9 @@ public sealed class RentalsViewModel : ViewModelBase
                     EndDate = rental.EndDate,
                     RentalType = rental.RentalType,
                     Price = rental.Price,
+                    DailyPrice = rental.DailyPrice,
+                    MonthlyPrice = rental.MonthlyPrice,
+                    DeviceValue = rental.DeviceValue,
                     PaidAmount = rental.PaidAmount,
                     RemainingAmount = rental.RemainingAmount,
                     Status = rental.Status,
@@ -1007,15 +1692,44 @@ public sealed class RentalsViewModel : ViewModelBase
             OnPropertyChanged(nameof(TotalRentals));
             OnPropertyChanged(nameof(ActiveRentalsCount));
             OnPropertyChanged(nameof(ExpiredRentalsCount));
+            OnPropertyChanged(nameof(ExpiringSoonRentalsCount));
+            OnPropertyChanged(nameof(HasExpiringSoonRentals));
             OnPropertyChanged(nameof(TotalIncome));
             OnPropertyChanged(nameof(HasExpiredRentals));
         }
         catch { }
+        finally
+        {
+            SetIdle();
+        }
+    }
+
+    public int ExpiringSoonRentalsCount => Rentals.Count(r => r.Status == "Active" && r.EndDate >= DateTime.Today && r.EndDate <= DateTime.Today.AddDays(ExpiryWarningDays));
+    public bool HasExpiringSoonRentals => ExpiringSoonRentalsCount > 0;
+
+    public const int ExpiryWarningDays = 3;
+
+    void StartAlertTimer()
+    {
+        try
+        {
+            _alertTimer = new System.Windows.Threading.DispatcherTimer
+            {
+                Interval = TimeSpan.FromMinutes(5)
+            };
+            _alertTimer.Tick += (_, __) => CheckExpiredRentals();
+            _alertTimer.Start();
+        }
+        catch
+        {
+        }
     }
 
     void CheckExpiredRentals()
     {
-        if (HasExpiredRentals)
+        var expired = ExpiredRentalsCount;
+        var expiring = ExpiringSoonRentalsCount;
+        if (expired > 0 || expiring > 0)
         {
             PlaySound("alert");
         }
@@ -1025,10 +1739,14 @@ public sealed class RentalsViewModel : ViewModelBase
     {
         try
         {
-            // TODO: Implement sound alerts
-            // For now, this is a placeholder
+            if (string.Equals(type, "alert", StringComparison.OrdinalIgnoreCase))
+                System.Media.SystemSounds.Exclamation.Play();
+            else
+                System.Media.SystemSounds.Asterisk.Play();
         }
-        catch { }
+        catch
+        {
+        }
     }
 
     string GenerateRentalNumber()
@@ -1070,6 +1788,9 @@ public class RentalItem : ViewModelBase
     DateTime _endDate;
     string _rentalType = "";
     decimal _price;
+    decimal _dailyPrice;
+    decimal _monthlyPrice;
+    decimal _deviceValue;
     decimal _paidAmount;
     decimal _remainingAmount;
     string _status = "";
@@ -1169,6 +1890,24 @@ public class RentalItem : ViewModelBase
     {
         get => _price;
         set => SetProperty(ref _price, value);
+    }
+
+    public decimal DailyPrice
+    {
+        get => _dailyPrice;
+        set => SetProperty(ref _dailyPrice, value);
+    }
+
+    public decimal MonthlyPrice
+    {
+        get => _monthlyPrice;
+        set => SetProperty(ref _monthlyPrice, value);
+    }
+
+    public decimal DeviceValue
+    {
+        get => _deviceValue;
+        set => SetProperty(ref _deviceValue, value);
     }
 
     public decimal PaidAmount

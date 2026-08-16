@@ -43,6 +43,8 @@ public partial class MainWindow : Window
         
         // Set initial flow direction
         this.FlowDirection = LanguageService.Instance.IsRTL ? FlowDirection.RightToLeft : FlowDirection.LeftToRight;
+
+        Loaded += (_, __) => UpdateNotificationBadge();
     }
 
     private void UpdateUIForLanguage()
@@ -208,6 +210,27 @@ public partial class MainWindow : Window
         }
     }
 
+    void OnNavReceiptStickerClick(object sender, RoutedEventArgs e)
+    {
+        if (DataContext is MainViewModel vm)
+        {
+            vm.ShowReceiptStickerDesignerCommand.Execute(null);
+
+            // Hide sidebar for other sections
+            _isSidebarVisible = false;
+            var sidebarBorder = this.FindName("SidebarBorder") as Border;
+            if (sidebarBorder != null)
+            {
+                sidebarBorder.Visibility = Visibility.Collapsed;
+            }
+            var sidebarColumn = this.FindName("SidebarColumn") as ColumnDefinition;
+            if (sidebarColumn != null)
+            {
+                sidebarColumn.Width = new GridLength(0);
+            }
+        }
+    }
+
     void OnNavRentalsClick(object sender, RoutedEventArgs e)
     {
         if (DataContext is MainViewModel vm)
@@ -314,45 +337,11 @@ public partial class MainWindow : Window
     {
         try
         {
-            var notifications = new List<string>();
-            
-            // Check for expired rentals
-            try
-            {
-                using var db = BlueMax.Infrastructure.DbContextFactory.CreateDbContext();
-                var expiredRentals = db.Rentals
-                    .Where(r => r.EndDate < DateTime.Today && r.Status == "نشط")
-                    .ToList();
-                
-                if (expiredRentals.Any())
-                {
-                    notifications.Add($"تنبيه: هناك {expiredRentals.Count} إيجار منتهي (تاريخ الانتهاء أقل من اليوم)");
-                }
-            }
-            catch
-            {
-            }
-
-            // Check for devices needing calibration
-            try
-            {
-                using var db = BlueMax.Infrastructure.DbContextFactory.CreateDbContext();
-                var devicesNeedingCalibration = db.Certificates
-                    .Where(c => c.ExpiryDate < DateTime.Today.AddDays(7))
-                    .ToList();
-                
-                if (devicesNeedingCalibration.Any())
-                {
-                    notifications.Add($"تنبيه: هناك {devicesNeedingCalibration.Count} شهادة ستنتهي خلال 7 أيام");
-                }
-            }
-            catch
-            {
-            }
+            var notifications = BuildNotifications();
 
             if (!notifications.Any())
             {
-                notifications.Add("لا توجد إشعارات جديدة");
+                notifications.Add(BlueMax.Presentation.Wpf.Resources.Translations.Get("NoNotifications"));
             }
 
             var list = new ListBox
@@ -403,9 +392,82 @@ public partial class MainWindow : Window
 
             close.Click += (_, __) => window.Close();
             window.ShowDialog();
+            UpdateNotificationBadge();
         }
         catch
         {
+        }
+    }
+
+    List<string> BuildNotifications()
+    {
+        var notifications = new List<string>();
+
+        // Check for expired rentals
+        try
+        {
+            using var db = BlueMax.Infrastructure.DbContextFactory.CreateDbContext();
+            var expiredRentals = db.Rentals
+                .Where(r => r.EndDate < DateTime.Today && r.Status == "Active")
+                .ToList();
+
+            if (expiredRentals.Any())
+            {
+                notifications.Add($"تنبيه: هناك {expiredRentals.Count} إيجار منتهي (تاريخ الانتهاء أقل من اليوم)");
+            }
+        }
+        catch
+        {
+        }
+
+        // Check for rentals expiring soon
+        try
+        {
+            using var db = BlueMax.Infrastructure.DbContextFactory.CreateDbContext();
+            var expiringRentals = db.Rentals
+                .Where(r => r.EndDate >= DateTime.Today && r.EndDate <= DateTime.Today.AddDays(3) && r.Status == "Active")
+                .ToList();
+
+            if (expiringRentals.Any())
+            {
+                notifications.Add($"تنبيه: هناك {expiringRentals.Count} إيجار سينتهي خلال 3 أيام");
+            }
+        }
+        catch
+        {
+        }
+
+        // Check for devices needing calibration
+        try
+        {
+            using var db = BlueMax.Infrastructure.DbContextFactory.CreateDbContext();
+            var devicesNeedingCalibration = db.Certificates
+                .Where(c => c.ExpiryDate < DateTime.Today.AddDays(7))
+                .ToList();
+
+            if (devicesNeedingCalibration.Any())
+            {
+                notifications.Add($"تنبيه: هناك {devicesNeedingCalibration.Count} شهادة ستنتهي خلال 7 أيام");
+            }
+        }
+        catch
+        {
+        }
+
+        return notifications;
+    }
+
+    void UpdateNotificationBadge()
+    {
+        try
+        {
+            var count = BuildNotifications().Count;
+            NotificationBadgeText.Text = count.ToString();
+            NotificationBadge.Visibility = count > 0 ? Visibility.Visible : Visibility.Collapsed;
+        }
+        catch
+        {
+            NotificationBadge.Visibility = Visibility.Collapsed;
         }
     }
 

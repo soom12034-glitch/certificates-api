@@ -1,0 +1,24 @@
+<Window x:Class="BlueMax.Presentation.Wpf.Views.TextInputWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:viewmodels="clr-namespace:BlueMax.Presentation.Wpf.ViewModels"
+        Title="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=[SaveTemplateTitle]}"
+        Width="380" SizeToContent="Height"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        Background="{DynamicResource SurfaceWindowBrush}"
+        FontFamily="Cairo, Segoe UI"
+        FlowDirection="RightToLeft"
+        ShowInTaskbar="False">
+    <StackPanel Margin="20">
+        <TextBlock x:Name="PromptText" FontSize="13" Foreground="{DynamicResource TextStrongBrush}" TextWrapping="Wrap" Margin="0,0,0,10"/>
+        <TextBox x:Name="AnswerBox" Height="36" Padding="10,8" FontSize="13"
+                 BorderBrush="{DynamicResource BorderMediumBrush}" BorderThickness="1" Background="White"/>
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" Margin="0,16,0,0">
+            <Button Content="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=[Save]}" Click="OnOkClick"
+                    Background="{DynamicResource PrimaryBrush}" Foreground="White" Height="34" Padding="20,0" FontSize="13" Cursor="Hand"/>
+            <Button Content="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=[Cancel]}" Click="OnCancelClick"
+                    Background="{DynamicResource BorderLightBrush}" Foreground="{DynamicResource TextSecondaryBrush}" Height="34" Padding="20,0" FontSize="13" Margin="8,0,0,0" Cursor="Hand"/>
+        </StackPanel>
+    </StackPanel>
+</Window>

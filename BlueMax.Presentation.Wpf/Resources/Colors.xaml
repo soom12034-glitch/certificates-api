@@ -1,0 +1,144 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- =====================================================================
+         Semantic Design System Colors
+         Single source of truth for the app's color palette.
+         Each semantic token exposes a <Color> (for effects / gradient stops)
+         and a <SolidColorBrush> (for Background / Foreground / BorderBrush / Fill).
+         Override these tokens (or swap this dictionary) to re-skin the app.
+         ===================================================================== -->
+
+    <!-- Brand / Status -->
+    <Color x:Key="PrimaryColor">#6366F1</Color>
+    <Color x:Key="PrimaryHoverColor">#4F46E5</Color>
+    <Color x:Key="PrimaryVioletColor">#8B5CF6</Color>
+    <Color x:Key="SecondaryPinkColor">#EC4899</Color>
+    <Color x:Key="PinkLightColor">#F472B6</Color>
+    <Color x:Key="InfoBlueColor">#3B82F6</Color>
+    <Color x:Key="InfoCyanColor">#06B6D4</Color>
+    <Color x:Key="OrangeColor">#FB923C</Color>
+
+    <Color x:Key="SuccessColor">#10B981</Color>
+    <Color x:Key="SuccessHoverColor">#059669</Color>
+    <Color x:Key="SuccessTealColor">#16A085</Color>
+    <Color x:Key="SuccessBrightColor">#4CAF50</Color>
+
+    <Color x:Key="WarningColor">#F59E0B</Color>
+    <Color x:Key="WarningHoverColor">#D97706</Color>
+    <Color x:Key="WarningOrangeColor">#FF9800</Color>
+
+    <Color x:Key="DangerColor">#EF4444</Color>
+    <Color x:Key="DangerLightColor">#FF5252</Color>
+    <Color x:Key="DangerBorderColor">#D32F2F</Color>
+    <Color x:Key="DangerSurfaceColor">#FDE7E9</Color>
+
+    <Color x:Key="BrandBlueColor">#007ACC</Color>
+
+    <!-- Text -->
+    <Color x:Key="TextPrimaryColor">#1F2937</Color>
+    <Color x:Key="TextStrongColor">#111827</Color>
+    <Color x:Key="TextBodyColor">#333333</Color>
+    <Color x:Key="TextSecondaryColor">#374151</Color>
+    <Color x:Key="TextMutedColor">#4B5563</Color>
+    <Color x:Key="TextHintColor">#6B7280</Color>
+    <Color x:Key="TextDisabledColor">#9CA3AF</Color>
+    <Color x:Key="TextFaintColor">#777777</Color>
+    <Color x:Key="TextSidebarColor">#A0A0B0</Color>
+    <Color x:Key="TextNavyColor">#2C3E50</Color>
+    <Color x:Key="TextOnDarkColor">#D1D5DB</Color>
+
+    <!-- Surfaces -->
+    <Color x:Key="SurfaceWhiteColor">#FFFFFF</Color>
+    <Color x:Key="SurfaceSoftColor">#F9FAFB</Color>
+    <Color x:Key="SurfaceWindowColor">#F5F5F5</Color>
+    <Color x:Key="SurfaceAltColor">#F3F4F6</Color>
+    <Color x:Key="SurfaceInputColor">#F0F0F0</Color>
+    <Color x:Key="SurfaceCardColor">#F8F9FA</Color>
+    <Color x:Key="SurfaceDividerColor">#DDDDDD</Color>
+    <Color x:Key="SurfaceMutedColor">#EEEEEE</Color>
+    <Color x:Key="SurfaceSelectedColor">#EFF6FF</Color>
+    <Color x:Key="SurfaceSuccessColor">#E8F5E9</Color>
+
+    <!-- Borders -->
+    <Color x:Key="BorderLightColor">#E5E7EB</Color>
+    <Color x:Key="BorderMediumColor">#D1D5DB</Color>
+    <Color x:Key="BorderInputColor">#B0B0B0</Color>
+    <Color x:Key="BorderSidebarColor">#3D3D5C</Color>
+
+    <!-- Sidebar -->
+    <Color x:Key="SidebarColor">#2D2D44</Color>
+    <Color x:Key="SidebarDeepColor">#2D1B4E</Color>
+
+    <!-- Overlays (semi-transparent) -->
+    <Color x:Key="OverlaySoftColor">#22000000</Color>
+    <Color x:Key="OverlayDarkColor">#66000000</Color>
+    <Color x:Key="OverlayWhiteColor">#30FFFFFF</Color>
+    <Color x:Key="OverlaySuccessColor">#1016A085</Color>
+
+    <!-- Effects -->
+    <Color x:Key="Black">#000000</Color>
+
+    <!-- ===================== Brush tokens ===================== -->
+    <SolidColorBrush x:Key="PrimaryBrush" Color="{DynamicResource PrimaryColor}"/>
+    <SolidColorBrush x:Key="PrimaryHoverBrush" Color="{DynamicResource PrimaryHoverColor}"/>
+    <SolidColorBrush x:Key="PrimaryVioletBrush" Color="{DynamicResource PrimaryVioletColor}"/>
+    <SolidColorBrush x:Key="SecondaryPinkBrush" Color="{DynamicResource SecondaryPinkColor}"/>
+    <SolidColorBrush x:Key="PinkLightBrush" Color="{DynamicResource PinkLightColor}"/>
+    <SolidColorBrush x:Key="InfoBlueBrush" Color="{DynamicResource InfoBlueColor}"/>
+    <SolidColorBrush x:Key="InfoCyanBrush" Color="{DynamicResource InfoCyanColor}"/>
+    <SolidColorBrush x:Key="OrangeBrush" Color="{DynamicResource OrangeColor}"/>
+
+    <SolidColorBrush x:Key="SuccessBrush" Color="{DynamicResource SuccessColor}"/>
+    <SolidColorBrush x:Key="SuccessHoverBrush" Color="{DynamicResource SuccessHoverColor}"/>
+    <SolidColorBrush x:Key="SuccessTealBrush" Color="{DynamicResource SuccessTealColor}"/>
+    <SolidColorBrush x:Key="SuccessBrightBrush" Color="{DynamicResource SuccessBrightColor}"/>
+
+    <SolidColorBrush x:Key="WarningBrush" Color="{DynamicResource WarningColor}"/>
+    <SolidColorBrush x:Key="WarningHoverBrush" Color="{DynamicResource WarningHoverColor}"/>
+    <SolidColorBrush x:Key="WarningOrangeBrush" Color="{DynamicResource WarningOrangeColor}"/>
+
+    <SolidColorBrush x:Key="DangerBrush" Color="{DynamicResource DangerColor}"/>
+    <SolidColorBrush x:Key="DangerLightBrush" Color="{DynamicResource DangerLightColor}"/>
+    <SolidColorBrush x:Key="DangerBorderBrush" Color="{DynamicResource DangerBorderColor}"/>
+    <SolidColorBrush x:Key="DangerSurfaceBrush" Color="{DynamicResource DangerSurfaceColor}"/>
+
+    <SolidColorBrush x:Key="BrandBlueBrush" Color="{DynamicResource BrandBlueColor}"/>
+
+    <SolidColorBrush x:Key="TextPrimaryBrush" Color="{DynamicResource TextPrimaryColor}"/>
+    <SolidColorBrush x:Key="TextStrongBrush" Color="{DynamicResource TextStrongColor}"/>
+    <SolidColorBrush x:Key="TextBodyBrush" Color="{DynamicResource TextBodyColor}"/>
+    <SolidColorBrush x:Key="TextSecondaryBrush" Color="{DynamicResource TextSecondaryColor}"/>
+    <SolidColorBrush x:Key="TextMutedBrush" Color="{DynamicResource TextMutedColor}"/>
+    <SolidColorBrush x:Key="TextHintBrush" Color="{DynamicResource TextHintColor}"/>
+    <SolidColorBrush x:Key="TextDisabledBrush" Color="{DynamicResource TextDisabledColor}"/>
+    <SolidColorBrush x:Key="TextFaintBrush" Color="{DynamicResource TextFaintColor}"/>
+    <SolidColorBrush x:Key="TextSidebarBrush" Color="{DynamicResource TextSidebarColor}"/>
+    <SolidColorBrush x:Key="TextNavyBrush" Color="{DynamicResource TextNavyColor}"/>
+    <SolidColorBrush x:Key="TextOnDarkBrush" Color="{DynamicResource TextOnDarkColor}"/>
+
+    <SolidColorBrush x:Key="SurfaceWhiteBrush" Color="{DynamicResource SurfaceWhiteColor}"/>
+    <SolidColorBrush x:Key="SurfaceSoftBrush" Color="{DynamicResource SurfaceSoftColor}"/>
+    <SolidColorBrush x:Key="SurfaceWindowBrush" Color="{DynamicResource SurfaceWindowColor}"/>
+    <SolidColorBrush x:Key="SurfaceAltBrush" Color="{DynamicResource SurfaceAltColor}"/>
+    <SolidColorBrush x:Key="SurfaceInputBrush" Color="{DynamicResource SurfaceInputColor}"/>
+    <SolidColorBrush x:Key="SurfaceCardBrush" Color="{DynamicResource SurfaceCardColor}"/>
+    <SolidColorBrush x:Key="SurfaceDividerBrush" Color="{DynamicResource SurfaceDividerColor}"/>
+    <SolidColorBrush x:Key="SurfaceMutedBrush" Color="{DynamicResource SurfaceMutedColor}"/>
+    <SolidColorBrush x:Key="SurfaceSelectedBrush" Color="{DynamicResource SurfaceSelectedColor}"/>
+    <SolidColorBrush x:Key="SurfaceSuccessBrush" Color="{DynamicResource SurfaceSuccessColor}"/>
+
+    <SolidColorBrush x:Key="BorderLightBrush" Color="{DynamicResource BorderLightColor}"/>
+    <SolidColorBrush x:Key="BorderMediumBrush" Color="{DynamicResource BorderMediumColor}"/>
+    <SolidColorBrush x:Key="BorderInputBrush" Color="{DynamicResource BorderInputColor}"/>
+    <SolidColorBrush x:Key="BorderSidebarBrush" Color="{DynamicResource BorderSidebarColor}"/>
+
+    <SolidColorBrush x:Key="SidebarBrush" Color="{DynamicResource SidebarColor}"/>
+    <SolidColorBrush x:Key="SidebarDeepBrush" Color="{DynamicResource SidebarDeepColor}"/>
+
+    <SolidColorBrush x:Key="OverlaySoftBrush" Color="{DynamicResource OverlaySoftColor}"/>
+    <SolidColorBrush x:Key="OverlayDarkBrush" Color="{DynamicResource OverlayDarkColor}"/>
+    <SolidColorBrush x:Key="OverlayWhiteBrush" Color="{DynamicResource OverlayWhiteColor}"/>
+    <SolidColorBrush x:Key="OverlaySuccessBrush" Color="{DynamicResource OverlaySuccessColor}"/>
+
+</ResourceDictionary>

@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="BlueMax Key Generator" Height="450" Width="600"
         WindowStartupLocation="CenterScreen" ResizeMode="NoResize"
-        FlowDirection="RightToLeft" Background="#F5F5F5">
+        FlowDirection="RightToLeft" Background="{DynamicResource SurfaceWindowBrush}">
     
     <Grid Margin="20">
         <Grid.RowDefinitions>
@@ -16,7 +16,7 @@
 
         <!-- Header -->
         <TextBlock Text="مولد مفاتيح التفعيل" FontSize="24" FontWeight="Bold" 
-                   HorizontalAlignment="Center" Margin="0,0,0,30" Foreground="#333"/>
+                   HorizontalAlignment="Center" Margin="0,0,0,30" Foreground="{DynamicResource TextBodyBrush}"/>
 
         <!-- Input Section -->
         <StackPanel Grid.Row="1">
@@ -35,7 +35,7 @@
                         xmlns:sys="clr-namespace:System;assembly=mscorlib"/>
             
             <Button x:Name="BtnGenerate" Content="توليد المفتاح" Height="45" FontSize="16" FontWeight="Bold"
-                    Background="#007ACC" Foreground="White" Click="BtnGenerate_Click" Cursor="Hand">
+                    Background="{DynamicResource BrandBlueBrush}" Foreground="White" Click="BtnGenerate_Click" Cursor="Hand">
                 <Button.Resources>
                     <Style TargetType="Border">
                         <Setter Property="CornerRadius" Value="5"/>
@@ -53,7 +53,7 @@
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
                 <TextBox x:Name="TxtLicenseKey" Height="80" FontSize="12" Padding="5" 
-                         TextWrapping="Wrap" IsReadOnly="True" Background="#EEE"/>
+                         TextWrapping="Wrap" IsReadOnly="True" Background="{DynamicResource SurfaceMutedBrush}"/>
                 <Button Grid.Column="1" Content="نسخ" Width="60" Margin="5,0,0,0" Height="80" Click="BtnCopy_Click"/>
             </Grid>
         </StackPanel>

@@ -80,17 +80,27 @@ public class BackupService : IDisposable
         };
     }
 
-    private async void PerformScheduledBackup(object? state)
+    private void PerformScheduledBackup(object? state)
     {
-        try
+        _ = Task.Run(async () =>
         {
-            await PerformBackupAsync();
-            LogService.LogAudit("AUTO_BACKUP", "Scheduled automatic backup completed");
-        }
-        catch (Exception ex)
-        {
-            LogService.LogException(ex);
-        }
+            try
+            {
+                await PerformBackupAsync();
+                LogService.LogAudit("AUTO_BACKUP", "Scheduled automatic backup completed");
+            }
+            catch (Exception ex)
+            {
+                LogService.LogException(ex);
+            }
+        });
+    }
+
+    public void RescheduleBackup()
+    {
+        _backupTimer?.Dispose();
+        _backupTimer = null;
+        InitializeScheduledBackup();
     }
 
     public async Task PerformBackupAsync()
@@ -150,7 +160,9 @@ public class BackupService : IDisposable
                 var fullPath = Path.Combine(backupPath, backupName);
 
                 var databaseName = GetDatabaseName(connectionString);
-                var query = $"BACKUP DATABASE [{databaseName}] TO DISK = '{fullPath}' WITH FORMAT, INIT, NAME = 'BlueMax Full Backup';";
+                var safeDbName = databaseName.Replace("]", "]]");
+                var safePath = fullPath.Replace("'", "''");
+                var query = $"BACKUP DATABASE [{safeDbName}] TO DISK = '{safePath}' WITH FORMAT, INIT, NAME = 'BlueMax Full Backup';";
 
                 using var connection = new Microsoft.Data.SqlClient.SqlConnection(connectionString);
                 await connection.OpenAsync();
@@ -158,6 +170,9 @@ public class BackupService : IDisposable
                 await command.ExecuteNonQueryAsync();
 
                 LogService.LogInfo($"SQL Server backup completed: {fullPath}");
+
+                var settings = BackupSettingsStore.Load();
+                CleanupOldBackups(backupPath, settings.MaxBackupCount);
             }
             catch (Exception ex)
             {

@@ -20,6 +20,7 @@ public partial class ClientReportWindow : Window
     public ClientReportWindow(CustomerItem customer, List<WorkOrder> workOrders, List<Certificate> certificates)
     {
         InitializeComponent();
+        BlueMax.Presentation.Wpf.Services.LanguageService.Instance.ApplyFlowDirection(this);
         var vm = new ClientReportViewModel(customer, workOrders, certificates);
         DataContext = vm;
         Loaded += (_, __) => vm.RefreshPreviewCommand.Execute(null);
@@ -361,6 +362,39 @@ public partial class ClientReportWindow : Window
                     TextAlignment = TextAlignment.Center,
                     Margin = new Thickness(0, 0, 0, 8)
                 });
+
+                if (!string.IsNullOrWhiteSpace(_companySettings.CompanyHeader))
+                {
+                    root.Children.Add(new TextBlock
+                    {
+                        FlowDirection = FlowDirection.RightToLeft,
+                        FontFamily = new FontFamily("Tahoma"),
+                        FontSize = 14,
+                        Foreground = new SolidColorBrush(Color.FromRgb(80, 80, 80)),
+                        Text = _companySettings.CompanyHeader,
+                        TextAlignment = TextAlignment.Center,
+                        Margin = new Thickness(0, 0, 0, 4)
+                    });
+                }
+
+                var contactParts = new List<string>();
+                if (!string.IsNullOrWhiteSpace(_companySettings.CompanyPhone))
+                    contactParts.Add($"هاتف: {_companySettings.CompanyPhone}");
+                if (!string.IsNullOrWhiteSpace(_companySettings.CompanyAddress))
+                    contactParts.Add(_companySettings.CompanyAddress);
+                if (contactParts.Count > 0)
+                {
+                    root.Children.Add(new TextBlock
+                    {
+                        FlowDirection = FlowDirection.RightToLeft,
+                        FontFamily = new FontFamily("Tahoma"),
+                        FontSize = 12,
+                        Foreground = new SolidColorBrush(Color.FromRgb(100, 100, 100)),
+                        Text = string.Join("  |  ", contactParts),
+                        TextAlignment = TextAlignment.Center,
+                        Margin = new Thickness(0, 0, 0, 10)
+                    });
+                }
             }
 
             // Title

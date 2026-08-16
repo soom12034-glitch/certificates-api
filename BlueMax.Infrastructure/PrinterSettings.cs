@@ -32,9 +32,12 @@ public class PrinterSettings
 
 public class PrinterSettingsStore
 {
-    private const string SettingsPath = "PrinterSettings.json";
+    public const string DefaultFileName = "PrinterSettings.json";
+    public const string ReceiptFileName = "ReceiptPrinterSettings.json";
 
-    public PrinterSettings Load()
+    readonly string _settingsPath;
+
+    public PrinterSettingsStore(string fileName = DefaultFileName)
     {
         var settingsDir = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
@@ -44,14 +47,17 @@ public class PrinterSettingsStore
 
         Directory.CreateDirectory(settingsDir);
 
-        var settingsPath = Path.Combine(settingsDir, SettingsPath);
+        _settingsPath = Path.Combine(settingsDir, string.IsNullOrWhiteSpace(fileName) ? DefaultFileName : fileName);
+    }
 
-        if (!File.Exists(settingsPath))
+    public PrinterSettings Load()
+    {
+        if (!File.Exists(_settingsPath))
             return new PrinterSettings();
 
         try
         {
-            var json = File.ReadAllText(settingsPath);
+            var json = File.ReadAllText(_settingsPath);
             return JsonSerializer.Deserialize<PrinterSettings>(json) ?? new PrinterSettings();
         }
         catch (Exception ex)
@@ -63,20 +69,10 @@ public class PrinterSettingsStore
 
     public void Save(PrinterSettings settings)
     {
-        var settingsDir = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "BlueMax",
-            "CertSystem",
-            "Settings");
-
-        Directory.CreateDirectory(settingsDir);
-
-        var settingsPath = Path.Combine(settingsDir, SettingsPath);
-
         try
         {
             var json = JsonSerializer.Serialize(settings, new JsonSerializerOptions { WriteIndented = true });
-            File.WriteAllText(settingsPath, json);
+            File.WriteAllText(_settingsPath, json);
         }
         catch (Exception ex)
         {

@@ -13,19 +13,13 @@ public class WordTemplateEngine
 {
     private static readonly Regex TokenRegex = new(@"\{\{\s*(?<key>[^}]+?)\s*\}\}", RegexOptions.CultureInvariant);
     public const string QrImageMarker = "__BLUEMAX_QR_IMAGE__";
+    public const string CompanyLogoMarker = "__BLUEMAX_LOGO_IMAGE__";
 
     private readonly string _templatesDirectory;
-    private readonly string? _db;
 
     public WordTemplateEngine(string templatesDirectory)
     {
         _templatesDirectory = templatesDirectory;
-    }
-
-    public WordTemplateEngine(string templatesDirectory, string db)
-    {
-        _templatesDirectory = templatesDirectory;
-        _db = db;
     }
 
     public string GenerateDocument(string templateName, Dictionary<string, object> data)
@@ -51,9 +45,11 @@ public class WordTemplateEngine
         var body = document.Body ?? throw new InvalidOperationException("Document body not found");
         var replacementState = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
         var qrImagePath = GetDataValue(data, "qr_image_path");
+        var logoImagePath = GetDataValue(data, "company_logo_path");
 
         ReplaceTokensInPart(body, data, replacementState);
         ReplaceQrMarkersInPart(body, mainPart, qrImagePath);
+        ReplaceLogoMarkersInPart(body, mainPart, logoImagePath);
 
         foreach (var header in mainPart.HeaderParts)
         {
@@ -61,6 +57,7 @@ public class WordTemplateEngine
             {
                 ReplaceTokensInPart(header.Header, data, replacementState);
                 ReplaceQrMarkersInPart(header.Header, mainPart, qrImagePath);
+                ReplaceLogoMarkersInPart(header.Header, mainPart, logoImagePath);
             }
         }
 
@@ -70,12 +67,29 @@ public class WordTemplateEngine
             {
                 ReplaceTokensInPart(footer.Footer, data, replacementState);
                 ReplaceQrMarkersInPart(footer.Footer, mainPart, qrImagePath);
+                ReplaceLogoMarkersInPart(footer.Footer, mainPart, logoImagePath);
             }
         }
 
         doc.Save();
 
+        TryDeleteTempQrImage(qrImagePath);
+
         return outputPath;
+    }
+
+    private static void TryDeleteTempQrImage(string qrImagePath)
+    {
+        if (string.IsNullOrWhiteSpace(qrImagePath))
+            return;
+        try
+        {
+            if (File.Exists(qrImagePath))
+                File.Delete(qrImagePath);
+        }
+        catch
+        {
+        }
     }
 
     private static void ReplaceTokensInPart(OpenXmlElement partRoot, Dictionary<string, object> data, Dictionary<string, int> replacementState)
@@ -171,13 +185,23 @@ public class WordTemplateEngine
 
     private static void ReplaceQrMarkersInPart(OpenXmlElement partRoot, MainDocumentPart mainPart, string qrImagePath)
     {
-        if (string.IsNullOrWhiteSpace(qrImagePath) || !File.Exists(qrImagePath))
+        ReplaceMarkerWithImage(partRoot, mainPart, QrImageMarker, qrImagePath);
+    }
+
+    private static void ReplaceLogoMarkersInPart(OpenXmlElement partRoot, MainDocumentPart mainPart, string logoImagePath)
+    {
+        ReplaceMarkerWithImage(partRoot, mainPart, CompanyLogoMarker, logoImagePath);
+    }
+
+    private static void ReplaceMarkerWithImage(OpenXmlElement partRoot, MainDocumentPart mainPart, string marker, string imagePath)
+    {
+        if (string.IsNullOrWhiteSpace(marker) || string.IsNullOrWhiteSpace(imagePath) || !File.Exists(imagePath))
             return;
 
         foreach (var text in partRoot.Descendants<Text>().ToList())
         {
             var value = text.Text ?? string.Empty;
-            var markerIndex = value.IndexOf(QrImageMarker, StringComparison.Ordinal);
+            var markerIndex = value.IndexOf(marker, StringComparison.Ordinal);
             if (markerIndex < 0)
                 continue;
 
@@ -185,11 +209,11 @@ public class WordTemplateEngine
                 continue;
 
             var before = value.Substring(0, markerIndex);
-            var after = value.Substring(markerIndex + QrImageMarker.Length);
+            var after = value.Substring(markerIndex + marker.Length);
 
             text.Text = before;
 
-            var imageRun = CreateImageRun(mainPart, qrImagePath, originalRun);
+            var imageRun = CreateImageRun(mainPart, imagePath, originalRun);
             originalRun.InsertAfterSelf(imageRun);
 
             if (!string.IsNullOrEmpty(after))

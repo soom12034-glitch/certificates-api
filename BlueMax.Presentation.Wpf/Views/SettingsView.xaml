@@ -54,6 +54,14 @@
                                         <RowDefinition Height="Auto" />
                                         <RowDefinition Height="Auto" />
                                         <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
                                     </Grid.RowDefinitions>
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="160" />
@@ -78,17 +86,37 @@
                                     <TextBox Grid.Row="7" Grid.Column="1" Style="{StaticResource ModernTextBox}" Text="{Binding CompanyAddress}"/>
                                     <TextBlock Grid.Row="8" Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=CompanyPhoneField}" Style="{StaticResource LabelStyle}"/>
                                     <TextBox Grid.Row="8" Grid.Column="1" Style="{StaticResource ModernTextBox}" Text="{Binding CompanyPhone}"/>
-                                    <TextBlock Grid.Row="9" Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=AppIcon}" Style="{StaticResource LabelStyle}"/>
-                                    <StackPanel Grid.Row="9" Grid.Column="1" Orientation="Horizontal">
+                                    <TextBlock Grid.Row="9" Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=CompanyCommercialRecord}" Style="{StaticResource LabelStyle}"/>
+                                    <TextBox Grid.Row="9" Grid.Column="1" Style="{StaticResource ModernTextBox}" Text="{Binding CompanyCommercialRecord}"/>
+                                    <TextBlock Grid.Row="10" Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=CompanyTaxNumber}" Style="{StaticResource LabelStyle}"/>
+                                    <TextBox Grid.Row="10" Grid.Column="1" Style="{StaticResource ModernTextBox}" Text="{Binding CompanyTaxNumber}"/>
+                                    <TextBlock Grid.Row="11" Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=CompanyNationalAddress}" Style="{StaticResource LabelStyle}"/>
+                                    <TextBox Grid.Row="11" Grid.Column="1" Style="{StaticResource ModernTextBox}" Text="{Binding CompanyNationalAddress}"/>
+                                    <TextBlock Grid.Row="12" Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=ContractRepresentativeName}" Style="{StaticResource LabelStyle}"/>
+                                    <TextBox Grid.Row="12" Grid.Column="1" Style="{StaticResource ModernTextBox}" Text="{Binding ContractRepresentativeName}"/>
+                                    <TextBlock Grid.Row="13" Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=ContractRepresentativeId}" Style="{StaticResource LabelStyle}"/>
+                                    <TextBox Grid.Row="13" Grid.Column="1" Style="{StaticResource ModernTextBox}" Text="{Binding ContractRepresentativeId}"/>
+                                    <TextBlock Grid.Row="14" Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=ContractRepresentativePhone}" Style="{StaticResource LabelStyle}"/>
+                                    <TextBox Grid.Row="14" Grid.Column="1" Style="{StaticResource ModernTextBox}" Text="{Binding ContractRepresentativePhone}"/>
+                                    <TextBlock Grid.Row="15" Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=CompanyLogo}" Style="{StaticResource LabelStyle}"/>
+                                    <StackPanel Grid.Row="15" Grid.Column="1" Orientation="Horizontal">
+                                        <TextBox Width="300" Style="{StaticResource ModernTextBox}" Text="{Binding LogoPath}"/>
+                                        <Button Content="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=UploadLogo}" Width="120" Margin="8,0,0,0" Command="{Binding UploadLogoCommand}" Style="{StaticResource ModernButtonStyle}"/>
+                                        <CheckBox Content="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=ShowLogoInHeader}" IsChecked="{Binding ShowLogo}" Margin="12,0,0,0" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                    <TextBlock Grid.Row="16" Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=AppIcon}" Style="{StaticResource LabelStyle}"/>
+                                    <StackPanel Grid.Row="16" Grid.Column="1" Orientation="Horizontal">
                                         <TextBox Width="300" Style="{StaticResource ModernTextBox}" Text="{Binding AppIconPath}"/>
                                         <Button Content="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=UploadIcon}" Width="120" Margin="8,0,0,0" Command="{Binding UploadAppIconCommand}" Style="{StaticResource ModernButtonStyle}"/>
                                     </StackPanel>
-                                    <TextBlock Grid.Row="10" Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=LibreOfficePath}" Style="{StaticResource LabelStyle}"/>
-                                    <StackPanel Grid.Row="10" Grid.Column="1" Orientation="Horizontal">
+                                    <TextBlock Grid.Row="17" Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=LibreOfficePath}" Style="{StaticResource LabelStyle}"/>
+                                    <StackPanel Grid.Row="17" Grid.Column="1" Orientation="Horizontal">
                                         <TextBox Width="300" Style="{StaticResource ModernTextBox}" Text="{Binding LibreOfficeProgramPath}"/>
                                         <Button Content="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=Select}" Width="120" Margin="8,0,0,0" Command="{Binding ChooseLibreOfficeProgramCommand}" Style="{StaticResource ModernButtonStyle}"/>
                                     </StackPanel>
-                                    <StackPanel Grid.Row="11" Grid.ColumnSpan="3" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
+                                    <TextBlock Grid.Row="18" Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=CertNumberPrefix}" Style="{StaticResource LabelStyle}"/>
+                                    <TextBox Grid.Row="18" Grid.Column="1" Style="{StaticResource ModernTextBox}" MaxLength="20" Text="{Binding CertificatePrefix}"/>
+                                    <StackPanel Grid.Row="19" Grid.ColumnSpan="3" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
                                         <Button Content="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=UploadHeader}" Width="110" Margin="0,0,8,0" Command="{Binding UploadHeaderCommand}" Style="{StaticResource ModernButtonStyle}"/>
                                         <Button Content="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=UploadFooter}" Width="110" Margin="0,0,8,0" Command="{Binding UploadFooterCommand}" Style="{StaticResource ModernButtonStyle}"/>
                                         <Button Content="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=SaveReportSettings}" Width="160" Command="{Binding SaveReportCommand}" Style="{StaticResource ModernButtonStyle}" Background="{DynamicResource GreenGradient}"/>
@@ -352,7 +380,7 @@
                                                 <ColumnDefinition Width="*"/>
                                                 <ColumnDefinition Width="Auto"/>
                                             </Grid.ColumnDefinitions>
-                                            <TextBox Text="{Binding LicenseHardwareId}" IsReadOnly="True" Style="{StaticResource ModernTextBox}" Background="#EEE" VerticalContentAlignment="Center"/>
+                                            <TextBox Text="{Binding LicenseHardwareId}" IsReadOnly="True" Style="{StaticResource ModernTextBox}" Background="{DynamicResource SurfaceMutedBrush}" VerticalContentAlignment="Center"/>
                                             <Button Grid.Column="1" Content="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=CopyButton}" Command="{Binding CopyHardwareIdCommand}" Width="80" Margin="8,0,0,0" Style="{StaticResource ModernButtonStyle}" VerticalAlignment="Center"/>
                                         </Grid>
                                     </Grid>
@@ -466,7 +494,7 @@
                                                                 <TextBlock Text="{Binding CreatedDateDisplay}" FontSize="11" Foreground="{DynamicResource TextSecondary}" Margin="0,2,0,0"/>
                                                             </StackPanel>
                                                             <TextBlock Grid.Column="1" Text="{Binding SizeDisplay}" FontSize="12" Foreground="{DynamicResource TextSecondary}" VerticalAlignment="Center" Margin="0,0,12,0"/>
-                                                            <Button Grid.Column="2" Content="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=Delete}" Width="60" Height="28" FontSize="11" Style="{StaticResource ModernButtonStyle}" Background="#EF4444" Command="{Binding DataContext.DeleteBackupCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}"/>
+                                                            <Button Grid.Column="2" Content="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=Delete}" Width="60" Height="28" FontSize="11" Style="{StaticResource ModernButtonStyle}" Background="{DynamicResource DangerBrush}" Command="{Binding DataContext.DeleteBackupCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}"/>
                                                         </Grid>
                                                     </Border>
                                                 </DataTemplate>
@@ -490,17 +518,17 @@
                                         <ColumnDefinition Width="Auto" />
                                         <ColumnDefinition Width="*" />
                                     </Grid.ColumnDefinitions>
-                                    <TextBlock Grid.Row="0" Text="حالة الاتصال السحابي:" Style="{StaticResource SubheaderTextStyle}"/>
-                                    <Border Grid.Row="0" Grid.Column="1" Background="#E8F5E9" CornerRadius="8" Padding="8,4" Margin="8,0,0,0">
-                                        <TextBlock Text="غير متصل" Foreground="#EF4444" FontWeight="SemiBold" FontSize="12"/>
+                                    <TextBlock Grid.Row="0" Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=CloudConnectionStatus}" Style="{StaticResource SubheaderTextStyle}"/>
+                                    <Border Grid.Row="0" Grid.Column="1" Background="{DynamicResource SurfaceSuccessBrush}" CornerRadius="8" Padding="8,4" Margin="8,0,0,0">
+                                        <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=OfflineStatus}" Foreground="{DynamicResource DangerBrush}" FontWeight="SemiBold" FontSize="12"/>
                                     </Border>
                                     <StackPanel Grid.Row="1" Grid.ColumnSpan="2" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,16,0,16">
-                                        <Button Content="تحميل نسخة سحابية" Width="180" IsEnabled="False" Style="{StaticResource ModernButtonStyle}"/>
-                                        <Button Content="رفع نسخة سحابية" Width="180" Margin="8,0,0,0" IsEnabled="False" Style="{StaticResource ModernButtonStyle}"/>
+                                        <Button Content="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=DownloadCloudBackup}" Width="180" IsEnabled="False" Style="{StaticResource ModernButtonStyle}"/>
+                                        <Button Content="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=UploadCloudBackup}" Width="180" Margin="8,0,0,0" IsEnabled="False" Style="{StaticResource ModernButtonStyle}"/>
                                     </StackPanel>
-                                    <TextBlock Grid.Row="2" Grid.ColumnSpan="2" Text="قائمة النسخ الاحتياطية السحابية:" Style="{StaticResource SubheaderTextStyle}"/>
+                                    <TextBlock Grid.Row="2" Grid.ColumnSpan="2" Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=CloudBackupList}" Style="{StaticResource SubheaderTextStyle}"/>
                                     <Border Grid.Row="2" Grid.ColumnSpan="2" Background="{DynamicResource SurfaceBackground}" CornerRadius="8" Padding="16" Height="200">
-                                        <TextBlock Text="النسخ الاحتياطي السحابي غير متاح حالياً" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="{DynamicResource TextSecondary}"/>
+                                        <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=CloudBackupUnavailable}" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="{DynamicResource TextSecondary}"/>
                                     </Border>
                                 </Grid>
                             </StackPanel>

@@ -9,79 +9,52 @@
         Height="520"
         WindowStartupLocation="CenterOwner"
         ResizeMode="CanResize"
-        Background="#F5F5F5"
+        Background="{DynamicResource SurfaceWindowBrush}"
         FlowDirection="RightToLeft">
     <Window.Resources>
         <converters:BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
+        <converters:ImagePathToBitmapConverter x:Key="ImagePathToBitmapConverter"/>
+        <converters:StringToBrushConverter x:Key="StringToBrushConverter"/>
+        <converters:BooleanToFontWeightConverter x:Key="BooleanToFontWeightConverter"/>
+        <converters:BooleanToFontStyleConverter x:Key="BooleanToFontStyleConverter"/>
+        <converters:BooleanToTextDecorationsConverter x:Key="BooleanToTextDecorationsConverter"/>
         <converters:QrCodeConverter x:Key="QrCodeConverter"/>
         <BooleanToVisibilityConverter x:Key="BoolToVis"/>
 
         <DataTemplate x:Key="QrTemplate">
-            <Image Source="{Binding DisplayText, Converter={StaticResource QrCodeConverter}}" 
+            <Image Source="{Binding DisplayText, Converter={StaticResource QrCodeConverter}, IsAsync=True}" 
                    Stretch="Uniform" 
+                   Margin="2"
+                   SnapsToDevicePixels="True"
                    Visibility="{Binding IsVisible, Converter={StaticResource BoolToVis}}"/>
         </DataTemplate>
 
         <DataTemplate x:Key="TextTemplate">
             <TextBlock Text="{Binding DisplayText}" 
-                       FontSize="{Binding FontSize}" 
+                       FontSize="{Binding FontSize}"
+                       FontFamily="{Binding FontFamily}"
+                       Foreground="{Binding FontColor, Converter={StaticResource StringToBrushConverter}}"
                        TextAlignment="{Binding TextAlignment}"
-                       TextWrapping="Wrap" 
-                       VerticalAlignment="Top"
+                       TextWrapping="Wrap"
                        HorizontalAlignment="Stretch"
-                       Visibility="{Binding IsVisible, Converter={StaticResource BoolToVis}}">
-                <TextBlock.Style>
-                    <Style TargetType="TextBlock">
-                        <Setter Property="FontWeight" Value="Normal"/>
-                        <Setter Property="FlowDirection" Value="LeftToRight"/>
-                        <Style.Triggers>
-                            <DataTrigger Binding="{Binding Key}" Value="company">
-                                <Setter Property="FontWeight" Value="Bold"/>
-                                <Setter Property="FlowDirection" Value="RightToLeft"/>
-                            </DataTrigger>
-                            <DataTrigger Binding="{Binding Key}" Value="header">
-                                <Setter Property="FontWeight" Value="SemiBold"/>
-                                <Setter Property="FlowDirection" Value="RightToLeft"/>
-                            </DataTrigger>
-                            <DataTrigger Binding="{Binding Key}" Value="brand_label">
-                                <Setter Property="FontWeight" Value="Bold"/>
-                            </DataTrigger>
-                            <DataTrigger Binding="{Binding Key}" Value="model_label">
-                                <Setter Property="FontWeight" Value="Bold"/>
-                            </DataTrigger>
-                            <DataTrigger Binding="{Binding Key}" Value="serial_label">
-                                <Setter Property="FontWeight" Value="Bold"/>
-                            </DataTrigger>
-                            <DataTrigger Binding="{Binding Key}" Value="cal_label">
-                                <Setter Property="FontWeight" Value="Bold"/>
-                            </DataTrigger>
-                            <DataTrigger Binding="{Binding Key}" Value="exp_label">
-                                <Setter Property="FontWeight" Value="Bold"/>
-                                <Setter Property="FlowDirection" Value="RightToLeft"/>
-                            </DataTrigger>
-                            <DataTrigger Binding="{Binding Key}" Value="address">
-                                <Setter Property="FlowDirection" Value="RightToLeft"/>
-                            </DataTrigger>
-                            <DataTrigger Binding="{Binding Key}" Value="phone">
-                                <Setter Property="FlowDirection" Value="LeftToRight"/>
-                            </DataTrigger>
-                        </Style.Triggers>
-                    </Style>
-                </TextBlock.Style>
-            </TextBlock>
+                       VerticalAlignment="Stretch"
+                       FontWeight="{Binding IsBold, Converter={StaticResource BooleanToFontWeightConverter}}"
+                       FontStyle="{Binding IsItalic, Converter={StaticResource BooleanToFontStyleConverter}}"
+                       TextDecorations="{Binding IsUnderline, Converter={StaticResource BooleanToTextDecorationsConverter}}"
+                       Visibility="{Binding IsVisible, Converter={StaticResource BoolToVis}}"/>
         </DataTemplate>
 
         <DataTemplate x:Key="LogoTemplate">
-            <Image Source="{Binding DisplayText}" 
+            <Image Source="{Binding DisplayText, Converter={StaticResource ImagePathToBitmapConverter}, IsAsync=True}" 
                    Stretch="Uniform"
                    Visibility="{Binding IsVisible, Converter={StaticResource BoolToVis}}"/>
         </DataTemplate>
 
         <DataTemplate x:Key="LineTemplate">
-            <Border Background="Black" 
-                    Height="{Binding Height}" 
-                    Width="{Binding Width}"
-                    Visibility="{Binding IsVisible, Converter={StaticResource BoolToVis}}"/>
+            <Rectangle Height="{Binding Height}" 
+                       Width="{Binding Width}"
+                       Fill="{Binding FontColor, Converter={StaticResource StringToBrushConverter}}"
+                       Visibility="{Binding IsVisible, Converter={StaticResource BoolToVis}}"/>
         </DataTemplate>
 
         <views:StickerItemTemplateSelector x:Key="StickerTemplateSelector"
@@ -97,11 +70,11 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <Border Background="#F8F9FA" Padding="14" CornerRadius="8,8,0,0" Margin="10,10,10,0">
-            <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=StickerPreviewWindow}" FontSize="16" FontWeight="Bold" Foreground="#2C3E50" VerticalAlignment="Center" TextAlignment="Center"/>
+        <Border Background="{DynamicResource SurfaceCardBrush}" Padding="14" CornerRadius="8,8,0,0" Margin="10,10,10,0">
+            <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=StickerPreviewWindow}" FontSize="16" FontWeight="Bold" Foreground="{DynamicResource TextNavyBrush}" VerticalAlignment="Center" TextAlignment="Center"/>
         </Border>
 
-        <Border Grid.Row="1" Margin="10" Background="#DDDDDD" CornerRadius="0,0,8,8" Padding="20">
+        <Border Grid.Row="1" Margin="10" Background="{DynamicResource SurfaceDividerBrush}" CornerRadius="0,0,8,8" Padding="20">
             <Viewbox Stretch="Uniform">
                 <!-- Outer container to isolate FlowDirection -->
                 <Border Background="White" 
@@ -127,6 +100,7 @@
                                     <Setter Property="Canvas.Top" Value="{Binding Y}"/>
                                     <Setter Property="Width" Value="{Binding Width}"/>
                                     <Setter Property="Height" Value="{Binding Height}"/>
+                                    <Setter Property="Panel.ZIndex" Value="{Binding ZIndex}"/>
                                     <Setter Property="Visibility" Value="{Binding IsVisible, Converter={StaticResource BoolToVis}}"/>
                                 </Style>
                             </ItemsControl.ItemContainerStyle>

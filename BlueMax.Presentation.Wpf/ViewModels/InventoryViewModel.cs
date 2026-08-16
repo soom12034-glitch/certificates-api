@@ -164,63 +164,65 @@ public sealed class InventoryViewModel : ViewModelBase
 
     async void RefreshItems()
     {
-        await Task.Run(() =>
+        if (IsBusy) return;
+        SetBusy(T("LoadingData"));
+        try
         {
-            try
+            var result = await Task.Run(() =>
             {
                 System.Diagnostics.Debug.WriteLine("[Inventory] RefreshItems started in background thread");
                 using var db = CreateDbContext();
-            db.Database.EnsureCreated();
+                db.Database.EnsureCreated();
 
-            var query = db.SpareParts.AsNoTracking();
+                var query = db.SpareParts.AsNoTracking();
 
-            var lowStockCount = query.Count(e => e.Quantity <= e.MinThreshold);
+                var lowStockCount = query.Count(e => e.Quantity <= e.MinThreshold);
 
-            if (ShowLowStockOnly)
-            {
-                query = query.Where(e => e.Quantity <= e.MinThreshold);
-            }
-
-            if (!string.IsNullOrWhiteSpace(SearchText))
-            {
-                var text = SearchText.Trim();
-                query = query.Where(e => e.Name.Contains(text) || e.Code.Contains(text) || e.Brand.Contains(text));
-            }
-
-            var itemsList = query
-                .OrderBy(e => e.Name)
-                .Take(500)
-                .Select(e => new SparePartItem
+                if (ShowLowStockOnly)
                 {
-                    Id = e.Id,
-                    Code = e.Code,
-                    Name = e.Name,
-                    Quantity = e.Quantity,
-                    PurchaseDate = e.PurchaseDate,
-                    CostPrice = e.CostPrice,
-                    SellingPrice = e.SellingPrice,
-                    Brand = e.Brand,
-                    Location = e.Location,
-                    MinThreshold = e.MinThreshold
-                })
-                .ToList();
+                    query = query.Where(e => e.Quantity <= e.MinThreshold);
+                }
 
-                Application.Current.Dispatcher.InvokeAsync(() =>
+                if (!string.IsNullOrWhiteSpace(SearchText))
                 {
-                    LowStockCount = lowStockCount;
-                    Items.Clear();
-                    foreach (var item in itemsList)
-                        Items.Add(item);
-                });
-            }
-            catch (Exception ex)
-            {
-                Application.Current.Dispatcher.InvokeAsync(() =>
-                {
-                    System.Windows.MessageBox.Show("Error loading inventory:\n" + ex.Message + "\n\n" + ex.StackTrace, "Inventory Error", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
-                });
-            }
-        });
+                    var text = SearchText.Trim();
+                    query = query.Where(e => e.Name.Contains(text) || e.Code.Contains(text) || e.Brand.Contains(text));
+                }
+
+                var itemsList = query
+                    .OrderBy(e => e.Name)
+                    .Take(500)
+                    .Select(e => new SparePartItem
+                    {
+                        Id = e.Id,
+                        Code = e.Code,
+                        Name = e.Name,
+                        Quantity = e.Quantity,
+                        PurchaseDate = e.PurchaseDate,
+                        CostPrice = e.CostPrice,
+                        SellingPrice = e.SellingPrice,
+                        Brand = e.Brand,
+                        Location = e.Location,
+                        MinThreshold = e.MinThreshold
+                    })
+                    .ToList();
+
+                return (lowStockCount, itemsList);
+            });
+
+            LowStockCount = result.lowStockCount;
+            Items.Clear();
+            foreach (var item in result.itemsList)
+                Items.Add(item);
+        }
+        catch (Exception ex)
+        {
+            System.Windows.MessageBox.Show("Error loading inventory:\n" + ex.Message + "\n\n" + ex.StackTrace, "Inventory Error", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+        }
+        finally
+        {
+            SetIdle();
+        }
     }
 
     void ClearInputs()
