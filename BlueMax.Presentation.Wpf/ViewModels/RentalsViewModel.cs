@@ -1507,11 +1507,21 @@ public sealed class RentalsViewModel : ViewModelBase
 
                     col.Item().PaddingTop(4).Text(confirmation).DirectionFromRightToLeft().FontSize(10).FontColor("#374151");
 
-                    col.Item().PaddingTop(6).Row(meta =>
+                    col.Item().PaddingTop(4).LineHorizontal(0.5f).LineColor("#E5E7EB");
+
+                    col.Item().PaddingTop(4).Text(T("HandoverDetailsHeader")).DirectionFromRightToLeft().Bold().FontSize(10).FontColor("#0F3A5F");
+
+                    col.Item().PaddingTop(2).Row(meta =>
                     {
                         meta.Spacing(6);
                         meta.RelativeItem().Element(c => BuildRentalMetaBox(c, T("ClientNameField"), rental.CustomerName));
-                        meta.RelativeItem().Element(c => BuildRentalMetaBox(c, T("PhoneNumber"), rental.Phone ?? ""));
+                        meta.RelativeItem().Element(c => BuildRentalMetaBox(c, T("IdNumber"), rental.IdNumber ?? ""));
+                    });
+                    col.Item().PaddingTop(4).Row(meta1b =>
+                    {
+                        meta1b.Spacing(6);
+                        meta1b.RelativeItem().Element(c => BuildRentalMetaBox(c, T("PhoneNumber"), rental.Phone ?? ""));
+                        meta1b.RelativeItem().Element(c => BuildRentalMetaBox(c, T("ResidenceNumber"), rental.IdNumber ?? ""));
                     });
                     col.Item().PaddingTop(4).Row(meta2 =>
                     {
@@ -1528,10 +1538,14 @@ public sealed class RentalsViewModel : ViewModelBase
                         meta3.RelativeItem().Element(c => BuildRentalMetaBox(c, T("DeviceValue"), rental.DeviceValue.ToString("N2", System.Globalization.CultureInfo.InvariantCulture)));
                     });
 
-                    col.Item().PaddingTop(8).Row(signatures =>
+                    col.Item().PaddingTop(6).LineHorizontal(0.5f).LineColor("#E5E7EB");
+
+                    col.Item().PaddingTop(4).Text(T("HandoverLegalClause")).DirectionFromRightToLeft().FontSize(9).FontColor("#374151");
+
+                    col.Item().PaddingTop(10).Row(signatures =>
                     {
                         signatures.Spacing(14);
-                        signatures.RelativeItem().Element(c => BuildRentalSignatureBox(c, T("ContractSignatureRenter")));
+                        signatures.RelativeItem().Element(c => BuildRentalSignatureBox(c, isReturn ? T("ContractSignatureRenter") : T("ContractSignatureRenter")));
                         signatures.RelativeItem().Element(c => BuildRentalSignatureBox(c, T("ContractSignatureLessor")));
                     });
                 });

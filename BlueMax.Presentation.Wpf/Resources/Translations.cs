@@ -186,8 +186,10 @@ public static class Translations
         public const string AuthorizedSignatory = "المفوض من قبل المنشآة بالتوقيع";
         public const string ResidenceNumber = "رقم الإقامة";
         public const string OfLabel = "من";
-        public const string ReceiveConfirmationText = "أقر أنا المستلم بأنني استلمت الجهاز المذكور أعلاه بحالة جيدة ومطابق لمواصفاته، وأتحمل مسؤولية حفظه واستخدامه خلال مدة الإيجار.";
-        public const string ReturnConfirmationText = "أقر أنا المستلم بأنني أرجعت الجهاز المذكور أعلاه إلى المؤجر بنفس الحالة التي استلمته بها، وتم فحصه والتأكد من سلامته.";
+        public const string ReceiveConfirmationText = "أقر أنا الموقع أدناه (المستلم) باستلام جهاز كما هو موضح في البيانات أعلاه، وذلك في حالة جيدة ومطابق للمواصفات المتفق عليها في عقد الإيجار رقم المذكور أعلاه.";
+        public const string ReturnConfirmationText = "أقر أنا الموقع أدناه (المستلم) بإرجاع الجهاز كما هو موضح في البيانات أعلاه إلى المؤجر بنفس الحالة التي تم استلامه بها، وقد تمت معاينة الجهاز والتأكد من سلامته.";
+        public const string HandoverDetailsHeader = "بيانات الاستلام";
+        public const string HandoverLegalClause = "أتعهد أنا المستلم بالحفاظ على الجهاز والالتزام بشروط عقد الإيجار، وأتحمل المسؤولية الكاملة عن أي أضرار أو فقدان يلحق بالجهاز خلال فترة الإيجار. وأقر بصحة جميع البيانات الواردة أعلاه.";  
         public const string RentalEndDateBeforeStart = "تاريخ الانتهاء لا يمكن أن يكون قبل تاريخ البدء";
         public const string MissingRequiredFields = "يرجى تعبئة الحقول المطلوبة";
         public const string ValidationTitle = "تحقق من الإدخال";
@@ -1051,8 +1053,10 @@ public static class Translations
         public const string AuthorizedSignatory = "Authorized by Establishment to Sign";
         public const string ResidenceNumber = "Residence Number";
         public const string OfLabel = "of";
-        public const string ReceiveConfirmationText = "I, the receiver, confirm that I have received the above-mentioned device in good condition matching its specifications, and I am responsible for its safekeeping and use during the rental period.";
-        public const string ReturnConfirmationText = "I, the receiver, confirm that I have returned the above-mentioned device to the lessor in the same condition in which I received it, and it was inspected and confirmed to be in good condition.";
+        public const string ReceiveConfirmationText = "I, the undersigned (receiver), hereby acknowledge the receipt of the device as detailed above, in good condition and in accordance with the specifications agreed upon in the aforementioned rental contract.";
+        public const string ReturnConfirmationText = "I, the undersigned (receiver), hereby acknowledge the return of the device as detailed above to the lessor in the same condition in which it was received, and the device has been inspected and confirmed to be in good condition.";
+        public const string HandoverDetailsHeader = "Handover Details";
+        public const string HandoverLegalClause = "I, the receiver, undertake to maintain the device and comply with the terms of the rental contract, and I bear full responsibility for any damage or loss incurred during the rental period. I confirm the accuracy of all data stated above.";
         public const string RentalEndDateBeforeStart = "End date cannot be before start date";
         public const string MissingRequiredFields = "Please fill in the required fields";
         public const string ValidationTitle = "Input Validation";
