@@ -1450,6 +1450,9 @@ public sealed class RentalsViewModel : ViewModelBase
         var companyHeader = header["CompanyHeader"];
         var companyAddress = header["CompanyAddress"];
         var companyPhone = header["CompanyPhone"];
+        var companyCommercialRecord = header["CompanyCommercialRecord"];
+        var companyTaxNumber = header["CompanyTaxNumber"];
+        var companyNationalAddress = header["CompanyNationalAddress"];
         var logoPath = header["LogoPath"];
         var logoBytes = LoadPdfLogoBytes(logoPath);
         var hasLogo = logoBytes != null;
@@ -1489,6 +1492,12 @@ public sealed class RentalsViewModel : ViewModelBase
                                 contact.Add(("", companyAddress));
                             if (companyPhone.Length > 0)
                                 contact.Add((T("PhoneNumber"), companyPhone));
+                            if (companyCommercialRecord.Length > 0)
+                                contact.Add((T("CompanyCommercialRecord"), companyCommercialRecord));
+                            if (companyTaxNumber.Length > 0)
+                                contact.Add((T("CompanyTaxNumber"), companyTaxNumber));
+                            if (companyNationalAddress.Length > 0)
+                                contact.Add((T("CompanyNationalAddress"), companyNationalAddress));
                             if (contact.Count > 0)
                                 info.Item().Element(c => BuildHeaderContactLine(c, contact));
                         });
@@ -1503,7 +1512,7 @@ public sealed class RentalsViewModel : ViewModelBase
 
                     col.Item().PaddingTop(2).AlignCenter().Text(title).DirectionFromRightToLeft().Bold().FontSize(16).FontColor("#0F3A5F");
                     col.Item().AlignRight().Text(T("RentalNumber") + " " + rentalNo).DirectionFromRightToLeft().Bold().FontSize(9).FontColor("#1F2937");
-                    col.Item().PaddingTop(2).AlignRight().Text(T("ContractDate") + " " + DateTime.Now.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture)).DirectionFromRightToLeft().Bold().FontSize(9).FontColor("#1F2937");
+                    col.Item().PaddingTop(2).AlignRight().Text(T("DateLabel") + " " + DateTime.Now.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture)).DirectionFromRightToLeft().Bold().FontSize(9).FontColor("#1F2937");
 
                     col.Item().PaddingTop(4).Text(T("HandoverDetailsHeader")).DirectionFromRightToLeft().Bold().FontSize(10).FontColor("#0F3A5F");
 
