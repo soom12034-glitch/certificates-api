@@ -33,17 +33,20 @@ public sealed class SettingsViewModel : ViewModelBase
 
     ReportDesignerSettings _report = new();
     PrinterSettings _printer = new();
+    PrinterSettings _receiptPrinter = new();
     string _verificationBaseUrl = LoadVerificationBaseUrl();
     string _status = "";
     readonly ObservableCollection<string> _installedPrinters = new();
     string _selectedPrinterName = "";
     string _selectedA4PrinterName = "";
+    string _selectedReceiptPrinterName = "";
     readonly ObservableCollection<ChoiceItem> _printerProtocolOptions = new();
     ChoiceItem? _selectedPrinterProtocolItem;
     readonly ObservableCollection<ChoiceItem> _tsplMediaOptions = new();
     ChoiceItem? _selectedTsplMediaItem;
     readonly ObservableCollection<ChoiceItem> _tsplCodepageOptions = new();
     ChoiceItem? _selectedTsplCodepageItem;
+    ChoiceItem? _selectedReceiptPrinterProtocolItem;
     int _selectedTabIndex;
     readonly ObservableCollection<string> _loginUsernames = new();
     string _selectedLoginUsername = "";
@@ -110,6 +113,7 @@ public sealed class SettingsViewModel : ViewModelBase
 
         var printerStore = new PrinterSettingsStore();
         _printer = printerStore.Load();
+        _receiptPrinter = new PrinterSettingsStore(PrinterSettingsStore.ReceiptFileName).Load();
 
         SaveReportCommand = new RelayCommand(_ => SaveReport());
             ChooseLibreOfficeProgramCommand = new RelayCommand(_ => ChooseLibreOfficeProgram());
@@ -123,6 +127,9 @@ public sealed class SettingsViewModel : ViewModelBase
         OpenPrinterPreferencesCommand = new RelayCommand(_ => OpenPrinterPreferences(), _ => !string.IsNullOrWhiteSpace(SelectedPrinterName));
         OpenA4PrinterPropertiesCommand = new RelayCommand(_ => OpenA4PrinterProperties(), _ => !string.IsNullOrWhiteSpace(SelectedA4PrinterName));
         OpenA4PrinterPreferencesCommand = new RelayCommand(_ => OpenA4PrinterPreferences(), _ => !string.IsNullOrWhiteSpace(SelectedA4PrinterName));
+        SaveReceiptPrinterCommand = new RelayCommand(_ => SaveReceiptPrinter());
+        OpenReceiptPrinterPropertiesCommand = new RelayCommand(_ => OpenReceiptPrinterProperties(), _ => !string.IsNullOrWhiteSpace(SelectedReceiptPrinterName));
+        OpenReceiptPrinterPreferencesCommand = new RelayCommand(_ => OpenReceiptPrinterPreferences(), _ => !string.IsNullOrWhiteSpace(SelectedReceiptPrinterName));
 
         // License
         ActivateLicenseCommand = new RelayCommand(_ => ActivateLicense());
@@ -154,7 +161,9 @@ public sealed class SettingsViewModel : ViewModelBase
 
         LoadInstalledPrinters();
         LoadA4PrinterName();
+        LoadReceiptPrinterName();
         LoadPrinterProtocols();
+        LoadReceiptPrinterProtocols();
         LoadTsplMediaOptions();
         LoadTsplCodepageOptions();
         LoadUsersAndPermissions();
@@ -322,6 +331,27 @@ public sealed class SettingsViewModel : ViewModelBase
                 return;
             SaveAppSetting("A4PrinterName", value ?? "");
             Status = "تم حفظ طابعة A4.";
+        }
+    }
+
+    public string SelectedReceiptPrinterName
+    {
+        get => _selectedReceiptPrinterName;
+        set
+        {
+            if (!SetProperty(ref _selectedReceiptPrinterName, value))
+                return;
+            _receiptPrinter.PrinterName = value ?? "";
+            if (string.IsNullOrWhiteSpace(_receiptPrinter.ConnectionType))
+                _receiptPrinter.ConnectionType = "USB";
+            try
+            {
+                new PrinterSettingsStore(PrinterSettingsStore.ReceiptFileName).Save(_receiptPrinter);
+                Status = "تم حفظ طابعة استيكر الاستلام.";
+            }
+            catch
+            {
+            }
         }
     }
 
@@ -768,6 +798,9 @@ public sealed class SettingsViewModel : ViewModelBase
     public RelayCommand OpenPrinterPreferencesCommand { get; }
     public RelayCommand OpenA4PrinterPropertiesCommand { get; }
     public RelayCommand OpenA4PrinterPreferencesCommand { get; }
+    public RelayCommand SaveReceiptPrinterCommand { get; }
+    public RelayCommand OpenReceiptPrinterPropertiesCommand { get; }
+    public RelayCommand OpenReceiptPrinterPreferencesCommand { get; }
     public RelayCommand SaveDbConnectionCommand { get; }
 
     void LoadInstalledPrinters()
@@ -838,6 +871,56 @@ public sealed class SettingsViewModel : ViewModelBase
         var current = _printer.Protocol ?? "ZPL";
         SelectedPrinterProtocolItem = _printerProtocolOptions.FirstOrDefault(o => string.Equals(o.Code, current, System.StringComparison.OrdinalIgnoreCase))
                                        ?? _printerProtocolOptions[0];
+    }
+
+    readonly ObservableCollection<ChoiceItem> _receiptPrinterProtocolOptions = new();
+
+    public ObservableCollection<ChoiceItem> ReceiptPrinterProtocolOptions => _receiptPrinterProtocolOptions;
+
+    public ChoiceItem? SelectedReceiptPrinterProtocolItem
+    {
+        get => _selectedReceiptPrinterProtocolItem;
+        set
+        {
+            if (!SetProperty(ref _selectedReceiptPrinterProtocolItem, value))
+                return;
+            if (value != null)
+            {
+                _receiptPrinter.Protocol = value.Code;
+                try
+                {
+                    new PrinterSettingsStore(PrinterSettingsStore.ReceiptFileName).Save(_receiptPrinter);
+                    Status = "تم حفظ بروتوكول طابعة الاستيكر.";
+                }
+                catch
+                {
+                }
+            }
+        }
+    }
+
+    void LoadReceiptPrinterName()
+    {
+        try
+        {
+            var saved = _receiptPrinter.PrinterName ?? "";
+            if (!string.IsNullOrWhiteSpace(saved))
+                SelectedReceiptPrinterName = saved;
+        }
+        catch
+        {
+        }
+    }
+
+    void LoadReceiptPrinterProtocols()
+    {
+        _receiptPrinterProtocolOptions.Clear();
+        _receiptPrinterProtocolOptions.Add(new ChoiceItem { Code = "ZPL", Label = "Zebra (ZPL II)" });
+        _receiptPrinterProtocolOptions.Add(new ChoiceItem { Code = "TSPL", Label = "TSC/Xprinter (TSPL)" });
+        _receiptPrinterProtocolOptions.Add(new ChoiceItem { Code = "Windows", Label = "Generic Windows Driver" });
+        var current = _receiptPrinter.Protocol ?? "ZPL";
+        SelectedReceiptPrinterProtocolItem = _receiptPrinterProtocolOptions.FirstOrDefault(o => string.Equals(o.Code, current, System.StringComparison.OrdinalIgnoreCase))
+                                             ?? _receiptPrinterProtocolOptions[0];
     }
 
     public ChoiceItem? SelectedTsplMediaItem
@@ -970,6 +1053,192 @@ public sealed class SettingsViewModel : ViewModelBase
         {
             _printer.TsplCalibrateOnPrint = value;
             SetProperty(ref value, value, nameof(TsplCalibrateOnPrint));
+        }
+    }
+
+    // ── Receipt sticker printer properties ──
+
+    public string ReceiptConnectionType
+    {
+        get => _receiptPrinter.ConnectionType ?? "USB";
+        set
+        {
+            if (_receiptPrinter.ConnectionType != value)
+            {
+                _receiptPrinter.ConnectionType = value ?? "USB";
+                OnPropertyChanged(nameof(ReceiptConnectionType));
+            }
+        }
+    }
+
+    public string ReceiptNetworkHost
+    {
+        get => _receiptPrinter.NetworkHost ?? "";
+        set
+        {
+            if (_receiptPrinter.NetworkHost != value)
+            {
+                _receiptPrinter.NetworkHost = value ?? "";
+                OnPropertyChanged(nameof(ReceiptNetworkHost));
+            }
+        }
+    }
+
+    public int ReceiptNetworkPort
+    {
+        get => _receiptPrinter.NetworkPort;
+        set
+        {
+            _receiptPrinter.NetworkPort = value;
+            SetProperty(ref value, value, nameof(ReceiptNetworkPort));
+        }
+    }
+
+    public int ReceiptLabelWidthMm
+    {
+        get => _receiptPrinter.LabelWidthMm;
+        set
+        {
+            _receiptPrinter.LabelWidthMm = value;
+            SetProperty(ref value, value, nameof(ReceiptLabelWidthMm));
+        }
+    }
+
+    public int ReceiptLabelHeightMm
+    {
+        get => _receiptPrinter.LabelHeightMm;
+        set
+        {
+            _receiptPrinter.LabelHeightMm = value;
+            SetProperty(ref value, value, nameof(ReceiptLabelHeightMm));
+        }
+    }
+
+    public int ReceiptDarkness
+    {
+        get => _receiptPrinter.Darkness;
+        set
+        {
+            _receiptPrinter.Darkness = value;
+            SetProperty(ref value, value, nameof(ReceiptDarkness));
+        }
+    }
+
+    public int ReceiptSpeedIps
+    {
+        get => _receiptPrinter.SpeedIps;
+        set
+        {
+            _receiptPrinter.SpeedIps = value;
+            SetProperty(ref value, value, nameof(ReceiptSpeedIps));
+        }
+    }
+
+    public bool ReceiptThermalSafeMode
+    {
+        get => _receiptPrinter.ThermalSafeMode;
+        set
+        {
+            _receiptPrinter.ThermalSafeMode = value;
+            SetProperty(ref value, value, nameof(ReceiptThermalSafeMode));
+        }
+    }
+
+    public double ReceiptThermalCoolingDelaySeconds
+    {
+        get => _receiptPrinter.ThermalCoolingDelaySeconds;
+        set
+        {
+            _receiptPrinter.ThermalCoolingDelaySeconds = value < 0 ? 0 : value;
+            SetProperty(ref value, value, nameof(ReceiptThermalCoolingDelaySeconds));
+        }
+    }
+
+    public int ReceiptDotsPerMm
+    {
+        get => _receiptPrinter.DotsPerMm;
+        set
+        {
+            _receiptPrinter.DotsPerMm = value;
+            SetProperty(ref value, value, nameof(ReceiptDotsPerMm));
+        }
+    }
+
+    void SaveReceiptPrinter()
+    {
+        try
+        {
+            new PrinterSettingsStore(PrinterSettingsStore.ReceiptFileName).Save(_receiptPrinter);
+            MessageBox.Show("تم حفظ إعدادات طابعة الاستيكر بنجاح", "نجاح", MessageBoxButton.OK, MessageBoxImage.Information);
+            Status = "تم حفظ إعدادات طابعة الاستيكر.";
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"فشل حفظ إعدادات طابعة الاستيكر: {ex.Message}", "خطأ", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    void OpenReceiptPrinterProperties()
+    {
+        var name = SelectedReceiptPrinterName ?? _receiptPrinter.PrinterName ?? "";
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            MessageBox.Show("الرجاء اختيار طابعة استيكر الاستلام أولاً", "تنبيه", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+        try
+        {
+            IntPtr hPrinter = IntPtr.Zero;
+            if (OpenPrinter(name, out hPrinter, IntPtr.Zero))
+            {
+                var mainWindow = System.Windows.Application.Current.MainWindow;
+                if (mainWindow == null) { MessageBox.Show("لم يتم العثور على النافذة الرئيسية", "خطأ", MessageBoxButton.OK, MessageBoxImage.Error); return; }
+                var helper = new System.Windows.Interop.WindowInteropHelper(mainWindow);
+                if (helper.Handle == IntPtr.Zero) { MessageBox.Show("مقبض النافذة غير صالح", "خطأ", MessageBoxButton.OK, MessageBoxImage.Error); return; }
+                if (PrinterProperties(helper.Handle, hPrinter))
+                    Status = "تم فتح خصائص طابعة الاستيكر بنجاح";
+                else
+                    MessageBox.Show("فشل فتح خصائص الطابعة", "خطأ", MessageBoxButton.OK, MessageBoxImage.Error);
+                ClosePrinter(hPrinter);
+            }
+            else
+                MessageBox.Show("فشل الوصول للطابعة المحددة", "خطأ", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"فشل فتح الخصائص: {ex.Message}", "خطأ", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    void OpenReceiptPrinterPreferences()
+    {
+        var name = SelectedReceiptPrinterName ?? _receiptPrinter.PrinterName ?? "";
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            MessageBox.Show("الرجاء اختيار طابعة استيكر الاستلام أولاً", "تنبيه", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+        try
+        {
+            IntPtr hPrinter = IntPtr.Zero;
+            if (OpenPrinter(name, out hPrinter, IntPtr.Zero))
+            {
+                var mainWindow = System.Windows.Application.Current.MainWindow;
+                if (mainWindow == null) { MessageBox.Show("لم يتم العثور على النافذة الرئيسية", "خطأ", MessageBoxButton.OK, MessageBoxImage.Error); return; }
+                var helper = new System.Windows.Interop.WindowInteropHelper(mainWindow);
+                if (helper.Handle == IntPtr.Zero) { MessageBox.Show("مقبض النافذة غير صالح", "خطأ", MessageBoxButton.OK, MessageBoxImage.Error); return; }
+                if (DocumentProperties(helper.Handle, hPrinter, name, IntPtr.Zero, IntPtr.Zero, DM_IN_PROMPT))
+                    Status = "تم فتح تفضيلات طابعة الاستيكر بنجاح";
+                else
+                    MessageBox.Show("فشل فتح تفضيلات الطابعة", "خطأ", MessageBoxButton.OK, MessageBoxImage.Error);
+                ClosePrinter(hPrinter);
+            }
+            else
+                MessageBox.Show("فشل الوصول للطابعة المحددة", "خطأ", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"فشل فتح التفضيلات: {ex.Message}", "خطأ", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
 

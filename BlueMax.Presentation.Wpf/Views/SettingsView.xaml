@@ -250,6 +250,69 @@
                                 </Grid>
                             </StackPanel>
                         </Border>
+
+                        <!-- Receipt Sticker Printer Settings -->
+                        <Border Style="{StaticResource CardStyle}" Margin="0,16,0,16">
+                            <StackPanel>
+                                <TextBlock Text="اعدادات طابعة استيكر الاستلام" Style="{StaticResource HeaderTextStyle}"/>
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                    </Grid.RowDefinitions>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="160" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=PrinterModelProtocol}" Style="{StaticResource LabelStyle}"/>
+                                    <ComboBox Grid.Column="1"
+                                              ItemsSource="{Binding ReceiptPrinterProtocolOptions}"
+                                              SelectedItem="{Binding SelectedReceiptPrinterProtocolItem}"
+                                              DisplayMemberPath="Label" 
+                                              Style="{StaticResource ModernComboBoxStyle}"/>
+                                    <TextBlock Grid.Row="1" Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=ConnectionType}" Style="{StaticResource LabelStyle}"/>
+                                    <TextBox Grid.Row="1" Grid.Column="1" Style="{StaticResource ModernTextBox}" Text="{Binding ReceiptConnectionType}"/>
+                                    <TextBlock Grid.Row="2" Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=PrinterName}" Style="{StaticResource LabelStyle}"/>
+                                    <StackPanel Grid.Row="2" Grid.Column="1" Orientation="Horizontal">
+                                        <ComboBox Width="260" ItemsSource="{Binding InstalledPrinters}" SelectedItem="{Binding SelectedReceiptPrinterName}" Style="{StaticResource ModernComboBoxStyle}"/>
+                                        <Button Content="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=Properties}" Width="90" Margin="8,0,0,0" Command="{Binding OpenReceiptPrinterPropertiesCommand}" Style="{StaticResource ModernButtonStyle}"/>
+                                        <Button Content="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=Preferences}" Width="90" Margin="8,0,0,0" Command="{Binding OpenReceiptPrinterPreferencesCommand}" Style="{StaticResource ModernButtonStyle}"/>
+                                    </StackPanel>
+                                    <TextBlock Grid.Row="3" Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=Host}" Style="{StaticResource LabelStyle}"/>
+                                    <TextBox Grid.Row="3" Grid.Column="1" Style="{StaticResource ModernTextBox}" Text="{Binding ReceiptNetworkHost}"/>
+                                    <TextBlock Grid.Row="4" Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=Port}" Style="{StaticResource LabelStyle}"/>
+                                    <TextBox Grid.Row="4" Grid.Column="1" Style="{StaticResource ModernTextBox}" Text="{Binding ReceiptNetworkPort}"/>
+                                    <TextBlock Grid.Row="5" Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=LabelWidth}" Style="{StaticResource LabelStyle}"/>
+                                    <TextBox Grid.Row="5" Grid.Column="1" Style="{StaticResource ModernTextBox}" Text="{Binding ReceiptLabelWidthMm}"/>
+                                    <TextBlock Grid.Row="6" Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=LabelHeight}" Style="{StaticResource LabelStyle}"/>
+                                    <TextBox Grid.Row="6" Grid.Column="1" Style="{StaticResource ModernTextBox}" Text="{Binding ReceiptLabelHeightMm}"/>
+                                    <TextBlock Grid.Row="7" Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=Darkness}" Style="{StaticResource LabelStyle}"/>
+                                    <TextBox Grid.Row="7" Grid.Column="1" Style="{StaticResource ModernTextBox}" Text="{Binding ReceiptDarkness}"/>
+                                    <TextBlock Grid.Row="8" Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=Speed}" Style="{StaticResource LabelStyle}"/>
+                                    <TextBox Grid.Row="8" Grid.Column="1" Style="{StaticResource ModernTextBox}" Text="{Binding ReceiptSpeedIps}"/>
+                                    <TextBlock Grid.Row="9" Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=ThermalSafeMode}" Style="{StaticResource LabelStyle}"/>
+                                    <CheckBox Grid.Row="9" Grid.Column="1" IsChecked="{Binding ReceiptThermalSafeMode}" VerticalAlignment="Center"/>
+                                    <TextBlock Grid.Row="10" Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=ThermalCoolingDelay}" Style="{StaticResource LabelStyle}"/>
+                                    <TextBox Grid.Row="10" Grid.Column="1" Style="{StaticResource ModernTextBox}" Text="{Binding ReceiptThermalCoolingDelaySeconds}"/>
+                                    <TextBlock Grid.Row="11" Text="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=DotsPerMm}" Style="{StaticResource LabelStyle}"/>
+                                    <TextBox Grid.Row="11" Grid.Column="1" Style="{StaticResource ModernTextBox}" Text="{Binding ReceiptDotsPerMm}"/>
+                                    <StackPanel Grid.Row="12" Grid.ColumnSpan="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
+                                        <Button Content="{Binding Source={x:Static viewmodels:TranslationViewModel.Instance}, Path=SavePrinterSettings}" Width="180" Command="{Binding SaveReceiptPrinterCommand}" Style="{StaticResource ModernButtonStyle}" Background="{DynamicResource GreenGradient}"/>
+                                    </StackPanel>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>
