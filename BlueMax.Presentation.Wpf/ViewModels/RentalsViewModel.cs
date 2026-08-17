@@ -1535,13 +1535,6 @@ public sealed class RentalsViewModel : ViewModelBase
                         meta2.RelativeItem().Element(c => BuildRentalMetaBox(c, T("DeviceValue"), rental.DeviceValue.ToString("N2", System.Globalization.CultureInfo.InvariantCulture)));
                     });
 
-                    col.Item().PaddingTop(4).Row(meta3 =>
-                    {
-                        meta3.Spacing(6);
-                        meta3.RelativeItem().Element(c => BuildRentalMetaBox(c, T("StartDateField"), rental.StartDate.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture)));
-                        meta3.RelativeItem().Element(c => BuildRentalMetaBox(c, T("EndDateField"), rental.EndDate.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture)));
-                    });
-
                     col.Item().PaddingTop(4).LineHorizontal(0.5f).LineColor("#E5E7EB");
 
                     col.Item().PaddingTop(6).Text(confirmation).DirectionFromRightToLeft().FontSize(9).FontColor("#374151");
