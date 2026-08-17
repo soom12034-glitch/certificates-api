@@ -1468,7 +1468,7 @@ public sealed class RentalsViewModel : ViewModelBase
             {
                 page.Size(595, 842);
                 page.Margin(1.5f, QuestPDF.Infrastructure.Unit.Centimetre);
-                page.DefaultTextStyle(x => x.FontFamily("Cairo").FontSize(9).FontColor("#1F2937"));
+                page.DefaultTextStyle(x => x.FontFamily("Cairo").FontSize(10).FontColor("#1F2937").Bold());
 
                 page.Background().Border(1).BorderColor("#0F3A5F");
 
@@ -1537,8 +1537,8 @@ public sealed class RentalsViewModel : ViewModelBase
 
                     col.Item().PaddingTop(4).LineHorizontal(0.5f).LineColor("#E5E7EB");
 
-                    col.Item().PaddingTop(6).Text(confirmation).DirectionFromRightToLeft().FontSize(9).FontColor("#374151");
-                    col.Item().PaddingTop(4).Text(T("HandoverLegalClause")).DirectionFromRightToLeft().FontSize(9).FontColor("#374151");
+                    col.Item().PaddingTop(6).Text(confirmation).DirectionFromRightToLeft().FontSize(10).FontColor("#1F2937").Bold();
+                    col.Item().PaddingTop(4).Text(T("HandoverLegalClause")).DirectionFromRightToLeft().FontSize(10).FontColor("#1F2937").Bold();
 
                     col.Item().PaddingTop(10).Row(signatures =>
                     {
