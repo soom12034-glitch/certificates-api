@@ -310,6 +310,7 @@ public class TranslationViewModel : INotifyPropertyChanged
     public string DeviceValue => Translations.Get("DeviceValue");
     public string RentalContract => Translations.Get("RentalContract");
     public string PrintRentalContract => Translations.Get("PrintRentalContract");
+    public string ExportContractWord => Translations.Get("ExportContractWord");
     public string FirstParty => Translations.Get("FirstParty");
     public string SecondParty => Translations.Get("SecondParty");
     public string RepresentativeOf => Translations.Get("RepresentativeOf");

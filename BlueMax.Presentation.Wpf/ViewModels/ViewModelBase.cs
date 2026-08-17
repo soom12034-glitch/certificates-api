@@ -1,5 +1,7 @@
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Globalization;
+using System.IO;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using QuestPDF.Fluent;
@@ -29,6 +31,10 @@ public abstract class ViewModelBase : INotifyPropertyChanged
 
     /// <summary>Shortcut for <see cref="Resources.Translations.Get(string)"/>.</summary>
     protected static string T(string key) => Resources.Translations.Get(key);
+
+    protected static CultureInfo InvariantCulture { get; } = CultureInfo.InvariantCulture;
+
+    protected static string N2(decimal value) => value.ToString("N2", CultureInfo.InvariantCulture);
 
     /// <summary>True when the string contains Arabic characters (needs RTL rendering).</summary>
     protected static bool IsArabicText(string? value)
@@ -72,8 +78,78 @@ public abstract class ViewModelBase : INotifyPropertyChanged
                 valueText.DirectionFromLeftToRight();
             if (valueBold)
                 valueText.Bold();
-            row.AutoItem().Text(label + ": ").DirectionFromRightToLeft().FontSize(labelSize).FontColor(labelColor);
+            row.AutoItem().PaddingLeft(4).Text(label).DirectionFromRightToLeft().FontSize(labelSize).FontColor(labelColor).Bold();
         });
+    }
+
+    /// <summary>
+    /// Loads the report logo as PNG bytes safe to embed in QuestPDF 2024.3 documents.
+    /// QuestPDF 2024.3 throws <c>DocumentLayoutException</c> when an image constrained with
+    /// <c>Width(x).Height(y)</c> has an aspect ratio narrower than the target box (W/H &lt; 1.5 here),
+    /// so the image is scaled down and padded with white to a landscape aspect, keeping PDFs small.
+    /// Returns null when the file cannot be processed (caller then renders without a logo).
+    /// </summary>
+    protected static byte[]? LoadPdfLogoBytes(string logoPath)
+    {
+        if (string.IsNullOrWhiteSpace(logoPath) || !File.Exists(logoPath))
+            return null;
+        try
+        {
+            using var src = System.Drawing.Image.FromFile(logoPath);
+            int w = src.Width, h = src.Height;
+            if (w <= 0 || h <= 0)
+                return null;
+            const float minAspect = 1.5f;
+            const int maxWidth = 1000;
+
+            float aspect = (float)w / h;
+            int needW = aspect >= minAspect ? w : (int)Math.Ceiling(h * minAspect);
+            float scale = needW > maxWidth ? (float)maxWidth / needW : 1f;
+
+            int drawW = (int)Math.Round(w * scale);
+            int drawH = (int)Math.Round(h * scale);
+            int canvasW = Math.Max(drawW, (int)Math.Ceiling(drawH * minAspect));
+            int canvasH = drawH;
+            if (canvasW > maxWidth)
+            {
+                float s2 = (float)maxWidth / canvasW;
+                canvasW = maxWidth;
+                canvasH = Math.Max(1, (int)Math.Round(canvasH * s2));
+                drawW = (int)Math.Round(drawW * s2);
+                drawH = (int)Math.Round(drawH * s2);
+            }
+
+            using var canvas = new System.Drawing.Bitmap(canvasW, canvasH);
+            using (var g = System.Drawing.Graphics.FromImage(canvas))
+            {
+                g.Clear(System.Drawing.Color.White);
+                g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
+                g.DrawImage(src, (canvasW - drawW) / 2, (canvasH - drawH) / 2, drawW, drawH);
+            }
+            using var ms = new MemoryStream();
+            canvas.Save(ms, System.Drawing.Imaging.ImageFormat.Png);
+            return ms.ToArray();
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Reads the width/height aspect (W/H) from PNG bytes produced by <see cref="LoadPdfLogoBytes"/>,
+    /// falling back to 1.5 when the data cannot be parsed.
+    /// </summary>
+    protected static float GetPngAspect(byte[]? png)
+    {
+        if (png != null && png.Length >= 24 && png[0] == 0x89 && png[1] == (byte)'P')
+        {
+            int pngW = (png[16] << 24) | (png[17] << 16) | (png[18] << 8) | png[19];
+            int pngH = (png[20] << 24) | (png[21] << 16) | (png[22] << 8) | png[23];
+            if (pngH > 0)
+                return (float)pngW / pngH;
+        }
+        return 1.5f;
     }
 
     /// <summary>
@@ -112,15 +188,15 @@ public abstract class ViewModelBase : INotifyPropertyChanged
         for (var i = items.Count - 1; i >= 0; i--)
         {
             if (i != items.Count - 1)
-                row.AutoItem().Text("    -    ").FontSize(9).FontColor("#6B7280");
+                row.AutoItem().PaddingLeft(6).PaddingRight(6).Text("  -  ").FontSize(9).FontColor("#6B7280").Bold();
             var (label, value) = items[i];
-            var valueText = row.AutoItem().Text(value).FontSize(9).FontColor("#6B7280");
+            var valueText = row.AutoItem().Text(value + "  ").FontSize(9).FontColor("#6B7280").Bold();
             if (IsArabicText(value))
                 valueText.DirectionFromRightToLeft();
             else
                 valueText.DirectionFromLeftToRight();
             if (label.Length > 0)
-                row.AutoItem().Text(label + ": ").DirectionFromRightToLeft().FontSize(9).FontColor("#6B7280");
+                row.AutoItem().Text(label).DirectionFromRightToLeft().FontSize(9).FontColor("#6B7280").Bold();
         }
     }
 

@@ -140,6 +140,9 @@ public partial class App : Application
     protected override void OnStartup(StartupEventArgs e)
     {
         System.Diagnostics.Debug.WriteLine("OnStartup method started.");
+        var culture = (System.Globalization.CultureInfo)System.Globalization.CultureInfo.CurrentCulture.Clone();
+        culture.NumberFormat = (System.Globalization.NumberFormatInfo)System.Globalization.CultureInfo.InvariantCulture.NumberFormat.Clone();
+        System.Threading.Thread.CurrentThread.CurrentCulture = culture;
         Log("OnStartup: Before base.OnStartup(e).");
         base.OnStartup(e);
         Log("OnStartup: After base.OnStartup(e).");

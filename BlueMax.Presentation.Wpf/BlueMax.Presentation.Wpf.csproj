@@ -11,12 +11,12 @@
     <ApplicationIcon>Calibration2.ico</ApplicationIcon>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <RollForward>LatestPatch</RollForward>
-    <Version>11.3.0</Version>
-    <AssemblyVersion>11.3.0.0</AssemblyVersion>
-    <FileVersion>11.3.0.0</FileVersion>
+    <Version>11.3.3</Version>
+    <AssemblyVersion>11.3.3.0</AssemblyVersion>
+    <FileVersion>11.3.3.0</FileVersion>
     <Product>Calibration Certificates</Product>
     <AssemblyTitle>Calibration Certificates</AssemblyTitle>
-    <AssemblyInformationalVersion>V11.3</AssemblyInformationalVersion>
+    <AssemblyInformationalVersion>V11.3.3</AssemblyInformationalVersion>
   </PropertyGroup>
 
   <ItemGroup>
@@ -30,6 +30,7 @@
     <PackageReference Include="System.Configuration.ConfigurationManager" Version="8.0.1" />
     <PackageReference Include="System.Management" Version="8.0.0" />
     <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.2792.45" />
+    <PackageReference Include="DocumentFormat.OpenXml" Version="3.4.1" />
   </ItemGroup>
 
   <ItemGroup>

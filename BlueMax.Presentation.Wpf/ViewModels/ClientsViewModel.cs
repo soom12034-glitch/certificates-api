@@ -85,7 +85,7 @@ public sealed class ClientsViewModel : ViewModelBase
     {
         if (string.IsNullOrWhiteSpace(CustomerNameInput))
         {
-            MessageBox.Show("اسم العميل مطلوب", "خطأ", MessageBoxButton.OK, MessageBoxImage.Warning);
+            MessageBox.Show(T("ClientNameRequired"), T("Error"), MessageBoxButton.OK, MessageBoxImage.Warning);
             return;
         }
 
@@ -294,8 +294,8 @@ public sealed class ClientsViewModel : ViewModelBase
         var companyAddress = report.CompanyAddress?.Trim() ?? "";
         var companyPhone = report.CompanyPhone?.Trim() ?? "";
         var hasLogo = report.ShowLogo && !string.IsNullOrWhiteSpace(report.LogoPath) && File.Exists(report.LogoPath);
-        var reportNumber = "CST-" + DateTime.Now.ToString("yyyyMMddHHmmss");
-        var generatedOn = DateTime.Now.ToString("yyyy-MM-dd HH:mm");
+        var reportNumber = "CST-" + DateTime.Now.ToString("yyyyMMddHHmmss", System.Globalization.CultureInfo.InvariantCulture);
+        var generatedOn = DateTime.Now.ToString("yyyy-MM-dd HH:mm", System.Globalization.CultureInfo.InvariantCulture);
 
         var customer = SelectedCustomer;
         var customerName = customer?.Name ?? "";
@@ -382,9 +382,9 @@ public sealed class ClientsViewModel : ViewModelBase
                         col.Item().PaddingTop(4).Row(summary =>
                         {
                             summary.Spacing(6);
-                            summary.RelativeItem().Element(c => BuildClientSummaryCard(c, T("MaintenanceOrdersCount"), WorkOrders.Count.ToString()));
-                            summary.RelativeItem().Element(c => BuildClientSummaryCard(c, T("TotalMaintenanceCost"), totalMaintenanceCost.ToString("N2")));
-                            summary.RelativeItem().Element(c => BuildClientSummaryCard(c, T("CertificatesCount"), Certificates.Count.ToString()));
+                            summary.RelativeItem().Element(c => BuildClientSummaryCard(c, T("MaintenanceOrdersCount"), WorkOrders.Count.ToString(System.Globalization.CultureInfo.InvariantCulture)));
+                            summary.RelativeItem().Element(c => BuildClientSummaryCard(c, T("TotalMaintenanceCost"), totalMaintenanceCost.ToString("N2", System.Globalization.CultureInfo.InvariantCulture)));
+                            summary.RelativeItem().Element(c => BuildClientSummaryCard(c, T("CertificatesCount"), Certificates.Count.ToString(System.Globalization.CultureInfo.InvariantCulture)));
                         });
 
                         col.Item().PaddingTop(4).Text(T("MaintenanceHistory")).DirectionFromRightToLeft().Bold().FontSize(11).FontColor("#0F3A5F");
@@ -466,12 +466,12 @@ public sealed class ClientsViewModel : ViewModelBase
             table.Cell().Border(0.5f).BorderColor("#E5E7EB").Padding(2).AlignCenter().Text(w.ReceivedDate.ToString("yyyy-MM-dd")).FontSize(9);
             table.Cell().Border(0.5f).BorderColor("#E5E7EB").Padding(2).Text(deviceText).DirectionFromRightToLeft().FontSize(9);
             table.Cell().Border(0.5f).BorderColor("#E5E7EB").Padding(2).Text(w.Complaint).DirectionFromRightToLeft().FontSize(9);
-            table.Cell().Border(0.5f).BorderColor("#E5E7EB").Padding(2).AlignRight().Text(w.TotalCost.ToString("N2")).FontSize(9);
+            table.Cell().Border(0.5f).BorderColor("#E5E7EB").Padding(2).AlignRight().Text(w.TotalCost.ToString("N2", System.Globalization.CultureInfo.InvariantCulture)).FontSize(9);
         }
         table.Cell().Border(0.5f).BorderColor("#0F3A5F").Background("#E2E8F0").Padding(2).Text(T("Total")).DirectionFromRightToLeft().Bold().FontSize(9).FontColor("#0F3A5F");
         table.Cell().Border(0.5f).BorderColor("#0F3A5F").Background("#E2E8F0").Padding(2).Text("");
         table.Cell().Border(0.5f).BorderColor("#0F3A5F").Background("#E2E8F0").Padding(2).Text("");
-        table.Cell().Border(0.5f).BorderColor("#0F3A5F").Background("#E2E8F0").Padding(2).AlignRight().Text(WorkOrders.Sum(w => w.TotalCost).ToString("N2")).Bold().FontSize(9).FontColor("#0F3A5F");
+        table.Cell().Border(0.5f).BorderColor("#0F3A5F").Background("#E2E8F0").Padding(2).AlignRight().Text(WorkOrders.Sum(w => w.TotalCost).ToString("N2", System.Globalization.CultureInfo.InvariantCulture)).Bold().FontSize(9).FontColor("#0F3A5F");
     }
 
     void BuildClientCertificatesTable(QuestPDF.Fluent.TableDescriptor table)

@@ -64,6 +64,7 @@ public sealed class RentalsViewModel : ViewModelBase
         PrintRentalHandoverCommand = new RelayCommand(p => PrintRentalHandover(string.Equals(p?.ToString(), "Return", StringComparison.OrdinalIgnoreCase)), _ => SelectedRental != null);
         OpenSelectedRentalFileCommand = new RelayCommand(_ => OpenSelectedRentalFile(), _ => SelectedRental != null);
         SearchCommand = new RelayCommand(_ => SearchRentals());
+        ExportRentalContractWordCommand = new RelayCommand(_ => ExportRentalContractWord(), _ => SelectedRental != null);
 
         try
         {
@@ -546,6 +547,7 @@ public sealed class RentalsViewModel : ViewModelBase
     public RelayCommand PrintRentalHandoverCommand { get; }
     public RelayCommand OpenSelectedRentalFileCommand { get; }
     public RelayCommand SearchCommand { get; }
+    public RelayCommand ExportRentalContractWordCommand { get; }
 
     void CalculateRemainingAmount()
     {
@@ -716,16 +718,16 @@ public sealed class RentalsViewModel : ViewModelBase
         }
         catch (Exception ex)
         {
-            var errorMessage = $"خطأ في الحفظ: {ex.Message}";
+            var errorMessage = string.Format(T("RentalSaveError"), ex.Message);
             if (ex.InnerException != null)
             {
-                errorMessage += $"\n\nتفاصيل إضافية: {ex.InnerException.Message}";
+                errorMessage += "\n\n" + string.Format(T("AdditionalDetails"), ex.InnerException.Message);
                 if (ex.InnerException.InnerException != null)
                 {
                     errorMessage += $"\n\n{ex.InnerException.InnerException.Message}";
                 }
             }
-            MessageBox.Show(errorMessage, "خطأ", MessageBoxButton.OK, MessageBoxImage.Error);
+            MessageBox.Show(errorMessage, T("Error"), MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
 
@@ -734,7 +736,7 @@ public sealed class RentalsViewModel : ViewModelBase
         if (SelectedRental == null)
             return;
 
-        var result = MessageBox.Show("هل أنت متأكد من حذف هذا الإيجار؟", "تأكيد الحذف", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+        var result = MessageBox.Show(T("RentalDeleteConfirm"), T("RentalDeleteTitle"), MessageBoxButton.YesNo, MessageBoxImage.Warning);
         if (result != MessageBoxResult.Yes)
             return;
 
@@ -752,7 +754,7 @@ public sealed class RentalsViewModel : ViewModelBase
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"خطأ في الحذف: {ex.Message}", "خطأ", MessageBoxButton.OK, MessageBoxImage.Error);
+            MessageBox.Show(string.Format(T("RentalDeleteError"), ex.Message), T("Error"), MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
 
@@ -775,7 +777,7 @@ public sealed class RentalsViewModel : ViewModelBase
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"خطأ في إنهاء الإيجار: {ex.Message}", "خطأ", MessageBoxButton.OK, MessageBoxImage.Error);
+            MessageBox.Show(string.Format(T("RentalEndError"), ex.Message), T("Error"), MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
 
@@ -802,8 +804,300 @@ public sealed class RentalsViewModel : ViewModelBase
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"خطأ في إنشاء عقد الإيجار: {ex.Message}", "خطأ", MessageBoxButton.OK, MessageBoxImage.Error);
+            MessageBox.Show(string.Format(T("RentalContractCreateError"), ex.Message), T("Error"), MessageBoxButton.OK, MessageBoxImage.Error);
         }
+    }
+
+    async void ExportRentalContractWord()
+    {
+        try
+        {
+            if (SelectedRental == null)
+            {
+                MessageBox.Show(T("SelectRentalFirst"), T("Alert"), MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            SetBusy(T("GeneratingWord"));
+            try
+            {
+                var docxPath = await Task.Run(() => BuildRentalContractDocx(SelectedRental));
+                if (!string.IsNullOrWhiteSpace(docxPath) && File.Exists(docxPath))
+                {
+                    var psi = new System.Diagnostics.ProcessStartInfo
+                    {
+                        FileName = docxPath,
+                        UseShellExecute = true
+                    };
+                    System.Diagnostics.Process.Start(psi);
+                }
+            }
+            finally
+            {
+                SetIdle();
+            }
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(string.Format(T("RentalWordExportError"), ex.Message), T("Error"), MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    string BuildRentalContractDocx(RentalItem rental)
+    {
+        var dir = AppPaths.RentalsOutput;
+        var rentalNo = (rental.RentalNumber ?? "").Trim();
+        if (string.IsNullOrWhiteSpace(rentalNo))
+            rentalNo = "RENTAL";
+        var docxPath = System.IO.Path.Combine(dir, $"RentalContract_{rentalNo}_{DateTime.Now:yyyyMMdd_HHmmss}.docx");
+
+        if (!System.IO.Directory.Exists(dir))
+            System.IO.Directory.CreateDirectory(dir);
+
+        var header = BuildPdfHeaderData();
+        var companyName = header["CompanyName"];
+        var companyHeader = header["CompanyHeader"];
+        var companyAddress = header["CompanyAddress"];
+        var companyPhone = header["CompanyPhone"];
+        var companyCommercialRecord = header["CompanyCommercialRecord"];
+        var companyTaxNumber = header["CompanyTaxNumber"];
+        var companyNationalAddress = header["CompanyNationalAddress"];
+        var representativeName = header["ContractRepresentativeName"];
+        var representativeId = header["ContractRepresentativeId"];
+        var representativePhone = header["ContractRepresentativePhone"];
+        var reportNumber = rentalNo;
+        var generatedOn = header["GeneratedOn"];
+
+        var deviceText = string.Join(" ", new[] { rental.DeviceType, rental.Brand, rental.Model }.Where(x => !string.IsNullOrWhiteSpace(x)));
+        var periodDays = Math.Max(1, (rental.EndDate.Date - rental.StartDate.Date).Days);
+
+        using var doc = DocumentFormat.OpenXml.Packaging.WordprocessingDocument.Create(
+            docxPath, DocumentFormat.OpenXml.WordprocessingDocumentType.Document);
+
+        var mainPart = doc.AddMainDocumentPart();
+        mainPart.Document = new DocumentFormat.OpenXml.Wordprocessing.Document();
+        var body = mainPart.Document.AppendChild(new DocumentFormat.OpenXml.Wordprocessing.Body());
+
+        void AddPara(string text, bool bold = false, string fontSize = "18", string color = "1F2937",
+            DocumentFormat.OpenXml.Wordprocessing.JustificationValues? just = null)
+        {
+            var pp = new DocumentFormat.OpenXml.Wordprocessing.ParagraphProperties();
+            if (just != null)
+                pp.AppendChild(new DocumentFormat.OpenXml.Wordprocessing.Justification { Val = just.Value });
+            var p = body.AppendChild(new DocumentFormat.OpenXml.Wordprocessing.Paragraph(pp));
+            if (!string.IsNullOrEmpty(text))
+            {
+                var rp = new DocumentFormat.OpenXml.Wordprocessing.RunProperties(
+                    new DocumentFormat.OpenXml.Wordprocessing.FontSize { Val = fontSize },
+                    new DocumentFormat.OpenXml.Wordprocessing.Color { Val = color });
+                if (bold)
+                    rp.AppendChild(new DocumentFormat.OpenXml.Wordprocessing.Bold());
+                p.AppendChild(new DocumentFormat.OpenXml.Wordprocessing.Run(rp,
+                    new DocumentFormat.OpenXml.Wordprocessing.Text(text) { Space = DocumentFormat.OpenXml.SpaceProcessingModeValues.Preserve }));
+            }
+        }
+
+        void AddLabeledLine(string label, string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+                return;
+            var p = body.AppendChild(new DocumentFormat.OpenXml.Wordprocessing.Paragraph(
+                new DocumentFormat.OpenXml.Wordprocessing.ParagraphProperties(
+                    new DocumentFormat.OpenXml.Wordprocessing.Justification { Val = DocumentFormat.OpenXml.Wordprocessing.JustificationValues.Right })));
+            if (!string.IsNullOrWhiteSpace(label))
+            {
+                p.AppendChild(new DocumentFormat.OpenXml.Wordprocessing.Run(
+                    new DocumentFormat.OpenXml.Wordprocessing.RunProperties(
+                        new DocumentFormat.OpenXml.Wordprocessing.Bold(),
+                        new DocumentFormat.OpenXml.Wordprocessing.FontSize { Val = "18" },
+                        new DocumentFormat.OpenXml.Wordprocessing.Color { Val = "0F3A5F" }),
+                    new DocumentFormat.OpenXml.Wordprocessing.Text(label + ": ") { Space = DocumentFormat.OpenXml.SpaceProcessingModeValues.Preserve }));
+            }
+            p.AppendChild(new DocumentFormat.OpenXml.Wordprocessing.Run(
+                new DocumentFormat.OpenXml.Wordprocessing.RunProperties(
+                    new DocumentFormat.OpenXml.Wordprocessing.FontSize { Val = "18" }),
+                new DocumentFormat.OpenXml.Wordprocessing.Text(value) { Space = DocumentFormat.OpenXml.SpaceProcessingModeValues.Preserve }));
+        }
+
+        void AddSectionTitle(string text)
+        {
+            AddPara(text, bold: true, fontSize: "22", color: "0F3A5F",
+                just: DocumentFormat.OpenXml.Wordprocessing.JustificationValues.Right);
+        }
+
+        void AddPartyBox(string title, List<(string Label, string Value)> fields)
+        {
+            AddSectionTitle(title);
+            foreach (var (label, value) in fields)
+                if (!string.IsNullOrWhiteSpace(value))
+                    AddLabeledLine(label, value);
+        }
+
+        void AddTableRow(DocumentFormat.OpenXml.Wordprocessing.Table tbl, string[] values, bool headerRow = false, bool[]? boldCells = null)
+        {
+            var row = new DocumentFormat.OpenXml.Wordprocessing.TableRow();
+            for (int i = 0; i < values.Length; i++)
+            {
+                var rp = new DocumentFormat.OpenXml.Wordprocessing.RunProperties(
+                    new DocumentFormat.OpenXml.Wordprocessing.FontSize { Val = "18" });
+                if (headerRow)
+                {
+                    rp.AppendChild(new DocumentFormat.OpenXml.Wordprocessing.Bold());
+                    rp.AppendChild(new DocumentFormat.OpenXml.Wordprocessing.Color { Val = "FFFFFF" });
+                }
+                else if (boldCells != null && i < boldCells.Length && boldCells[i])
+                {
+                    rp.AppendChild(new DocumentFormat.OpenXml.Wordprocessing.Bold());
+                    rp.AppendChild(new DocumentFormat.OpenXml.Wordprocessing.Color { Val = "0F3A5F" });
+                }
+
+                var tcp = new DocumentFormat.OpenXml.Wordprocessing.TableCellProperties();
+                if (headerRow)
+                    tcp.AppendChild(new DocumentFormat.OpenXml.Wordprocessing.Shading
+                    { Val = DocumentFormat.OpenXml.Wordprocessing.ShadingPatternValues.Clear, Fill = "0F3A5F" });
+
+                var cell = new DocumentFormat.OpenXml.Wordprocessing.TableCell(tcp,
+                    new DocumentFormat.OpenXml.Wordprocessing.Paragraph(
+                        new DocumentFormat.OpenXml.Wordprocessing.ParagraphProperties(
+                            new DocumentFormat.OpenXml.Wordprocessing.Justification { Val = DocumentFormat.OpenXml.Wordprocessing.JustificationValues.Center }),
+                        new DocumentFormat.OpenXml.Wordprocessing.Run(rp,
+                            new DocumentFormat.OpenXml.Wordprocessing.Text(values[i]) { Space = DocumentFormat.OpenXml.SpaceProcessingModeValues.Preserve })));
+                row.AppendChild(cell);
+            }
+            tbl.AppendChild(row);
+        }
+
+        DocumentFormat.OpenXml.Wordprocessing.Table CreateContractTable(string[] headers, string[] values, bool[]? boldCells = null)
+        {
+            var tbl = new DocumentFormat.OpenXml.Wordprocessing.Table(
+                new DocumentFormat.OpenXml.Wordprocessing.TableProperties(
+                    new DocumentFormat.OpenXml.Wordprocessing.TableBorders(
+                        new DocumentFormat.OpenXml.Wordprocessing.TopBorder { Val = DocumentFormat.OpenXml.Wordprocessing.BorderValues.Single, Size = 4, Color = "E5E7EB" },
+                        new DocumentFormat.OpenXml.Wordprocessing.BottomBorder { Val = DocumentFormat.OpenXml.Wordprocessing.BorderValues.Single, Size = 4, Color = "E5E7EB" },
+                        new DocumentFormat.OpenXml.Wordprocessing.LeftBorder { Val = DocumentFormat.OpenXml.Wordprocessing.BorderValues.Single, Size = 4, Color = "E5E7EB" },
+                        new DocumentFormat.OpenXml.Wordprocessing.RightBorder { Val = DocumentFormat.OpenXml.Wordprocessing.BorderValues.Single, Size = 4, Color = "E5E7EB" },
+                        new DocumentFormat.OpenXml.Wordprocessing.InsideHorizontalBorder { Val = DocumentFormat.OpenXml.Wordprocessing.BorderValues.Single, Size = 4, Color = "E5E7EB" },
+                        new DocumentFormat.OpenXml.Wordprocessing.InsideVerticalBorder { Val = DocumentFormat.OpenXml.Wordprocessing.BorderValues.Single, Size = 4, Color = "E5E7EB" }),
+                    new DocumentFormat.OpenXml.Wordprocessing.TableWidth { Width = "0", Type = DocumentFormat.OpenXml.Wordprocessing.TableWidthUnitValues.Auto }));
+            AddTableRow(tbl, headers, headerRow: true);
+            AddTableRow(tbl, values, boldCells: boldCells);
+            return tbl;
+        }
+
+        if (!string.IsNullOrWhiteSpace(companyName))
+            AddLabeledLine("", companyName);
+        if (!string.IsNullOrWhiteSpace(companyHeader))
+            AddLabeledLine("", companyHeader);
+        AddLabeledLine(T("PhoneNumber"), companyPhone);
+        AddLabeledLine(T("CompanyCommercialRecord"), companyCommercialRecord);
+        AddLabeledLine(T("CompanyTaxNumber"), companyTaxNumber);
+        AddLabeledLine(T("CompanyNationalAddress"), companyNationalAddress);
+
+        body.AppendChild(new DocumentFormat.OpenXml.Wordprocessing.Paragraph(
+            new DocumentFormat.OpenXml.Wordprocessing.ParagraphProperties(
+                new DocumentFormat.OpenXml.Wordprocessing.ParagraphBorders(
+                    new DocumentFormat.OpenXml.Wordprocessing.BottomBorder { Val = DocumentFormat.OpenXml.Wordprocessing.BorderValues.Single, Size = 6, Color = "0F3A5F" }))));
+
+        AddPara(T("RentalContract"), bold: true, fontSize: "32", color: "0F3A5F",
+            just: DocumentFormat.OpenXml.Wordprocessing.JustificationValues.Center);
+
+        AddLabeledLine(T("ContractNumberLabel"), reportNumber);
+        AddLabeledLine(T("ReportsGeneratedOn"), generatedOn);
+
+        AddPartyBox(T("FirstParty"), new List<(string, string)>
+        {
+            (T("Company"), companyName),
+            (T("CompanyCommercialRecord"), companyCommercialRecord),
+            (T("CompanyTaxNumber"), companyTaxNumber),
+            (T("CompanyNationalAddress"), companyNationalAddress),
+            (T("RepresentativeOf"), representativeName),
+            (T("IdNumber"), representativeId),
+            (T("PhoneNumber"), representativePhone)
+        });
+
+        AddPartyBox(T("SecondParty"), new List<(string, string)>
+        {
+            (T("ClientNameField"), rental.CustomerName),
+            (T("Company"), rental.Company ?? ""),
+            (T("IdNumber"), rental.IdNumber ?? ""),
+            (T("PhoneNumber"), rental.Phone ?? "")
+        });
+
+        AddSectionTitle(T("DeviceDetails"));
+        body.AppendChild(CreateContractTable(
+            new[] { T("DeviceType"), T("Device"), T("MainSerial"), T("Serial2Optional") },
+            new[] { rental.DeviceType, deviceText, rental.Serial, rental.Serial2 ?? "" }));
+
+        AddSectionTitle(T("RentalPeriod"));
+        body.AppendChild(CreateContractTable(
+            new[] { T("RentalType"), T("StartDateField"), T("EndDateField"), T("RentalDaysCountLabel") },
+            new[] { rental.RentalType, rental.StartDate.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture), rental.EndDate.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture), periodDays.ToString(System.Globalization.CultureInfo.InvariantCulture) }));
+
+        AddSectionTitle(T("PaymentSummary"));
+        body.AppendChild(CreateContractTable(
+            new[] { T("DeviceValue"), T("DailyPrice"), T("MonthlyPrice"), T("PriceField") },
+            new[] { rental.DeviceValue.ToString("N2", System.Globalization.CultureInfo.InvariantCulture), rental.DailyPrice.ToString("N2", System.Globalization.CultureInfo.InvariantCulture), rental.MonthlyPrice.ToString("N2", System.Globalization.CultureInfo.InvariantCulture), rental.Price.ToString("N2", System.Globalization.CultureInfo.InvariantCulture) },
+            new[] { true, false, false, true }));
+
+        body.AppendChild(CreateContractTable(
+            new[] { T("PaidAmount"), "", "", T("RemainingAmount") },
+            new[] { rental.PaidAmount.ToString("N2", System.Globalization.CultureInfo.InvariantCulture), "", "", rental.RemainingAmount.ToString("N2", System.Globalization.CultureInfo.InvariantCulture) },
+            new[] { false, false, false, true }));
+
+        AddSectionTitle(T("ContractTermsTitle"));
+        foreach (var term in BuildRentalContractTerms(rental))
+            AddPara(term, just: DocumentFormat.OpenXml.Wordprocessing.JustificationValues.Right);
+
+        body.AppendChild(new DocumentFormat.OpenXml.Wordprocessing.Paragraph());
+
+        var sigTable = new DocumentFormat.OpenXml.Wordprocessing.Table(
+            new DocumentFormat.OpenXml.Wordprocessing.TableProperties(
+                new DocumentFormat.OpenXml.Wordprocessing.TableWidth { Width = "0", Type = DocumentFormat.OpenXml.Wordprocessing.TableWidthUnitValues.Auto }));
+        var sigRow = new DocumentFormat.OpenXml.Wordprocessing.TableRow();
+        foreach (var t in new[] { T("ContractSignatureLessor"), T("ContractSignatureRenter") })
+        {
+            var cell = new DocumentFormat.OpenXml.Wordprocessing.TableCell(
+                new DocumentFormat.OpenXml.Wordprocessing.Paragraph(
+                    new DocumentFormat.OpenXml.Wordprocessing.ParagraphProperties(
+                        new DocumentFormat.OpenXml.Wordprocessing.Justification { Val = DocumentFormat.OpenXml.Wordprocessing.JustificationValues.Center }),
+                    new DocumentFormat.OpenXml.Wordprocessing.Run(
+                        new DocumentFormat.OpenXml.Wordprocessing.RunProperties(
+                            new DocumentFormat.OpenXml.Wordprocessing.Bold(),
+                            new DocumentFormat.OpenXml.Wordprocessing.FontSize { Val = "20" },
+                            new DocumentFormat.OpenXml.Wordprocessing.Color { Val = "0F3A5F" }),
+                        new DocumentFormat.OpenXml.Wordprocessing.Text(t))),
+                new DocumentFormat.OpenXml.Wordprocessing.Paragraph(
+                    new DocumentFormat.OpenXml.Wordprocessing.ParagraphProperties(
+                        new DocumentFormat.OpenXml.Wordprocessing.SpacingBetweenLines { Before = "600" })),
+                new DocumentFormat.OpenXml.Wordprocessing.Paragraph(
+                    new DocumentFormat.OpenXml.Wordprocessing.ParagraphProperties(
+                        new DocumentFormat.OpenXml.Wordprocessing.ParagraphBorders(
+                            new DocumentFormat.OpenXml.Wordprocessing.BottomBorder { Val = DocumentFormat.OpenXml.Wordprocessing.BorderValues.Single, Size = 4, Color = "9CA3AF" }))));
+            sigRow.AppendChild(cell);
+        }
+        sigTable.AppendChild(sigRow);
+        body.AppendChild(sigTable);
+
+        var sectionProps = new DocumentFormat.OpenXml.Wordprocessing.SectionProperties(
+            new DocumentFormat.OpenXml.Wordprocessing.PageSize
+            {
+                Width = 11906,
+                Height = 16838,
+                Orient = DocumentFormat.OpenXml.Wordprocessing.PageOrientationValues.Portrait
+            },
+            new DocumentFormat.OpenXml.Wordprocessing.PageMargin
+            {
+                Top = 1134,
+                Bottom = 1134,
+                Left = 1134u,
+                Right = 1134u,
+                Header = 720u,
+                Footer = 720u
+            });
+        body.AppendChild(sectionProps);
+
+        doc.Save();
+        return docxPath;
     }
 
     async void PrintRentalHandover(bool isReturn)
@@ -829,7 +1123,7 @@ public sealed class RentalsViewModel : ViewModelBase
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"خطأ في إنشاء الإيصال: {ex.Message}", "خطأ", MessageBoxButton.OK, MessageBoxImage.Error);
+            MessageBox.Show(string.Format(T("RentalReceiptCreateError"), ex.Message), T("Error"), MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
 
@@ -865,7 +1159,7 @@ public sealed class RentalsViewModel : ViewModelBase
         }
         catch (Exception ex)
         {
-            MessageBox.Show(ex.Message, "تعذر فتح الملف", MessageBoxButton.OK, MessageBoxImage.Error);
+            MessageBox.Show(ex.Message, T("FileOpenFailed"), MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
 
@@ -885,7 +1179,7 @@ public sealed class RentalsViewModel : ViewModelBase
             ["ContractRepresentativeId"] = report.ContractRepresentativeId?.Trim() ?? "",
             ["ContractRepresentativePhone"] = report.ContractRepresentativePhone?.Trim() ?? "",
             ["LogoPath"] = (report.ShowLogo && !string.IsNullOrWhiteSpace(report.LogoPath) && File.Exists(report.LogoPath)) ? report.LogoPath : "",
-            ["GeneratedOn"] = DateTime.Now.ToString("yyyy-MM-dd HH:mm")
+            ["GeneratedOn"] = DateTime.Now.ToString("yyyy-MM-dd HH:mm", System.Globalization.CultureInfo.InvariantCulture)
         };
     }
 
@@ -912,7 +1206,8 @@ public sealed class RentalsViewModel : ViewModelBase
         var representativeId = header["ContractRepresentativeId"];
         var representativePhone = header["ContractRepresentativePhone"];
         var logoPath = header["LogoPath"];
-        var hasLogo = !string.IsNullOrWhiteSpace(logoPath);
+        var logoBytes = LoadPdfLogoBytes(logoPath);
+        var hasLogo = logoBytes != null;
         var reportNumber = rentalNo;
         var generatedOn = header["GeneratedOn"];
 
@@ -927,22 +1222,15 @@ public sealed class RentalsViewModel : ViewModelBase
                 page.Margin(1.5f, QuestPDF.Infrastructure.Unit.Centimetre);
                 page.DefaultTextStyle(x => x.FontFamily("Cairo").FontSize(9).FontColor("#1F2937"));
 
-                page.Header().Element(h => h.Column(letterhead =>
+                page.Background().Border(1).BorderColor("#0F3A5F");
+
+                page.Header().Column(letterhead =>
                 {
                     letterhead.Item().Row(row =>
                     {
                         if (hasLogo)
                         {
-                            row.ConstantItem(92).Element(logo =>
-                            {
-                                try
-                                {
-                                    logo.Width(92).Height(64).AlignLeft().AlignTop().Image(logoPath);
-                                }
-                                catch
-                                {
-                                }
-                            });
+                            row.ConstantItem(120).Width(120).AlignLeft().AlignTop().Image(logoBytes!);
                         }
                         row.RelativeItem().PaddingTop(2).Column(info =>
                         {
@@ -968,156 +1256,163 @@ public sealed class RentalsViewModel : ViewModelBase
                     });
                     letterhead.Item().PaddingTop(4).Height(3).Background("#0F3A5F");
                     letterhead.Item().PaddingTop(1).Height(1).Background("#D1D5DB");
-                }));
+                });
 
-                page.Content().Element(content =>
+                page.Content().Column(col =>
                 {
-                    content.Column(col =>
+                    col.Spacing(6);
+
+                    col.Item().PaddingTop(2).AlignCenter().Text(T("RentalContract")).DirectionFromRightToLeft().Bold().FontSize(16).FontColor("#0F3A5F");
+                    col.Item().AlignRight().Text(T("ContractNumberLabel") + " " + reportNumber).DirectionFromRightToLeft().Bold().FontSize(9).FontColor("#1F2937");
+                    col.Item().PaddingTop(2).AlignRight().Text(T("ContractDate") + " " + DateTime.Now.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture)).DirectionFromRightToLeft().Bold().FontSize(9).FontColor("#1F2937");
+
+                    col.Item().PaddingTop(4).Row(meta =>
                     {
-                        col.Spacing(6);
-
-                        col.Item().PaddingTop(2).AlignCenter().Text(T("RentalContract")).DirectionFromRightToLeft().Bold().FontSize(16).FontColor("#0F3A5F");
-                        col.Item().Row(metaRow =>
+                        meta.Spacing(6);
+                        meta.RelativeItem().Element(c => BuildRentalPartyBox(c, T("SecondParty"), new List<(string, string)>
                         {
-                            metaRow.RelativeItem();
-                            metaRow.AutoItem().Text(generatedOn).DirectionFromLeftToRight().FontSize(8).FontColor("#6B7280");
-                            metaRow.AutoItem().Text(T("ReportsGeneratedOn") + ": ").DirectionFromRightToLeft().FontSize(8).FontColor("#6B7280");
-                            metaRow.AutoItem().Text("    |    ").FontSize(8).FontColor("#6B7280");
-                            metaRow.AutoItem().Text(reportNumber).DirectionFromLeftToRight().FontSize(8).FontColor("#6B7280");
-                            metaRow.AutoItem().Text(T("ContractNumberLabel") + ": ").DirectionFromRightToLeft().FontSize(8).FontColor("#6B7280");
-                        });
-
-                        col.Item().PaddingTop(4).Row(meta =>
+                            (T("ClientNameField"), rental.CustomerName),
+                            (T("Company"), rental.Company ?? ""),
+                            (T("IdNumber"), rental.IdNumber ?? ""),
+                            (T("PhoneNumber"), rental.Phone ?? "")
+                        }));
+                        meta.RelativeItem().Element(c => BuildRentalPartyBox(c, T("FirstParty"), new List<(string, string)>
                         {
-                            meta.Spacing(6);
-                            meta.RelativeItem().Element(c => BuildRentalPartyBox(c, T("FirstParty"), new List<(string, string)>
-                            {
-                                (T("Company"), companyName),
-                                (T("CompanyCommercialRecord"), companyCommercialRecord),
-                                (T("CompanyTaxNumber"), companyTaxNumber),
-                                (T("CompanyNationalAddress"), companyNationalAddress),
-                                (T("RepresentativeOf"), representativeName),
-                                (T("IdNumber"), representativeId),
-                                (T("PhoneNumber"), representativePhone)
-                            }));
-                            meta.RelativeItem().Element(c => BuildRentalPartyBox(c, T("SecondParty"), new List<(string, string)>
-                            {
-                                (T("ClientNameField"), rental.CustomerName),
-                                (T("Company"), rental.Company ?? ""),
-                                (T("IdNumber"), rental.IdNumber ?? ""),
-                                (T("PhoneNumber"), rental.Phone ?? "")
-                            }));
-                        });
+                            (T("Company"), companyName),
+                            (T("CompanyCommercialRecord"), companyCommercialRecord),
+                            (T("CompanyTaxNumber"), companyTaxNumber),
+                            (T("CompanyNationalAddress"), companyNationalAddress),
+                            (T("RepresentativeOf"), representativeName),
+                            (T("IdNumber"), representativeId),
+                            (T("PhoneNumber"), representativePhone)
+                        }));
+                    });
 
-                        col.Item().PaddingTop(4).Text(T("DeviceDetails")).DirectionFromRightToLeft().Bold().FontSize(11).FontColor("#0F3A5F");
-                        col.Item().Table(table =>
+                    col.Item().PaddingTop(4).Text(T("DeviceDetails")).DirectionFromRightToLeft().Bold().FontSize(11).FontColor("#0F3A5F");
+                    col.Item().Table(table =>
+                    {
+                        table.ColumnsDefinition(c =>
                         {
-                            table.ColumnsDefinition(c =>
-                            {
-                                c.RelativeColumn(1.2f);
-                                c.RelativeColumn(2f);
-                                c.RelativeColumn(1.2f);
-                                c.RelativeColumn(2f);
-                            });
-                            table.Header(h =>
-                            {
-                                BuildRentalTableHeaderCell(h.Cell(), T("DeviceType"));
-                                BuildRentalTableHeaderCell(h.Cell(), T("Device"));
-                                BuildRentalTableHeaderCell(h.Cell(), T("MainSerial"));
-                                BuildRentalTableHeaderCell(h.Cell(), T("Serial2Optional"));
-                            });
-                            table.Cell().Border(0.5f).BorderColor("#E5E7EB").Padding(3).AlignCenter().Text(rental.DeviceType).DirectionFromRightToLeft().FontSize(9);
-                            table.Cell().Border(0.5f).BorderColor("#E5E7EB").Padding(3).Text(deviceText).DirectionFromRightToLeft().FontSize(9);
-                            table.Cell().Border(0.5f).BorderColor("#E5E7EB").Padding(3).AlignCenter().Text(rental.Serial).DirectionFromRightToLeft().FontSize(9);
-                            table.Cell().Border(0.5f).BorderColor("#E5E7EB").Padding(3).AlignCenter().Text(rental.Serial2 ?? "").DirectionFromRightToLeft().FontSize(9);
+                            c.RelativeColumn(1.2f);
+                            c.RelativeColumn(2f);
+                            c.RelativeColumn(1.2f);
+                            c.RelativeColumn(2f);
                         });
+                        table.Header(h =>
+                        {
+                            BuildRentalTableHeaderCell(h.Cell(), T("DeviceType"));
+                            BuildRentalTableHeaderCell(h.Cell(), T("Device"));
+                            BuildRentalTableHeaderCell(h.Cell(), T("MainSerial"));
+                            BuildRentalTableHeaderCell(h.Cell(), T("Serial2Optional"));
+                        });
+                        table.Cell().Border(0.5f).BorderColor("#E5E7EB").Padding(3).AlignCenter().Text(rental.DeviceType).DirectionFromRightToLeft().Bold().FontSize(9).FontColor("#1F2937");
+                        table.Cell().Border(0.5f).BorderColor("#E5E7EB").Padding(3).Text(deviceText).DirectionFromRightToLeft().Bold().FontSize(9).FontColor("#1F2937");
+                        table.Cell().Border(0.5f).BorderColor("#E5E7EB").Padding(3).AlignCenter().Text(rental.Serial).DirectionFromRightToLeft().Bold().FontSize(9).FontColor("#1F2937");
+                        table.Cell().Border(0.5f).BorderColor("#E5E7EB").Padding(3).AlignCenter().Text(rental.Serial2 ?? "").DirectionFromRightToLeft().Bold().FontSize(9).FontColor("#1F2937");
+                    });
 
-                        col.Item().PaddingTop(4).Text(T("RentalPeriod")).DirectionFromRightToLeft().Bold().FontSize(11).FontColor("#0F3A5F");
-                        col.Item().Table(table =>
+                    col.Item().PaddingTop(4).Text(T("RentalPeriod")).DirectionFromRightToLeft().Bold().FontSize(11).FontColor("#0F3A5F");
+                    col.Item().Table(table =>
+                    {
+                        table.ColumnsDefinition(c =>
                         {
-                            table.ColumnsDefinition(c =>
-                            {
-                                c.RelativeColumn(1.2f);
-                                c.RelativeColumn(1.2f);
-                                c.RelativeColumn(1.2f);
-                                c.RelativeColumn(1.2f);
-                            });
-                            table.Header(h =>
-                            {
-                                BuildRentalTableHeaderCell(h.Cell(), T("RentalType"));
-                                BuildRentalTableHeaderCell(h.Cell(), T("StartDateField"));
-                                BuildRentalTableHeaderCell(h.Cell(), T("EndDateField"));
-                                BuildRentalTableHeaderCell(h.Cell(), T("RentalDaysCountLabel"));
-                            });
-                            table.Cell().Border(0.5f).BorderColor("#E5E7EB").Padding(3).AlignCenter().Text(rental.RentalType).DirectionFromRightToLeft().FontSize(9);
-                            table.Cell().Border(0.5f).BorderColor("#E5E7EB").Padding(3).AlignCenter().Text(rental.StartDate.ToString("yyyy-MM-dd")).FontSize(9);
-                            table.Cell().Border(0.5f).BorderColor("#E5E7EB").Padding(3).AlignCenter().Text(rental.EndDate.ToString("yyyy-MM-dd")).FontSize(9);
-                            table.Cell().Border(0.5f).BorderColor("#E5E7EB").Padding(3).AlignCenter().Text(periodDays.ToString()).FontSize(9);
+                            c.RelativeColumn(1.2f);
+                            c.RelativeColumn(1.2f);
+                            c.RelativeColumn(1.2f);
+                            c.RelativeColumn(1.2f);
                         });
+                        table.Header(h =>
+                        {
+                            BuildRentalTableHeaderCell(h.Cell(), T("RentalType"));
+                            BuildRentalTableHeaderCell(h.Cell(), T("StartDateField"));
+                            BuildRentalTableHeaderCell(h.Cell(), T("EndDateField"));
+                            BuildRentalTableHeaderCell(h.Cell(), T("RentalDaysCountLabel"));
+                        });
+                        var rentalTypeDisplay = rental.RentalType?.Trim().ToLowerInvariant() == "daily" ? T("Daily") : T("Monthly");
+                        table.Cell().Border(0.5f).BorderColor("#E5E7EB").Padding(3).AlignCenter().Text(rentalTypeDisplay).DirectionFromRightToLeft().Bold().FontSize(9).FontColor("#1F2937");
+                        table.Cell().Border(0.5f).BorderColor("#E5E7EB").Padding(3).AlignCenter().Text(rental.StartDate.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture)).Bold().FontSize(9).FontColor("#1F2937");
+                        table.Cell().Border(0.5f).BorderColor("#E5E7EB").Padding(3).AlignCenter().Text(rental.EndDate.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture)).Bold().FontSize(9).FontColor("#1F2937");
+                        table.Cell().Border(0.5f).BorderColor("#E5E7EB").Padding(3).AlignCenter().Text(periodDays.ToString(System.Globalization.CultureInfo.InvariantCulture)).Bold().FontSize(9).FontColor("#1F2937");
+                    });
 
-                        col.Item().PaddingTop(4).Text(T("PaymentSummary")).DirectionFromRightToLeft().Bold().FontSize(11).FontColor("#0F3A5F");
-                        col.Item().Table(table =>
+                    col.Item().PaddingTop(4).Text(T("PaymentSummary")).DirectionFromRightToLeft().Bold().FontSize(11).FontColor("#0F3A5F");
+                    col.Item().Table(table =>
+                    {
+                        table.ColumnsDefinition(c =>
                         {
-                            table.ColumnsDefinition(c =>
-                            {
-                                c.RelativeColumn(1.2f);
-                                c.RelativeColumn(1.2f);
-                                c.RelativeColumn(1.2f);
-                                c.RelativeColumn(1.2f);
-                            });
-                            table.Header(h =>
-                            {
-                                BuildRentalTableHeaderCell(h.Cell(), T("DeviceValue"));
-                                BuildRentalTableHeaderCell(h.Cell(), T("DailyPrice"));
-                                BuildRentalTableHeaderCell(h.Cell(), T("MonthlyPrice"));
-                                BuildRentalTableHeaderCell(h.Cell(), T("PriceField"));
-                            });
-                            table.Cell().Border(0.5f).BorderColor("#E5E7EB").Padding(3).AlignCenter().Text(rental.DeviceValue.ToString("N2")).Bold().FontColor("#0F3A5F").FontSize(9);
-                            table.Cell().Border(0.5f).BorderColor("#E5E7EB").Padding(3).AlignCenter().Text(rental.DailyPrice.ToString("N2")).FontSize(9);
-                            table.Cell().Border(0.5f).BorderColor("#E5E7EB").Padding(3).AlignCenter().Text(rental.MonthlyPrice.ToString("N2")).FontSize(9);
-                            table.Cell().Border(0.5f).BorderColor("#E5E7EB").Padding(3).AlignCenter().Text(rental.Price.ToString("N2")).Bold().FontColor("#0F3A5F").FontSize(9);
-                            table.Cell().Border(0.5f).BorderColor("#E5E7EB").Background("#F8FAFC").Padding(3).AlignCenter().Text(T("PaidAmount")).DirectionFromRightToLeft().FontSize(8).FontColor("#6B7280");
-                            table.Cell().Border(0.5f).BorderColor("#E5E7EB").Background("#F8FAFC").Padding(3).Text("").FontSize(9);
-                            table.Cell().Border(0.5f).BorderColor("#E5E7EB").Background("#F8FAFC").Padding(3).Text("").FontSize(9);
-                            table.Cell().Border(0.5f).BorderColor("#E5E7EB").Background("#F8FAFC").Padding(3).AlignCenter().Text(rental.PaidAmount.ToString("N2")).FontSize(9);
-                            table.Cell().Border(0.5f).BorderColor("#E5E7EB").Background("#E2E8F0").Padding(3).AlignCenter().Text(T("RemainingAmount")).DirectionFromRightToLeft().FontSize(8).FontColor("#6B7280");
-                            table.Cell().Border(0.5f).BorderColor("#E5E7EB").Background("#E2E8F0").Padding(3).Text("").FontSize(9);
-                            table.Cell().Border(0.5f).BorderColor("#E5E7EB").Background("#E2E8F0").Padding(3).Text("").FontSize(9);
-                            table.Cell().Border(0.5f).BorderColor("#E5E7EB").Background("#E2E8F0").Padding(3).AlignCenter().Text(rental.RemainingAmount.ToString("N2")).Bold().FontColor("#B91C1C").FontSize(9);
+                            c.RelativeColumn(1.2f);
+                            c.RelativeColumn(1.2f);
+                            c.RelativeColumn(1.2f);
+                            c.RelativeColumn(1.2f);
                         });
+                        table.Header(h =>
+                        {
+                            BuildRentalTableHeaderCell(h.Cell(), T("DeviceValue"));
+                            BuildRentalTableHeaderCell(h.Cell(), T("DailyPrice"));
+                            BuildRentalTableHeaderCell(h.Cell(), T("MonthlyPrice"));
+                            BuildRentalTableHeaderCell(h.Cell(), T("PriceField"));
+                        });
+                        table.Cell().Border(0.5f).BorderColor("#E5E7EB").Padding(3).AlignCenter().Text(rental.DeviceValue.ToString("N2", System.Globalization.CultureInfo.InvariantCulture)).Bold().FontSize(9).FontColor("#0F3A5F");
+                        table.Cell().Border(0.5f).BorderColor("#E5E7EB").Padding(3).AlignCenter().Text(rental.DailyPrice.ToString("N2", System.Globalization.CultureInfo.InvariantCulture)).Bold().FontSize(9).FontColor("#1F2937");
+                        table.Cell().Border(0.5f).BorderColor("#E5E7EB").Padding(3).AlignCenter().Text(rental.MonthlyPrice.ToString("N2", System.Globalization.CultureInfo.InvariantCulture)).Bold().FontSize(9).FontColor("#1F2937");
+                        table.Cell().Border(0.5f).BorderColor("#E5E7EB").Padding(3).AlignCenter().Text(rental.Price.ToString("N2", System.Globalization.CultureInfo.InvariantCulture)).Bold().FontSize(9).FontColor("#0F3A5F");
+                        table.Cell().Border(0.5f).BorderColor("#E5E7EB").Background("#F8FAFC").Padding(3).AlignCenter().Text(T("PaidAmount")).DirectionFromRightToLeft().Bold().FontSize(8).FontColor("#1F2937");
+                        table.Cell().Border(0.5f).BorderColor("#E5E7EB").Background("#F8FAFC").Padding(3).Text("").FontSize(9);
+                        table.Cell().Border(0.5f).BorderColor("#E5E7EB").Background("#F8FAFC").Padding(3).Text("").FontSize(9);
+                        table.Cell().Border(0.5f).BorderColor("#E5E7EB").Background("#F8FAFC").Padding(3).AlignCenter().Text(rental.PaidAmount.ToString("N2", System.Globalization.CultureInfo.InvariantCulture)).Bold().FontSize(9).FontColor("#1F2937");
+                        table.Cell().Border(0.5f).BorderColor("#E5E7EB").Background("#E2E8F0").Padding(3).AlignCenter().Text(T("RemainingAmount")).DirectionFromRightToLeft().Bold().FontSize(8).FontColor("#1F2937");
+                        table.Cell().Border(0.5f).BorderColor("#E2E8F0").Padding(3).Text("").FontSize(9);
+                        table.Cell().Border(0.5f).BorderColor("#E2E8F0").Padding(3).Text("").FontSize(9);
+                        table.Cell().Border(0.5f).BorderColor("#E5E7EB").Background("#E2E8F0").Padding(3).AlignCenter().Text(rental.RemainingAmount.ToString("N2", System.Globalization.CultureInfo.InvariantCulture)).Bold().FontSize(9).FontColor("#B91C1C");
+                    });
 
-                        col.Item().PaddingTop(6).Text(T("ContractTermsTitle")).DirectionFromRightToLeft().Bold().FontSize(11).FontColor("#0F3A5F");
-                        col.Item().PaddingTop(2).Column(termsCol =>
+                    col.Item().PaddingTop(6).Text(T("ContractTermsTitle")).DirectionFromRightToLeft().Bold().FontSize(11).FontColor("#0F3A5F");
+                    col.Item().PaddingTop(2).Column(termsCol =>
+                    {
+                        termsCol.Spacing(3);
+                        foreach (var term in BuildRentalContractTerms(rental))
                         {
-                            termsCol.Spacing(3);
-                            foreach (var term in BuildRentalContractTerms(rental))
-                            {
-                                termsCol.Item().Text(term).DirectionFromRightToLeft().FontSize(9).FontColor("#374151");
-                            }
-                        });
+                            termsCol.Item().Text(term).DirectionFromRightToLeft().Bold().FontSize(9).FontColor("#1F2937");
+                        }
+                    });
 
-                        col.Item().PaddingTop(8).EnsureSpace(100).Row(signatures =>
+                    col.Item().PaddingTop(8).Row(signatures =>
+                    {
+                        signatures.Spacing(14);
+                        signatures.RelativeItem().Element(c => c.Border(0.75f).BorderColor("#9CA3AF").Padding(8).Column(sc =>
                         {
-                            signatures.Spacing(14);
-                            signatures.RelativeItem().Element(c => BuildRentalSignatureBox(c, T("ContractSignatureLessor")));
-                            signatures.RelativeItem().Element(c => BuildRentalSignatureBox(c, T("ContractSignatureRenter")));
-                        });
+                            sc.Item().AlignCenter().Text(T("AuthorizedSignatory")).DirectionFromRightToLeft().Bold().FontSize(10).FontColor("#0F3A5F");
+                            sc.Item().PaddingTop(10).AlignRight().Text(T("NameField")).DirectionFromRightToLeft().Bold().FontSize(9).FontColor("#374151");
+                            sc.Item().PaddingTop(12).AlignRight().Text(T("IdNumber") + " \\ " + T("ResidenceNumber")).DirectionFromRightToLeft().Bold().FontSize(9).FontColor("#374151");
+                            sc.Item().PaddingTop(20).LineHorizontal(0.5f).LineColor("#9CA3AF");
+                            sc.Item().PaddingTop(2).AlignCenter().Text(T("SignatureLabel")).DirectionFromRightToLeft().Bold().FontSize(8).FontColor("#9CA3AF");
+                        }));
+                        signatures.RelativeItem().Element(c => c.Border(0.75f).BorderColor("#9CA3AF").Padding(8).Column(sc =>
+                        {
+                            sc.Item().AlignCenter().Text(T("ContractSignatureRenter")).DirectionFromRightToLeft().Bold().FontSize(10).FontColor("#0F3A5F");
+                            sc.Item().PaddingTop(10).AlignRight().Text(T("NameField")).DirectionFromRightToLeft().Bold().FontSize(9).FontColor("#374151");
+                            sc.Item().PaddingTop(12).AlignRight().Text(T("IdNumber") + " \\ " + T("ResidenceNumber")).DirectionFromRightToLeft().Bold().FontSize(9).FontColor("#374151");
+                            sc.Item().PaddingTop(20).LineHorizontal(0.5f).LineColor("#9CA3AF");
+                            sc.Item().PaddingTop(2).AlignCenter().Text(T("SignatureLabel")).DirectionFromRightToLeft().Bold().FontSize(8).FontColor("#9CA3AF");
+                        }));
                     });
                 });
 
-                page.Footer().Element(f => f.Column(footerCol =>
+                page.Footer().Column(footerCol =>
                 {
                     footerCol.Item().LineHorizontal(0.5f).LineColor("#CBD5E1");
                     footerCol.Item().PaddingTop(3).Row(footerRow =>
                     {
-                        footerRow.RelativeItem().AlignLeft().Text(x => SpanOf(x, companyName).FontSize(8).FontColor("#6B7280"));
-                        footerRow.RelativeItem().AlignRight().DefaultTextStyle(s => s.FontSize(8).FontColor("#6B7280")).Text(x =>
+                        footerRow.RelativeItem().AlignLeft().Text(x => SpanOf(x, companyName).FontSize(8).FontColor("#6B7280").Bold());
+                        footerRow.RelativeItem().AlignRight().DefaultTextStyle(s => s.FontSize(8).FontColor("#6B7280").Bold()).Text(x =>
                         {
                             x.Span(T("PageLabel") + " ").DirectionFromRightToLeft();
                             x.CurrentPageNumber();
+                            x.Span(" " + T("OfLabel") + " ").DirectionFromRightToLeft();
+                            x.TotalPages();
                         });
                     });
-                }));
+                });
             });
         }).GeneratePdf(pdfPath);
 
@@ -1126,7 +1421,7 @@ public sealed class RentalsViewModel : ViewModelBase
 
     List<string> BuildRentalContractTerms(RentalItem rental)
     {
-        var deviceValue = rental.DeviceValue.ToString("N2");
+        var deviceValue = rental.DeviceValue.ToString("N2", System.Globalization.CultureInfo.InvariantCulture);
         var terms = T("RentalContractTerms").Replace("{0}", deviceValue);
         var lines = new List<string>();
         foreach (var part in terms.Split(new[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries))
@@ -1156,7 +1451,9 @@ public sealed class RentalsViewModel : ViewModelBase
         var companyAddress = header["CompanyAddress"];
         var companyPhone = header["CompanyPhone"];
         var logoPath = header["LogoPath"];
-        var hasLogo = !string.IsNullOrWhiteSpace(logoPath);
+        var logoBytes = LoadPdfLogoBytes(logoPath);
+        var hasLogo = logoBytes != null;
+        var generatedOn = header["GeneratedOn"];
 
         var title = isReturn ? T("ReturnReceiptTitle") : T("ReceiveReceiptTitle");
         var confirmation = isReturn ? T("ReturnConfirmationText") : T("ReceiveConfirmationText");
@@ -1170,22 +1467,15 @@ public sealed class RentalsViewModel : ViewModelBase
                 page.Margin(1.5f, QuestPDF.Infrastructure.Unit.Centimetre);
                 page.DefaultTextStyle(x => x.FontFamily("Cairo").FontSize(9).FontColor("#1F2937"));
 
-                page.Header().Element(h => h.Column(letterhead =>
+                page.Background().Border(1).BorderColor("#0F3A5F");
+
+                page.Header().Column(letterhead =>
                 {
                     letterhead.Item().Row(row =>
                     {
                         if (hasLogo)
                         {
-                            row.ConstantItem(92).Element(logo =>
-                            {
-                                try
-                                {
-                                    logo.Width(92).Height(64).AlignLeft().AlignTop().Image(logoPath);
-                                }
-                                catch
-                                {
-                                }
-                            });
+                            row.ConstantItem(120).Width(120).AlignLeft().AlignTop().Image(logoBytes!);
                         }
                         row.RelativeItem().PaddingTop(2).Column(info =>
                         {
@@ -1205,70 +1495,62 @@ public sealed class RentalsViewModel : ViewModelBase
                     });
                     letterhead.Item().PaddingTop(4).Height(3).Background("#0F3A5F");
                     letterhead.Item().PaddingTop(1).Height(1).Background("#D1D5DB");
-                }));
+                });
 
-                page.Content().Element(content =>
+                page.Content().Column(col =>
                 {
-                    content.Column(col =>
+                    col.Spacing(6);
+
+                    col.Item().PaddingTop(2).AlignCenter().Text(title).DirectionFromRightToLeft().Bold().FontSize(16).FontColor("#0F3A5F");
+                    col.Item().AlignRight().Text(T("RentalNumber") + " " + rentalNo).DirectionFromRightToLeft().Bold().FontSize(9).FontColor("#1F2937");
+                    col.Item().PaddingTop(2).AlignRight().Text(T("ContractDate") + " " + DateTime.Now.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture)).DirectionFromRightToLeft().Bold().FontSize(9).FontColor("#1F2937");
+
+                    col.Item().PaddingTop(4).Text(confirmation).DirectionFromRightToLeft().FontSize(10).FontColor("#374151");
+
+                    col.Item().PaddingTop(6).Row(meta =>
                     {
-                        col.Spacing(6);
+                        meta.Spacing(6);
+                        meta.RelativeItem().Element(c => BuildRentalMetaBox(c, T("ClientNameField"), rental.CustomerName));
+                        meta.RelativeItem().Element(c => BuildRentalMetaBox(c, T("PhoneNumber"), rental.Phone ?? ""));
+                    });
+                    col.Item().PaddingTop(4).Row(meta2 =>
+                    {
+                        meta2.Spacing(6);
+                        meta2.RelativeItem().Element(c => BuildRentalMetaBox(c, T("Device"), deviceText));
+                        meta2.RelativeItem().Element(c => BuildRentalMetaBox(c, T("MainSerial"), rental.Serial));
+                    });
 
-                        col.Item().PaddingTop(2).AlignCenter().Text(title).DirectionFromRightToLeft().Bold().FontSize(16).FontColor("#0F3A5F");
-                        col.Item().Row(metaRow =>
-                        {
-                            metaRow.RelativeItem();
-                            metaRow.AutoItem().Text(header["GeneratedOn"]).DirectionFromLeftToRight().FontSize(8).FontColor("#6B7280");
-                            metaRow.AutoItem().Text(T("ReportsGeneratedOn") + ": ").DirectionFromRightToLeft().FontSize(8).FontColor("#6B7280");
-                            metaRow.AutoItem().Text("    |    ").FontSize(8).FontColor("#6B7280");
-                            metaRow.AutoItem().Text(rentalNo).DirectionFromLeftToRight().FontSize(8).FontColor("#6B7280");
-                            metaRow.AutoItem().Text(T("RentalNumber") + ": ").DirectionFromRightToLeft().FontSize(8).FontColor("#6B7280");
-                        });
+                    col.Item().PaddingTop(4).Row(meta3 =>
+                    {
+                        meta3.Spacing(6);
+                        meta3.RelativeItem().Element(c => BuildRentalMetaBox(c, T("StartDateField"), rental.StartDate.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture)));
+                        meta3.RelativeItem().Element(c => BuildRentalMetaBox(c, T("EndDateField"), rental.EndDate.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture)));
+                        meta3.RelativeItem().Element(c => BuildRentalMetaBox(c, T("DeviceValue"), rental.DeviceValue.ToString("N2", System.Globalization.CultureInfo.InvariantCulture)));
+                    });
 
-                        col.Item().PaddingTop(4).Text(confirmation).DirectionFromRightToLeft().FontSize(10).FontColor("#374151");
-
-                        col.Item().PaddingTop(6).Row(meta =>
-                        {
-                            meta.Spacing(6);
-                            meta.RelativeItem().Element(c => BuildRentalMetaBox(c, T("ClientNameField"), rental.CustomerName));
-                            meta.RelativeItem().Element(c => BuildRentalMetaBox(c, T("PhoneNumber"), rental.Phone ?? ""));
-                        });
-                        col.Item().PaddingTop(4).Row(meta2 =>
-                        {
-                            meta2.Spacing(6);
-                            meta2.RelativeItem().Element(c => BuildRentalMetaBox(c, T("Device"), deviceText));
-                            meta2.RelativeItem().Element(c => BuildRentalMetaBox(c, T("MainSerial"), rental.Serial));
-                        });
-
-                        col.Item().PaddingTop(4).Row(meta3 =>
-                        {
-                            meta3.Spacing(6);
-                            meta3.RelativeItem().Element(c => BuildRentalMetaBox(c, T("StartDateField"), rental.StartDate.ToString("yyyy-MM-dd")));
-                            meta3.RelativeItem().Element(c => BuildRentalMetaBox(c, T("EndDateField"), rental.EndDate.ToString("yyyy-MM-dd")));
-                            meta3.RelativeItem().Element(c => BuildRentalMetaBox(c, T("DeviceValue"), rental.DeviceValue.ToString("N2")));
-                        });
-
-                        col.Item().PaddingTop(8).EnsureSpace(100).Row(signatures =>
-                        {
-                            signatures.Spacing(14);
-                            signatures.RelativeItem().Element(c => BuildRentalSignatureBox(c, T("ContractSignatureRenter")));
-                            signatures.RelativeItem().Element(c => BuildRentalSignatureBox(c, T("ContractSignatureLessor")));
-                        });
+                    col.Item().PaddingTop(8).Row(signatures =>
+                    {
+                        signatures.Spacing(14);
+                        signatures.RelativeItem().Element(c => BuildRentalSignatureBox(c, T("ContractSignatureRenter")));
+                        signatures.RelativeItem().Element(c => BuildRentalSignatureBox(c, T("ContractSignatureLessor")));
                     });
                 });
 
-                page.Footer().Element(f => f.Column(footerCol =>
+                page.Footer().Column(footerCol =>
                 {
                     footerCol.Item().LineHorizontal(0.5f).LineColor("#CBD5E1");
                     footerCol.Item().PaddingTop(3).Row(footerRow =>
                     {
-                        footerRow.RelativeItem().AlignLeft().Text(x => SpanOf(x, companyName).FontSize(8).FontColor("#6B7280"));
-                        footerRow.RelativeItem().AlignRight().DefaultTextStyle(s => s.FontSize(8).FontColor("#6B7280")).Text(x =>
+                        footerRow.RelativeItem().AlignLeft().Text(x => SpanOf(x, companyName).FontSize(8).FontColor("#6B7280").Bold());
+                        footerRow.RelativeItem().AlignRight().DefaultTextStyle(s => s.FontSize(8).FontColor("#6B7280").Bold()).Text(x =>
                         {
                             x.Span(T("PageLabel") + " ").DirectionFromRightToLeft();
                             x.CurrentPageNumber();
+                            x.Span(" " + T("OfLabel") + " ").DirectionFromRightToLeft();
+                            x.TotalPages();
                         });
                     });
-                }));
+                });
             });
         }).GeneratePdf(pdfPath);
 
@@ -1293,7 +1575,7 @@ public sealed class RentalsViewModel : ViewModelBase
             {
                 if (string.IsNullOrWhiteSpace(value))
                     continue;
-                c.Item().PaddingTop(4).Element(el => AddRtlPairRow(el, label, value, valueColor: "#1F2937", valueBold: true));
+                c.Item().PaddingTop(4).Element(el => AddRtlPairRow(el, label, value, labelSize: 9, labelColor: "#1F2937", valueSize: 9, valueColor: "#1F2937", valueBold: true));
             }
         });
     }
@@ -1318,7 +1600,7 @@ public sealed class RentalsViewModel : ViewModelBase
         {
             if (SelectedRental == null)
             {
-                MessageBox.Show("يرجى اختيار إيجار أولاً", "تنبيه", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(T("SelectRentalFirst"), T("Alert"), MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
@@ -1338,8 +1620,8 @@ public sealed class RentalsViewModel : ViewModelBase
                 if (string.IsNullOrWhiteSpace(templatePath))
                 {
                     MessageBox.Show(
-                        "يرجى تحديد قالب Word لإيصال الإيجار (rental_receipt) من شاشة إدارة القوالب أولاً",
-                        "قالب غير موجود",
+                        T("RentalTemplateMissing"),
+                        T("TemplateNotFound"),
                         MessageBoxButton.OK,
                         MessageBoxImage.Warning);
                     return;
@@ -1386,12 +1668,12 @@ public sealed class RentalsViewModel : ViewModelBase
             }
             catch (Exception ex)
             {
-                MessageBox.Show(ex.Message, "تعذر فتح الملف", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(ex.Message, T("FileOpenFailed"), MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"خطأ في طباعة الإيصال: {ex.Message}", "خطأ", MessageBoxButton.OK, MessageBoxImage.Error);
+            MessageBox.Show(string.Format(T("ReceiptPrintError"), ex.Message), T("Error"), MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
 
@@ -1418,8 +1700,8 @@ public sealed class RentalsViewModel : ViewModelBase
                 if (string.IsNullOrWhiteSpace(templatePath))
                 {
                     MessageBox.Show(
-                        "يرجى تحديد قالب Word لإيصال الإيجار (rental_receipt) من شاشة إدارة القوالب أولاً",
-                        "قالب غير موجود",
+                        T("RentalTemplateMissing"),
+                        T("TemplateNotFound"),
                         MessageBoxButton.OK,
                         MessageBoxImage.Warning);
                     return;
@@ -1443,12 +1725,12 @@ public sealed class RentalsViewModel : ViewModelBase
             }
             catch (Exception ex)
             {
-                MessageBox.Show(ex.Message, "تعذر فتح الملف", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(ex.Message, T("FileOpenFailed"), MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"خطأ في فتح الملف: {ex.Message}", "خطأ", MessageBoxButton.OK, MessageBoxImage.Error);
+            MessageBox.Show(string.Format(T("FileOpenError"), ex.Message), T("Error"), MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
 

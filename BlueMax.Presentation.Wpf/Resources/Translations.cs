@@ -39,7 +39,7 @@ public static class Translations
         public const string HardwareIdHint = "أرسل بصمة الجهاز أعلاه إلى المورّد لإنشاء رمز التفعيل";
         // Certificates View Fields
         public const string ClientData = "بيانات العميل";
-        public const string ClientNameField = "اسم العميل *";
+        public const string ClientNameField = "اسم العميل";
         public const string DelegateName = "اسم المفوض";
         public const string DeviceData = "بيانات الجهاز";
         public const string DeviceType = "نوع الجهاز";
@@ -166,11 +166,13 @@ public static class Translations
         public const string DailyPrice = "السعر اليومي";
         public const string MonthlyPrice = "السعر الشهري";
         public const string DeviceValue = "قيمة الجهاز (ريال سعودي)";
-        public const string RentalContract = "عقد الإيجار";
+        public const string RentalContract = "عقد ايجار";
         public const string PrintRentalContract = "طباعة عقد الإيجار";
+        public const string ExportContractWord = "تصدير عقد Word";
         public const string ReceiveReceiptTitle = "إقرار استلام جهاز";
         public const string ReturnReceiptTitle = "إقرار إرجاع جهاز";
         public const string ContractNumberLabel = "رقم العقد";
+        public const string ContractDate = "تاريخ تحرير العقد";
         public const string RentalPeriod = "مدة الإيجار";
         public const string FirstParty = "الطرف الأول (المؤجر)";
         public const string SecondParty = "الطرف الثاني (المستأجر)";
@@ -181,6 +183,9 @@ public static class Translations
         public const string RentalContractTerms = "أولاً: سريان العقد - يسري هذا العقد ويعتبر نافذاً وملزماً للطرفين من تاريخ تحريره، ويعتبر توقيع الطرفين عليه إقراراً منهما بجميع بنوده وموافقتهما عليها التزاماً كاملاً.\nثانياً: الطرفان - الطرف الأول هو المؤجر المذكور أعلاه ويمثله في التوقيع على هذا العقد الممثل المذكور، والطرف الثاني هو المستأجر المذكور أعلاه.\nثالثاً: ملكية الجهاز - يقر الطرفان بأن الجهاز المؤجر يظل ملكاً للمؤجر ملكية خالصة طوال مدة الإيجار وبعدها، ولا يترتب على هذا العقد أي نقل أو تحويل لملكية الجهاز إلى المستأجر أو إلى أي طرف آخر.\nرابعاً: إقرار الاستلام - يقر المستأجر ويشهد على نفسه بأنه استلم الجهاز المذكور أعلاه بتاريخ بدء العقد صالحاً للعمل بحالة ممتازة وخالياً من العيوب، وقد قام بفحصه بنفسه والتأكد من سلامته ومطابقته لمواصفاته والأرقام التسلسلية المدونة في هذا العقد، ويتحمل المسؤولية الكاملة عنه منذ لحظة الاستلام.\nخامساً: الالتزام بالرد - يتعهد المستأجر بإعادة الجهاز إلى المؤجر عند انتهاء مدة الإيجار وبالحالة ذاتها التي استلمه بها (صالحاً للعمل بحالة ممتازة) مع جميع ملحقاته وفي المكان المتفق عليه، دون أي مماطلة أو تأخير.\nسادساً: مسؤولية الجهاز - يتحمل المستأجر المسؤولية الكاملة عن الجهاز من تاريخ الاستلام حتى تاريخ الإرجاع الفعلي، بما في ذلك التلف أو الفقدان أو السرقة أو الحريق أو الضياع أو أي ضرر مهما كان سببه، ويلتزم بتعويض المؤجر تعويضاً كاملاً عن كل ذلك.\nسابعاً: قيمة الجهاز - يقدر الطرفان قيمة الجهاز المذكور أعلاه بمبلغ ({0}) ريال سعودي، وتعتبر هذه القيمة أساساً ملزماً لاحتساب التعويض في حال فقدان الجهاز أو إتلافه أو عدم إعادته، ويكون للمؤجر الحق في المطالبة بها كاملة.\nثامناً: عدم التأجير من الباطن - لا يجوز للمستأجر تأجير الجهاز من الباطن أو التنازل عن هذا العقد أو نقل حيازة الجهاز إلى أي طرف آخر إلا بموافقة كتابية مسبقة من المؤجر، وتعتبر أي مخالفة لذلك مبرراً لفسخ العقد مع تحميل المستأجر جميع التبعات.\nتاسعاً: الاستخدام والموقع - يلتزم المستأجر باستخدام الجهاز وفق تعليمات التشغيل وللغرض المخصص له فقط، وعدم نقله خارج موقع الاستخدام المتفق عليه أو إخراجه من أراضي المملكة إلا بموافقة كتابية من المؤجر.\nعاشراً: عدم العبث - يلتزم المستأجر بعدم إزالة أو إتلاف الأرقام التسلسلية أو اللوحات أو الملصقات أو أي علامات دالة على ملكية المؤجر، وعدم فتح الجهاز أو تعديله أو إصلاحه إلا بواسطة المؤجر أو من يفوّضه كتابياً.\nحادي عشر: الصيانة - يتكفل المؤجر بالصيانة العامة والدورية للجهاز خلال مدة الإيجار، ويتحمل المستأجر تكاليف الصيانة الناتجة عن سوء الاستخدام أو الإهمال أو الحوادث الواقعة منه.\nثاني عشر: غرامة التأخير - في حال تأخر المستأجر عن إعادة الجهاز في الموعد المحدد دون موافقة كتابية مسبقة من المؤجر، يستحق المؤجر أجرة عن فترة التأخير تعادل المبلغ اليومي المتفق عليه عن كل يوم تأخير مع عدم الإخلال بحقه في إنهاء العقد والمطالبة بالتعويضات.\nثالث عشر: عدم سقوط الحقوق - لا يعتبر قبول المؤجر لأي دفعات متأخرة أو جزئية إبراءً للمستأجر من التزاماته ولا سقوطاً لأي حق من حقوق المؤجر، ولا يؤثر الإعفاء من شرط معين على سريان بقية الشروط.\nرابع عشر: التضامن - إذا كان المستأجر أكثر من شخص فإنهم يلتزمون بالتضامن والتكافل فيما بينهم بتنفيذ جميع التزاماتهم وفق هذا العقد.\nخامس عشر: حل النزاعات - يخضع هذا العقد وتفسيره وتنفيذه لأنظمة المملكة العربية السعودية وعلى وجه الخصوص نظام المعاملات المدنية، وتكون المحاكم المختصة في المملكة هي الجهة الوحيدة المختصة بالفصل في أي نزاع ينشأ عن هذا العقد.\nسادس عشر: الإقرار والاطلاع - يقر الطرفان بأنهما قرآ جميع بنود هذا العقد واطلعا عليها وفهماها وأقروا بصحة جميع البيانات الواردة فيه، ويحرر هذا العقد من نسختين بيد كل طرف نسخة.";
         public const string ContractSignatureLessor = "توقيع المؤجر";
         public const string ContractSignatureRenter = "توقيع المستأجر";
+        public const string AuthorizedSignatory = "المفوض من قبل المنشآة بالتوقيع";
+        public const string ResidenceNumber = "رقم الإقامة";
+        public const string OfLabel = "من";
         public const string ReceiveConfirmationText = "أقر أنا المستلم بأنني استلمت الجهاز المذكور أعلاه بحالة جيدة ومطابق لمواصفاته، وأتحمل مسؤولية حفظه واستخدامه خلال مدة الإيجار.";
         public const string ReturnConfirmationText = "أقر أنا المستلم بأنني أرجعت الجهاز المذكور أعلاه إلى المؤجر بنفس الحالة التي استلمته بها، وتم فحصه والتأكد من سلامته.";
         public const string RentalEndDateBeforeStart = "تاريخ الانتهاء لا يمكن أن يكون قبل تاريخ البدء";
@@ -287,8 +292,8 @@ public static class Translations
         // Inventory View Fields
         public const string AddEditSparePart = "إضافة / تعديل قطعة غيار";
         public const string PartCodeSKU = "كود القطعة (SKU)";
-        public const string ItemNameField = "اسم الصنف *";
-        public const string CategoryField = "التصنيف *";
+        public const string ItemNameField = "اسم الصنف";
+        public const string CategoryField = "التصنيف";
         public const string BrandField = "العلامة التجارية";
         public const string CurrentQuantity = "الكمية الحالية";
         public const string MinimumThreshold = "الحد الأدنى";
@@ -845,6 +850,23 @@ public static class Translations
         public const string DocTypeInvoice = "إيصال استلام فردى";
         public const string DocTypeRentalReceipt = "إقرار استلام جهاز إيجار";
         public const string BrandMiscChineseDevices = "مختلف الاجهزة الصينيه";
+
+        // Rentals: error/confirm messages
+        public const string RentalSaveError = "خطأ في الحفظ: {0}";
+        public const string AdditionalDetails = "تفاصيل إضافية: {0}";
+        public const string RentalDeleteConfirm = "هل أنت متأكد من حذف هذا الإيجار؟";
+        public const string RentalDeleteTitle = "تأكيد الحذف";
+        public const string RentalDeleteError = "خطأ في الحذف: {0}";
+        public const string RentalEndError = "خطأ في إنهاء الإيجار: {0}";
+        public const string RentalContractCreateError = "خطأ في إنشاء عقد الإيجار: {0}";
+        public const string RentalWordExportError = "خطأ في تصدير عقد الإيجار إلى Word: {0}";
+        public const string RentalReceiptCreateError = "خطأ في إنشاء الإيصال: {0}";
+        public const string FileOpenFailed = "تعذر فتح الملف";
+        public const string FileOpenError = "خطأ في فتح الملف: {0}";
+        public const string RentalTemplateMissing = "يرجى تحديد قالب Word لإيصال الإيجار (rental_receipt) من شاشة إدارة القوالب أولاً";
+        public const string TemplateNotFound = "قالب غير موجود";
+        public const string ReceiptPrintError = "خطأ في طباعة الإيصال: {0}";
+        public const string ClientNameRequired = "اسم العميل مطلوب";
     }
 
     public static class English
@@ -882,7 +904,7 @@ public static class Translations
         
         // Certificates View Fields
         public const string ClientData = "Client Data";
-        public const string ClientNameField = "Client Name *";
+        public const string ClientNameField = "Client Name";
         public const string DelegateName = "Delegate Name";
         public const string DeviceData = "Device Data";
         public const string DeviceType = "Device Type";
@@ -1011,9 +1033,11 @@ public static class Translations
         public const string DeviceValue = "Device Value (SAR)";
         public const string RentalContract = "Rental Contract";
         public const string PrintRentalContract = "Print Rental Contract";
+        public const string ExportContractWord = "Export Contract to Word";
         public const string ReceiveReceiptTitle = "Device Receive Acknowledgment";
         public const string ReturnReceiptTitle = "Device Return Acknowledgment";
         public const string ContractNumberLabel = "Contract Number";
+        public const string ContractDate = "Contract Date";
         public const string RentalPeriod = "Rental Period";
         public const string FirstParty = "First Party (Lessor)";
         public const string SecondParty = "Second Party (Lessee)";
@@ -1024,6 +1048,9 @@ public static class Translations
         public const string RentalContractTerms = "First: Contract Validity - This contract is effective and binding on both parties from its date of execution, and their signatures constitute full acknowledgment and acceptance of all its terms.\nSecond: The Parties - The First Party is the lessor mentioned above, represented in signing this contract by the representative stated above; the Second Party is the lessee mentioned above.\nThird: Device Ownership - Both parties acknowledge that the rented device remains the exclusive property of the lessor throughout and after the rental term, and this contract does not transfer or convey ownership of the device to the lessee or any third party.\nFourth: Receipt Acknowledgment - The lessee acknowledges and confirms that he/she received the aforementioned device on the contract start date in working condition, in excellent condition and free of defects, having personally inspected it and verified its condition and conformity with its specifications and the serial numbers stated in this contract, and bears full responsibility for it from the moment of receipt.\nFifth: Obligation to Return - The lessee undertakes to return the device to the lessor upon expiry of the rental term in the same condition in which it was received (working and in excellent condition) together with all its accessories and at the agreed location, without any delay.\nSixth: Device Liability - The lessee bears full responsibility for the device from the date of receipt until its actual return, including damage, loss, theft, fire, destruction or any harm regardless of its cause, and shall fully compensate the lessor for all of the foregoing.\nSeventh: Device Value - The parties estimate the value of the aforementioned device at ({0}) Saudi Riyals, and this value constitutes a binding basis for calculating compensation in the event of loss, damage or non-return of the device, which the lessor is entitled to claim in full.\nEighth: No Subleasing - The lessee may not sublease the device, assign this contract or transfer possession of the device to any third party without the prior written consent of the lessor, and any violation thereof is grounds for terminating the contract with all consequences borne by the lessee.\nNinth: Use and Location - The lessee shall use the device in accordance with the operating instructions and solely for its intended purpose, and shall not move it outside the agreed place of use or take it out of the Kingdom without the lessor's written consent.\nTenth: No Tampering - The lessee shall not remove or damage the serial numbers, plates, stickers or any marks indicating the lessor's ownership, and shall not open, modify or repair the device except by the lessor or by a person authorized in writing by the lessor.\nEleventh: Maintenance - The lessor shall carry out general and periodic maintenance of the device during the rental term, and the lessee shall bear the costs of maintenance resulting from misuse, negligence or accidents caused by the lessee.\nTwelfth: Late Return Penalty - If the lessee delays returning the device beyond the agreed date without the lessor's prior written consent, the lessor is entitled to a fee for the delay period equal to the agreed daily rate for each day of delay, without prejudice to the lessor's right to terminate the contract and claim damages.\nThirteenth: No Waiver - The lessor's acceptance of late or partial payments shall not constitute a release of the lessee from obligations nor a waiver of any of the lessor's rights, and waiver of one term shall not affect the enforceability of the remaining terms.\nFourteenth: Joint Liability - If the lessee consists of more than one person, they shall be jointly and severally liable for performing all their obligations under this contract.\nFifteenth: Dispute Resolution - This contract, its interpretation and performance are governed by the laws of the Kingdom of Saudi Arabia, in particular the Civil Transactions Law, and the competent courts in the Kingdom shall have exclusive jurisdiction over any dispute arising out of this contract.\nSixteenth: Acknowledgment - Both parties confirm that they have read, understood and acknowledged all the terms and the accuracy of all data contained in this contract, which is executed in two copies, one for each party.";
         public const string ContractSignatureLessor = "Lessor Signature";
         public const string ContractSignatureRenter = "Renter Signature";
+        public const string AuthorizedSignatory = "Authorized by Establishment to Sign";
+        public const string ResidenceNumber = "Residence Number";
+        public const string OfLabel = "of";
         public const string ReceiveConfirmationText = "I, the receiver, confirm that I have received the above-mentioned device in good condition matching its specifications, and I am responsible for its safekeeping and use during the rental period.";
         public const string ReturnConfirmationText = "I, the receiver, confirm that I have returned the above-mentioned device to the lessor in the same condition in which I received it, and it was inspected and confirmed to be in good condition.";
         public const string RentalEndDateBeforeStart = "End date cannot be before start date";
@@ -1130,8 +1157,8 @@ public static class Translations
         // Inventory View Fields
         public const string AddEditSparePart = "Add / Edit Spare Part";
         public const string PartCodeSKU = "Part Code (SKU)";
-        public const string ItemNameField = "Item Name *";
-        public const string CategoryField = "Category *";
+        public const string ItemNameField = "Item Name";
+        public const string CategoryField = "Category";
         public const string BrandField = "Brand";
         public const string CurrentQuantity = "Current Quantity";
         public const string MinimumThreshold = "Minimum Threshold";
@@ -1696,6 +1723,23 @@ public static class Translations
         public const string DocTypeInvoice = "Individual Receipt";
         public const string DocTypeRentalReceipt = "Rental Device Receipt";
         public const string BrandMiscChineseDevices = "Various Chinese devices";
+
+        // Rentals: error/confirm messages
+        public const string RentalSaveError = "Error saving: {0}";
+        public const string AdditionalDetails = "Additional details: {0}";
+        public const string RentalDeleteConfirm = "Are you sure you want to delete this rental?";
+        public const string RentalDeleteTitle = "Confirm deletion";
+        public const string RentalDeleteError = "Error deleting rental: {0}";
+        public const string RentalEndError = "Error ending rental: {0}";
+        public const string RentalContractCreateError = "Error creating rental contract: {0}";
+        public const string RentalWordExportError = "Error exporting rental contract to Word: {0}";
+        public const string RentalReceiptCreateError = "Error creating receipt: {0}";
+        public const string FileOpenFailed = "Failed to open file";
+        public const string FileOpenError = "Error opening file: {0}";
+        public const string RentalTemplateMissing = "Please specify a Word template for the rental receipt (rental_receipt) from the template management screen first";
+        public const string TemplateNotFound = "Template not found";
+        public const string ReceiptPrintError = "Error printing receipt: {0}";
+        public const string ClientNameRequired = "Client name is required";
     }
 
     private static readonly Dictionary<string, string> ArabicTable = LoadTable(typeof(Arabic));

@@ -1924,8 +1924,8 @@ public sealed class MaintenanceViewModel : ViewModelBase
         var companyAddress = report.CompanyAddress?.Trim() ?? "";
         var companyPhone = report.CompanyPhone?.Trim() ?? "";
         var hasLogo = report.ShowLogo && !string.IsNullOrWhiteSpace(report.LogoPath) && File.Exists(report.LogoPath);
-        var reportNumber = "RPT-" + DateTime.Now.ToString("yyyyMMddHHmmss");
-        var generatedOn = DateTime.Now.ToString("yyyy-MM-dd HH:mm");
+        var reportNumber = "RPT-" + DateTime.Now.ToString("yyyyMMddHHmmss", System.Globalization.CultureInfo.InvariantCulture);
+        var generatedOn = DateTime.Now.ToString("yyyy-MM-dd HH:mm", System.Globalization.CultureInfo.InvariantCulture);
 
         Document.Create(container =>
         {
@@ -2003,9 +2003,9 @@ public sealed class MaintenanceViewModel : ViewModelBase
                         {
                             summary.Spacing(6);
                             summary.RelativeItem().Element(c => BuildSummaryCard(c, T("TotalOrders"), TotalOrdersCount.ToString()));
-                            summary.RelativeItem().Element(c => BuildSummaryCard(c, T("TotalIncome"), ReportsTotalIncome.ToString("N2")));
-                            summary.RelativeItem().Element(c => BuildSummaryCard(c, T("TotalPartsCost"), ReportsTotalPartsCost.ToString("N2")));
-                            summary.RelativeItem().Element(c => BuildSummaryCard(c, T("TotalLaborCost"), ReportsTotalLaborCost.ToString("N2")));
+                            summary.RelativeItem().Element(c => BuildSummaryCard(c, T("TotalIncome"), ReportsTotalIncome.ToString("N2", System.Globalization.CultureInfo.InvariantCulture)));
+                            summary.RelativeItem().Element(c => BuildSummaryCard(c, T("TotalPartsCost"), ReportsTotalPartsCost.ToString("N2", System.Globalization.CultureInfo.InvariantCulture)));
+                            summary.RelativeItem().Element(c => BuildSummaryCard(c, T("TotalLaborCost"), ReportsTotalLaborCost.ToString("N2", System.Globalization.CultureInfo.InvariantCulture)));
                         });
 
                         col.Item().PaddingTop(4).Text(T("MaintenanceRequests")).DirectionFromRightToLeft().Bold().FontSize(11).FontColor("#0F3A5F");
@@ -2076,8 +2076,8 @@ public sealed class MaintenanceViewModel : ViewModelBase
         foreach (var s in ReportStatusBreakdown)
         {
             table.Cell().Border(0.5f).BorderColor("#E5E7EB").Padding(4).Text(s.Status).DirectionFromRightToLeft();
-            table.Cell().Border(0.5f).BorderColor("#E5E7EB").Padding(4).AlignCenter().Text(s.Count.ToString());
-            table.Cell().Border(0.5f).BorderColor("#E5E7EB").Padding(4).AlignRight().Text(s.TotalCost.ToString("N2"));
+            table.Cell().Border(0.5f).BorderColor("#E5E7EB").Padding(4).AlignCenter().Text(s.Count.ToString(System.Globalization.CultureInfo.InvariantCulture));
+            table.Cell().Border(0.5f).BorderColor("#E5E7EB").Padding(4).AlignRight().Text(s.TotalCost.ToString("N2", System.Globalization.CultureInfo.InvariantCulture));
         }
     }
 
@@ -2098,8 +2098,8 @@ public sealed class MaintenanceViewModel : ViewModelBase
         foreach (var m in ReportMonthBreakdown)
         {
             table.Cell().Border(0.5f).BorderColor("#E5E7EB").Padding(4).AlignCenter().Text(m.MonthLabel);
-            table.Cell().Border(0.5f).BorderColor("#E5E7EB").Padding(4).AlignCenter().Text(m.Count.ToString());
-            table.Cell().Border(0.5f).BorderColor("#E5E7EB").Padding(4).AlignRight().Text(m.TotalCost.ToString("N2"));
+            table.Cell().Border(0.5f).BorderColor("#E5E7EB").Padding(4).AlignCenter().Text(m.Count.ToString(System.Globalization.CultureInfo.InvariantCulture));
+            table.Cell().Border(0.5f).BorderColor("#E5E7EB").Padding(4).AlignRight().Text(m.TotalCost.ToString("N2", System.Globalization.CultureInfo.InvariantCulture));
         }
     }
 
@@ -2134,9 +2134,9 @@ public sealed class MaintenanceViewModel : ViewModelBase
             table.Cell().Border(0.5f).BorderColor("#E5E7EB").Padding(2).Text(r.DeviceType).DirectionFromRightToLeft().FontSize(9);
             table.Cell().Border(0.5f).BorderColor("#E5E7EB").Padding(2).Text(r.Model).DirectionFromRightToLeft().FontSize(9);
             table.Cell().Border(0.5f).BorderColor("#E5E7EB").Padding(2).AlignCenter().Text(r.Status).DirectionFromRightToLeft().FontSize(9);
-            table.Cell().Border(0.5f).BorderColor("#E5E7EB").Padding(2).AlignRight().Text(r.PartsCost.ToString("N2")).FontSize(9);
-            table.Cell().Border(0.5f).BorderColor("#E5E7EB").Padding(2).AlignRight().Text(r.LaborCost.ToString("N2")).FontSize(9);
-            table.Cell().Border(0.5f).BorderColor("#E5E7EB").Padding(2).AlignRight().Text(r.TotalCost.ToString("N2")).FontSize(9);
+            table.Cell().Border(0.5f).BorderColor("#E5E7EB").Padding(2).AlignRight().Text(r.PartsCost.ToString("N2", System.Globalization.CultureInfo.InvariantCulture)).FontSize(9);
+            table.Cell().Border(0.5f).BorderColor("#E5E7EB").Padding(2).AlignRight().Text(r.LaborCost.ToString("N2", System.Globalization.CultureInfo.InvariantCulture)).FontSize(9);
+            table.Cell().Border(0.5f).BorderColor("#E5E7EB").Padding(2).AlignRight().Text(r.TotalCost.ToString("N2", System.Globalization.CultureInfo.InvariantCulture)).FontSize(9);
         }
     }
 
@@ -2175,9 +2175,9 @@ public sealed class MaintenanceViewModel : ViewModelBase
                     EscapeCsv(r.Model),
                     EscapeCsv(r.SerialNumber),
                     EscapeCsv(r.Status),
-                    r.PartsCost.ToString("N2"),
-                    r.LaborCost.ToString("N2"),
-                    r.TotalCost.ToString("N2"),
+                    r.PartsCost.ToString("N2", System.Globalization.CultureInfo.InvariantCulture),
+                    r.LaborCost.ToString("N2", System.Globalization.CultureInfo.InvariantCulture),
+                    r.TotalCost.ToString("N2", System.Globalization.CultureInfo.InvariantCulture),
                     r.ReceivedDate.ToString("yyyy-MM-dd")));
             }
 

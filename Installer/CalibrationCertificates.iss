@@ -1,4 +1,4 @@
-; ============================================================================
+﻿; ============================================================================
 ;  Calibration Certificates - Professional Installer (Inno Setup 6)
 ;  Single source package: application + Cairo fonts + optional .NET 8 runtime
 ;  Installable from an admin account, removable from Control Panel
@@ -7,7 +7,7 @@
 ; ============================================================================
 
 #define MyAppName "Calibration Certificates"
-#define MyAppVersion "11.3.1"
+#define MyAppVersion "11.3.3"
 #define MyAppPublisher "BlueMax"
 #define MyAppExeName "BlueMax.Presentation.Wpf.exe"
 #define MyAppId "B1C0DE11-0D0E-4C0A-8B1E-5C0FFEE00011"
