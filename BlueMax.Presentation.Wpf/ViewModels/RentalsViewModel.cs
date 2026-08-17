@@ -1505,29 +1505,25 @@ public sealed class RentalsViewModel : ViewModelBase
                     col.Item().AlignRight().Text(T("RentalNumber") + " " + rentalNo).DirectionFromRightToLeft().Bold().FontSize(9).FontColor("#1F2937");
                     col.Item().PaddingTop(2).AlignRight().Text(T("ContractDate") + " " + DateTime.Now.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture)).DirectionFromRightToLeft().Bold().FontSize(9).FontColor("#1F2937");
 
-                    col.Item().PaddingTop(4).Text(confirmation).DirectionFromRightToLeft().FontSize(10).FontColor("#374151");
-
-                    col.Item().PaddingTop(4).LineHorizontal(0.5f).LineColor("#E5E7EB");
-
                     col.Item().PaddingTop(4).Text(T("HandoverDetailsHeader")).DirectionFromRightToLeft().Bold().FontSize(10).FontColor("#0F3A5F");
 
                     col.Item().PaddingTop(2).Row(meta =>
                     {
                         meta.Spacing(6);
                         meta.RelativeItem().Element(c => BuildRentalMetaBox(c, T("ClientNameField"), rental.CustomerName));
-                        meta.RelativeItem().Element(c => BuildRentalMetaBox(c, T("IdNumber"), rental.IdNumber ?? ""));
+                        meta.RelativeItem().Element(c => BuildRentalMetaBox(c, T("PhoneNumber"), rental.Phone ?? ""));
                     });
                     col.Item().PaddingTop(4).Row(meta1b =>
                     {
                         meta1b.Spacing(6);
-                        meta1b.RelativeItem().Element(c => BuildRentalMetaBox(c, T("PhoneNumber"), rental.Phone ?? ""));
-                        meta1b.RelativeItem().Element(c => BuildRentalMetaBox(c, T("ResidenceNumber"), rental.IdNumber ?? ""));
+                        meta1b.RelativeItem().Element(c => BuildRentalMetaBox(c, T("IdNumber"), rental.IdNumber ?? ""));
+                        meta1b.RelativeItem().Element(c => BuildRentalMetaBox(c, T("Device"), deviceText));
                     });
                     col.Item().PaddingTop(4).Row(meta2 =>
                     {
                         meta2.Spacing(6);
-                        meta2.RelativeItem().Element(c => BuildRentalMetaBox(c, T("Device"), deviceText));
                         meta2.RelativeItem().Element(c => BuildRentalMetaBox(c, T("MainSerial"), rental.Serial));
+                        meta2.RelativeItem().Element(c => BuildRentalMetaBox(c, T("DeviceValue"), rental.DeviceValue.ToString("N2", System.Globalization.CultureInfo.InvariantCulture)));
                     });
 
                     col.Item().PaddingTop(4).Row(meta3 =>
@@ -1535,17 +1531,17 @@ public sealed class RentalsViewModel : ViewModelBase
                         meta3.Spacing(6);
                         meta3.RelativeItem().Element(c => BuildRentalMetaBox(c, T("StartDateField"), rental.StartDate.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture)));
                         meta3.RelativeItem().Element(c => BuildRentalMetaBox(c, T("EndDateField"), rental.EndDate.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture)));
-                        meta3.RelativeItem().Element(c => BuildRentalMetaBox(c, T("DeviceValue"), rental.DeviceValue.ToString("N2", System.Globalization.CultureInfo.InvariantCulture)));
                     });
 
-                    col.Item().PaddingTop(6).LineHorizontal(0.5f).LineColor("#E5E7EB");
+                    col.Item().PaddingTop(4).LineHorizontal(0.5f).LineColor("#E5E7EB");
 
+                    col.Item().PaddingTop(6).Text(confirmation).DirectionFromRightToLeft().FontSize(9).FontColor("#374151");
                     col.Item().PaddingTop(4).Text(T("HandoverLegalClause")).DirectionFromRightToLeft().FontSize(9).FontColor("#374151");
 
                     col.Item().PaddingTop(10).Row(signatures =>
                     {
                         signatures.Spacing(14);
-                        signatures.RelativeItem().Element(c => BuildRentalSignatureBox(c, isReturn ? T("ContractSignatureRenter") : T("ContractSignatureRenter")));
+                        signatures.RelativeItem().Element(c => BuildRentalSignatureBox(c, T("ContractSignatureRenter")));
                         signatures.RelativeItem().Element(c => BuildRentalSignatureBox(c, T("ContractSignatureLessor")));
                     });
                 });
