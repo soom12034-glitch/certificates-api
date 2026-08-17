@@ -187,7 +187,7 @@ public static class Translations
         public const string ResidenceNumber = "رقم الإقامة";
         public const string OfLabel = "من";
         public const string DateLabel = "التاريخ";
-        public const string ReceiveConfirmationText = "أقر أنا الموقع أدناه (المستلم) باستلام جهاز كما هو موضح في البيانات أعلاه، وذلك في حالة جيدة ومطابق للمواصفات المتفق عليها في عقد الإيجار رقم المذكور أعلاه.";
+        public const string ReceiveConfirmationText = "أقر أنا الموقع أدناه (المستلم) باستلام جهاز كما هو موضح في البيانات أعلاه، وذلك في حالة جيدة ومطابق للمواصفات المتفق عليها.";  
         public const string ReturnConfirmationText = "أقر أنا الموقع أدناه (المستلم) بإرجاع الجهاز كما هو موضح في البيانات أعلاه إلى المؤجر بنفس الحالة التي تم استلامه بها، وقد تمت معاينة الجهاز والتأكد من سلامته.";
         public const string HandoverDetailsHeader = "بيانات الاستلام";
         public const string HandoverLegalClause = "أتعهد أنا المستلم بالحفاظ على الجهاز والالتزام بشروط عقد الإيجار، وأتحمل المسؤولية الكاملة عن أي أضرار أو فقدان يلحق بالجهاز خلال فترة الإيجار. وأقر بصحة جميع البيانات الواردة أعلاه.";  
@@ -1055,7 +1055,7 @@ public static class Translations
         public const string ResidenceNumber = "Residence Number";
         public const string OfLabel = "of";
         public const string DateLabel = "Date";
-        public const string ReceiveConfirmationText = "I, the undersigned (receiver), hereby acknowledge the receipt of the device as detailed above, in good condition and in accordance with the specifications agreed upon in the aforementioned rental contract.";
+        public const string ReceiveConfirmationText = "I, the undersigned (receiver), hereby acknowledge the receipt of the device as detailed above, in good condition and in accordance with the specifications agreed upon.";
         public const string ReturnConfirmationText = "I, the undersigned (receiver), hereby acknowledge the return of the device as detailed above to the lessor in the same condition in which it was received, and the device has been inspected and confirmed to be in good condition.";
         public const string HandoverDetailsHeader = "Handover Details";
         public const string HandoverLegalClause = "I, the receiver, undertake to maintain the device and comply with the terms of the rental contract, and I bear full responsibility for any damage or loss incurred during the rental period. I confirm the accuracy of all data stated above.";
