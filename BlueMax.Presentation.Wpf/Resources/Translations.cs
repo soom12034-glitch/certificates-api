@@ -190,7 +190,7 @@ public static class Translations
         public const string ReceiveConfirmationText = "أقر أنا الموقع أدناه (المستلم) باستلام جهاز كما هو موضح في البيانات أعلاه، وذلك في حالة جيدة ومطابق للمواصفات المتفق عليها.";  
         public const string ReturnConfirmationText = "أقر أنا الموقع أدناه (المستلم) بإرجاع الجهاز كما هو موضح في البيانات أعلاه إلى المؤجر بنفس الحالة التي تم استلامه بها، وقد تمت معاينة الجهاز والتأكد من سلامته.";
         public const string HandoverDetailsHeader = "بيانات الاستلام";
-        public const string HandoverLegalClause = "أتعهد أنا المستلم بالحفاظ على الجهاز وارجعه بنفس الحالة التي استلمت بها، وأقر بصحة جميع البيانات الواردة أعلاه.";  
+        public const string HandoverLegalClause = "أتعهد أنا المستلم بالحفاظ على الجهاز وارجعه بنفس الحالة التي استلمت بها الجهاز وأتحمل المسؤولية الكاملة عن أي أضرار أو فقدان يلحق بالجهاز خلال فترة الإيجار. وأقر بصحة جميع البيانات الواردة أعلاه.";  
         public const string RentalEndDateBeforeStart = "تاريخ الانتهاء لا يمكن أن يكون قبل تاريخ البدء";
         public const string MissingRequiredFields = "يرجى تعبئة الحقول المطلوبة";
         public const string ValidationTitle = "تحقق من الإدخال";
