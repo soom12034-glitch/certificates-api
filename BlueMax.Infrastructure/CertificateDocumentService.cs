@@ -357,10 +357,9 @@ public class CertificateDocumentService
 
         var baseUrl = (verificationBaseUrl ?? string.Empty).Trim();
 
-        // Prefer verifyUrl saved locally (after cloud upload). Fallback to baseUrl/certNo.
+        // Only use verifyUrl from verify_urls.json (returned by server after upload).
+        // Do NOT fallback to baseUrl/certNo - server expects hash, not certificate number.
         var certUrl = TryLoadVerifyUrlLocal(certNo);
-        if (string.IsNullOrWhiteSpace(certUrl) && !string.IsNullOrWhiteSpace(baseUrl))
-            certUrl = BuildCertificateUrl(baseUrl, certNo);
 
         var lines = new List<string>();
         if (!string.IsNullOrWhiteSpace(companyName))
