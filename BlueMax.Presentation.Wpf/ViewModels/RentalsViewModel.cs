@@ -1372,7 +1372,7 @@ public sealed class RentalsViewModel : ViewModelBase
                         termsCol.Spacing(3);
                         foreach (var term in BuildRentalContractTerms(rental))
                         {
-                            termsCol.Item().Text(term).DirectionFromRightToLeft().Bold().FontSize(9).FontColor("#1F2937");
+                            termsCol.Item().AlignRight().Text(term).DirectionFromRightToLeft().Bold().FontSize(9).FontColor("#1F2937");
                         }
                     });
 
