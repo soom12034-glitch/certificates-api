@@ -324,6 +324,7 @@ public class TranslationViewModel : INotifyPropertyChanged
     public string MaintenanceOrder => Translations.Get("MaintenanceOrder");
     public string SerialNumber1 => Translations.Get("SerialNumber1");
     public string Accessories => Translations.Get("Accessories");
+    public string AccessoriesField => Translations.Get("AccessoriesField");
     public string Complaint => Translations.Get("Complaint");
     public string TechnicalReport => Translations.Get("TechnicalReport");
     public string PartsCost => Translations.Get("PartsCost");
