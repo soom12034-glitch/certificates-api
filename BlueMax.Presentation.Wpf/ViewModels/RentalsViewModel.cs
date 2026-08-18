@@ -39,6 +39,7 @@ public sealed class RentalsViewModel : ViewModelBase
     decimal _remainingAmount;
     string _status = "Active";
     string _notes = "";
+    string _accessories = "";
     string _searchText = "";
     RentalItem? _selectedRental;
     Task? _ensureDbCreatedTask;
@@ -327,6 +328,7 @@ public sealed class RentalsViewModel : ViewModelBase
             RemainingAmount = value.RemainingAmount;
             Status = value.Status;
             Notes = value.Notes;
+            Accessories = value.Accessories;
             OnPropertyChanged(nameof(IsInputsLocked));
             OnPropertyChanged(nameof(IsInputsEditable));
         }
@@ -519,6 +521,12 @@ public sealed class RentalsViewModel : ViewModelBase
         set => SetProperty(ref _notes, value);
     }
 
+    public string Accessories
+    {
+        get => _accessories;
+        set => SetProperty(ref _accessories, value);
+    }
+
     public string SearchText
     {
         get => _searchText;
@@ -604,6 +612,7 @@ public sealed class RentalsViewModel : ViewModelBase
         RemainingAmount = 0;
         Status = "Active";
         Notes = "";
+        Accessories = "";
         SelectedRental = null;
         OnPropertyChanged(nameof(IsInputsLocked));
         OnPropertyChanged(nameof(IsInputsEditable));
@@ -675,6 +684,7 @@ public sealed class RentalsViewModel : ViewModelBase
                     rental.RemainingAmount = RemainingAmount;
                     rental.Status = Status;
                     rental.Notes = Notes;
+                    rental.Accessories = Accessories;
                     db.SaveChanges();
                     MessageBox.Show(T("RentalUpdatedSuccess"), T("Success"), MessageBoxButton.OK, MessageBoxImage.Information);
                 }
@@ -705,6 +715,7 @@ public sealed class RentalsViewModel : ViewModelBase
                     RemainingAmount = RemainingAmount,
                     Status = Status,
                     Notes = Notes,
+                    Accessories = Accessories,
                     CreatedAt = DateTime.Now
                 };
                 db.Rentals.Add(rental);
@@ -1311,6 +1322,15 @@ public sealed class RentalsViewModel : ViewModelBase
                         table.Cell().Border(0.5f).BorderColor("#E5E7EB").Padding(3).AlignCenter().Text(rental.Serial2 ?? "").DirectionFromRightToLeft().Bold().FontSize(9).FontColor("#1F2937");
                     });
 
+                    if (!string.IsNullOrWhiteSpace(rental.Accessories))
+                    {
+                        col.Item().PaddingTop(4).AlignRight().Row(accRow =>
+                        {
+                            accRow.RelativeItem().Text(T("AccessoriesField") + " : ").DirectionFromRightToLeft().Bold().FontSize(9).FontColor("#1F2937");
+                            accRow.RelativeItem().Text(rental.Accessories).DirectionFromRightToLeft().Bold().FontSize(9).FontColor("#1F2937");
+                        });
+                    }
+
                     col.Item().PaddingTop(4).Text(T("RentalPeriod")).DirectionFromRightToLeft().Bold().FontSize(11).FontColor("#0F3A5F");
                     col.Item().Table(table =>
                     {
@@ -1534,6 +1554,14 @@ public sealed class RentalsViewModel : ViewModelBase
                         meta2.RelativeItem().Element(c => BuildRentalMetaBox(c, T("MainSerial"), rental.Serial));
                         meta2.RelativeItem().Element(c => BuildRentalMetaBox(c, T("DeviceValue"), rental.DeviceValue.ToString("N2", System.Globalization.CultureInfo.InvariantCulture)));
                     });
+
+                    if (!string.IsNullOrWhiteSpace(rental.Accessories))
+                    {
+                        col.Item().PaddingTop(4).Row(meta4 =>
+                        {
+                            meta4.RelativeItem().Element(c => BuildRentalMetaBox(c, T("AccessoriesField"), rental.Accessories));
+                        });
+                    }
 
                     col.Item().PaddingTop(4).LineHorizontal(0.5f).LineColor("#E5E7EB");
 
@@ -1978,7 +2006,8 @@ public sealed class RentalsViewModel : ViewModelBase
                     PaidAmount = rental.PaidAmount,
                     RemainingAmount = rental.RemainingAmount,
                     Status = rental.Status,
-                    Notes = rental.Notes
+                    Notes = rental.Notes,
+                    Accessories = rental.Accessories
                 });
             }
 
@@ -2089,6 +2118,7 @@ public class RentalItem : ViewModelBase
     decimal _remainingAmount;
     string _status = "";
     string _notes = "";
+    string _accessories = "";
 
     public int Id
     {
@@ -2226,6 +2256,12 @@ public class RentalItem : ViewModelBase
     {
         get => _notes;
         set => SetProperty(ref _notes, value);
+    }
+
+    public string Accessories
+    {
+        get => _accessories;
+        set => SetProperty(ref _accessories, value);
     }
 }
 

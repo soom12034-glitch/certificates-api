@@ -143,6 +143,7 @@ public class AppDbContext : DbContext
                     AddColumnIfMissing(connection, "Rentals", "DailyPrice", "TEXT NOT NULL DEFAULT '0'");
                     AddColumnIfMissing(connection, "Rentals", "MonthlyPrice", "TEXT NOT NULL DEFAULT '0'");
                     AddColumnIfMissing(connection, "Rentals", "DeviceValue", "TEXT NOT NULL DEFAULT '0'");
+                    AddColumnIfMissing(connection, "Rentals", "Accessories", "TEXT NOT NULL DEFAULT ''");
                 }
             }
             finally
@@ -228,6 +229,7 @@ public class AppDbContext : DbContext
     ""RemainingAmount"" TEXT NOT NULL,
     ""Status"" TEXT NOT NULL,
     ""Notes"" TEXT NOT NULL,
+    ""Accessories"" TEXT NOT NULL DEFAULT '',
     ""CreatedAt"" TEXT NOT NULL,
     ""RowVersion"" BLOB NOT NULL
 );

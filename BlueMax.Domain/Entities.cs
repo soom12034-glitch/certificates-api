@@ -577,6 +577,12 @@ public class Rental
     public string Notes { get; set; } = "";
 
     /// <summary>
+    /// Device accessories that come with the rental (e.g. tripod, reflector, extra batteries).
+    /// </summary>
+    [StringLength(1000, ErrorMessage = "Accessories cannot exceed 1000 characters")]
+    public string Accessories { get; set; } = "";
+
+    /// <summary>
     /// Timestamp when the rental record was created.
     /// </summary>
     [Required(ErrorMessage = "Created date is required")]

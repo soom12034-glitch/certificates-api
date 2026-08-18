@@ -118,6 +118,7 @@ public static class Translations
         // Clients View Fields
         public const string Name = "الاسم";
         public const string ClientNotes = "ملاحظات";
+        public const string AccessoriesField = "الملحقات";
         public const string Clear = "تفريغ";
         public const string Report = "تقرير";
         public const string DeviceMaintenanceHistory = "سجل الأجهزة والصيانة";
@@ -986,6 +987,7 @@ public static class Translations
         // Clients View Fields
         public const string Name = "Name";
         public const string ClientNotes = "Notes";
+        public const string AccessoriesField = "Accessories";
         public const string Clear = "Clear";
         public const string Report = "Report";
         public const string DeviceMaintenanceHistory = "Device & Maintenance History";
