@@ -898,10 +898,14 @@ public class StickerDesignerViewModel : ViewModelBase, IStickerPrintModel
         }
 
         EnsureLogoItem();
-        RefreshLabelTexts();
-        var sanitized = SanitizeLayout();
-        if (sanitized || !_store.HasSavedLayout || MissingStandardItems())
-            StrictLayout();
+
+        if (!_store.HasSavedLayout)
+        {
+            RefreshLabelTexts();
+            var sanitized = SanitizeLayout();
+            if (sanitized || MissingStandardItems())
+                StrictLayout();
+        }
 
         SelectedStickerItem = _stickerItems.Count > 0 ? _stickerItems[0] : null;
     }
