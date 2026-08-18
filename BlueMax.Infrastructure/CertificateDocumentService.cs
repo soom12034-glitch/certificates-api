@@ -357,9 +357,11 @@ public class CertificateDocumentService
 
         var baseUrl = (verificationBaseUrl ?? string.Empty).Trim();
 
-        // Only use verifyUrl from verify_urls.json (returned by server after upload).
-        // Do NOT fallback to baseUrl/certNo - server expects hash, not certificate number.
+        // Prefer server-returned hash URL from verify_urls.json.
+        // Fallback to baseUrl/certNo so QR always contains a clickable link.
         var certUrl = TryLoadVerifyUrlLocal(certNo);
+        if (string.IsNullOrWhiteSpace(certUrl) && !string.IsNullOrWhiteSpace(baseUrl))
+            certUrl = BuildCertificateUrl(baseUrl, certNo);
 
         var lines = new List<string>();
         if (!string.IsNullOrWhiteSpace(companyName))
