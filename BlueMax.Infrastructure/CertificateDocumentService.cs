@@ -362,6 +362,10 @@ public class CertificateDocumentService
         if (string.IsNullOrWhiteSpace(certUrl) && !string.IsNullOrWhiteSpace(baseUrl))
             certUrl = BuildCertificateUrl(baseUrl, certNo);
 
+        // When we have a URL, use ONLY the URL so scanners recognize it as a clickable link
+        if (!string.IsNullOrWhiteSpace(certUrl))
+            return certUrl;
+
         var lines = new List<string>();
         if (!string.IsNullOrWhiteSpace(companyName))
             lines.Add(companyName);
@@ -376,8 +380,6 @@ public class CertificateDocumentService
             lines.Add($"SN2:{serial2}");
         if (!string.IsNullOrWhiteSpace(specValue))
             lines.Add($"SPEC:{specValue}");
-        if (!string.IsNullOrWhiteSpace(certUrl))
-            lines.Add($"URL:{certUrl}");
 
         return string.Join(Environment.NewLine, lines.Where(x => !string.IsNullOrWhiteSpace(x)));
     }
