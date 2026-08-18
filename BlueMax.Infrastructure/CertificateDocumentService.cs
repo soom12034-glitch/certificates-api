@@ -357,12 +357,10 @@ public class CertificateDocumentService
 
         var baseUrl = (verificationBaseUrl ?? string.Empty).Trim();
 
-        // Prefer verifyUrl saved locally (after cloud upload).
+        // Prefer verifyUrl saved locally (after cloud upload). Fallback to baseUrl/certNo.
         var certUrl = TryLoadVerifyUrlLocal(certNo);
-
-        // When we have a URL, use ONLY the URL so scanners recognize it as a clickable link
-        if (!string.IsNullOrWhiteSpace(certUrl))
-            return certUrl;
+        if (string.IsNullOrWhiteSpace(certUrl) && !string.IsNullOrWhiteSpace(baseUrl))
+            certUrl = BuildCertificateUrl(baseUrl, certNo);
 
         var lines = new List<string>();
         if (!string.IsNullOrWhiteSpace(companyName))
@@ -378,6 +376,8 @@ public class CertificateDocumentService
             lines.Add($"SN2:{serial2}");
         if (!string.IsNullOrWhiteSpace(specValue))
             lines.Add($"SPEC:{specValue}");
+        if (!string.IsNullOrWhiteSpace(certUrl))
+            lines.Add(certUrl);
 
         return string.Join(Environment.NewLine, lines.Where(x => !string.IsNullOrWhiteSpace(x)));
     }
