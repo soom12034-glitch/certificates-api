@@ -1537,8 +1537,8 @@ public sealed class RentalsViewModel : ViewModelBase
 
                     col.Item().PaddingTop(4).LineHorizontal(0.5f).LineColor("#E5E7EB");
 
-                    col.Item().PaddingTop(6).Text(confirmation).DirectionFromRightToLeft().FontSize(10).FontColor("#1F2937").Bold();
-                    col.Item().PaddingTop(4).Text(T("HandoverLegalClause")).DirectionFromRightToLeft().FontSize(10).FontColor("#1F2937").Bold();
+                    col.Item().PaddingTop(6).AlignRight().Text(confirmation).DirectionFromRightToLeft().FontSize(10).FontColor("#1F2937").Bold();
+                    col.Item().PaddingTop(4).AlignRight().Text(T("HandoverLegalClause")).DirectionFromRightToLeft().FontSize(10).FontColor("#1F2937").Bold();
 
                     col.Item().PaddingTop(10).Row(signatures =>
                     {
