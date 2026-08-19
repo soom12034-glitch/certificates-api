@@ -1911,7 +1911,8 @@ public sealed class MaintenanceViewModel : ViewModelBase
         catch (Exception ex)
         {
             LogService.LogException(ex);
-            System.Windows.MessageBox.Show(ex.Message, T("ReportsExportFailed"), System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+            try { System.IO.File.WriteAllText(System.IO.Path.Combine(AppPaths.ReportsOutput, "last_pdf_error.txt"), ex.ToString()); } catch { }
+            System.Windows.MessageBox.Show(ex.ToString(), T("ReportsExportFailed"), System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
         }
         finally
         {
@@ -1950,7 +1951,7 @@ public sealed class MaintenanceViewModel : ViewModelBase
                 page.Margin(1.5f, QuestPDF.Infrastructure.Unit.Centimetre);
                 page.DefaultTextStyle(x => x.FontFamily("Cairo").FontSize(9).FontColor("#1F2937"));
 
-                page.Header().Element(h => h.Column(letterhead =>
+                page.Header().Column(letterhead =>
                 {
                     letterhead.Item().Row(row =>
                     {
@@ -1985,60 +1986,72 @@ public sealed class MaintenanceViewModel : ViewModelBase
                     });
                     letterhead.Item().PaddingTop(4).Height(3).Background("#0F3A5F");
                     letterhead.Item().PaddingTop(1).Height(1).Background("#D1D5DB");
-                }));
+                });
 
                 page.Content().Column(col =>
                 {
                     col.Spacing(6);
 
-                        col.Item().PaddingTop(2).AlignCenter().Text(T("ReportsTitle")).DirectionFromRightToLeft().Bold().FontSize(15).FontColor("#0F3A5F");
-                        col.Item().Row(periodRow =>
-                        {
-                            periodRow.RelativeItem();
-                            periodRow.AutoItem().Text(toDate.ToString("yyyy-MM-dd")).DirectionFromLeftToRight().FontSize(10).FontColor("#374151");
-                            periodRow.AutoItem().Text(T("ReportsTo") + "  ").DirectionFromRightToLeft().FontSize(10).FontColor("#374151");
-                            periodRow.AutoItem().Text("    ").FontSize(10).FontColor("#374151");
-                            periodRow.AutoItem().Text(fromDate.ToString("yyyy-MM-dd")).DirectionFromLeftToRight().FontSize(10).FontColor("#374151");
-                            periodRow.AutoItem().Text(T("ReportsFrom") + "  ").DirectionFromRightToLeft().FontSize(10).FontColor("#374151");
-                            periodRow.RelativeItem();
-                        });
-                        col.Item().Row(metaRow =>
-                        {
-                            metaRow.RelativeItem();
-                            metaRow.AutoItem().Text(generatedOn).DirectionFromLeftToRight().FontSize(8).FontColor("#6B7280");
-                            metaRow.AutoItem().Text(T("ReportsGeneratedOn") + ": ").DirectionFromRightToLeft().FontSize(8).FontColor("#6B7280");
-                            metaRow.AutoItem().Text("    |    ").FontSize(8).FontColor("#6B7280");
-                            metaRow.AutoItem().Text(reportNumber).DirectionFromLeftToRight().FontSize(8).FontColor("#6B7280");
-                            metaRow.AutoItem().Text(T("ReportNumberLabel") + ": ").DirectionFromRightToLeft().FontSize(8).FontColor("#6B7280");
-                        });
+                    col.Item().PaddingTop(2).AlignCenter().Text(T("ReportsTitle")).DirectionFromRightToLeft().Bold().FontSize(15).FontColor("#0F3A5F");
 
-                        col.Item().PaddingTop(2).Row(summary =>
-                        {
-                            summary.Spacing(6);
-                            summary.RelativeItem().Element(c => BuildSummaryCard(c, T("TotalOrders"), totalOrders.ToString()));
-                            summary.RelativeItem().Element(c => BuildSummaryCard(c, T("TotalIncome"), totalIncome.ToString("N2", System.Globalization.CultureInfo.InvariantCulture)));
-                            summary.RelativeItem().Element(c => BuildSummaryCard(c, T("TotalPartsCost"), totalParts.ToString("N2", System.Globalization.CultureInfo.InvariantCulture)));
-                            summary.RelativeItem().Element(c => BuildSummaryCard(c, T("TotalLaborCost"), totalLabor.ToString("N2", System.Globalization.CultureInfo.InvariantCulture)));
-                        });
-
-                        col.Item().PaddingTop(4).Text(T("MaintenanceRequests")).DirectionFromRightToLeft().Bold().FontSize(11).FontColor("#0F3A5F");
-                        col.Item().Table(t => BuildRequestsTable(t, orders));
-
-                        col.Item().PaddingTop(4).Text(T("StatusBreakdown")).DirectionFromRightToLeft().Bold().FontSize(11).FontColor("#0F3A5F");
-                        col.Item().Table(t => BuildStatusBreakdownTable(t, statusRows));
-
-                        col.Item().PaddingTop(4).Text(T("MonthlyBreakdown")).DirectionFromRightToLeft().Bold().FontSize(11).FontColor("#0F3A5F");
-                        col.Item().Table(t => BuildMonthlyBreakdownTable(t, monthRows));
-
-                        col.Item().PaddingTop(8).Row(signatures =>
-                        {
-                            signatures.Spacing(14);
-                            signatures.RelativeItem().Element(c => BuildSignatureBox(c, T("SignatureMaintenanceResponsible")));
-                            signatures.RelativeItem().Element(c => BuildSignatureBox(c, T("SignatureManager")));
-                        });
+                    col.Item().AlignCenter().PaddingTop(2).Text(x =>
+                    {
+                        x.Span(T("ReportsFrom") + " ").DirectionFromRightToLeft().FontSize(10).FontColor("#374151");
+                        x.Span(fromDate.ToString("yyyy-MM-dd")).DirectionFromLeftToRight().FontSize(10).FontColor("#374151");
+                        x.Span("    " + T("ReportsTo") + " ").DirectionFromRightToLeft().FontSize(10).FontColor("#374151");
+                        x.Span(toDate.ToString("yyyy-MM-dd")).DirectionFromLeftToRight().FontSize(10).FontColor("#374151");
                     });
 
-                page.Footer().Element(f => f.Column(footerCol =>
+                    col.Item().AlignCenter().PaddingTop(1).Text(x =>
+                    {
+                        x.Span(T("ReportNumberLabel") + ": ").DirectionFromRightToLeft().FontSize(8).FontColor("#6B7280");
+                        x.Span(reportNumber).DirectionFromLeftToRight().FontSize(8).FontColor("#6B7280");
+                        x.Span("    |    ").FontSize(8).FontColor("#6B7280");
+                        x.Span(T("ReportsGeneratedOn") + ": ").DirectionFromRightToLeft().FontSize(8).FontColor("#6B7280");
+                        x.Span(generatedOn).DirectionFromLeftToRight().FontSize(8).FontColor("#6B7280");
+                    });
+
+                    col.Item().PaddingTop(2).Table(t =>
+                    {
+                        t.ColumnsDefinition(c =>
+                        {
+                            c.RelativeColumn(1);
+                            c.RelativeColumn(1);
+                            c.RelativeColumn(1);
+                            c.RelativeColumn(1);
+                        });
+                        t.Cell().Border(0.75f).BorderColor("#CBD5E1").Background("#F8FAFC").Padding(6).AlignCenter().Text(T("TotalOrders")).DirectionFromRightToLeft().FontSize(8).FontColor("#374151");
+                        t.Cell().Border(0.75f).BorderColor("#CBD5E1").Background("#F8FAFC").Padding(6).AlignCenter().Text(T("TotalIncome")).DirectionFromRightToLeft().FontSize(8).FontColor("#374151");
+                        t.Cell().Border(0.75f).BorderColor("#CBD5E1").Background("#F8FAFC").Padding(6).AlignCenter().Text(T("TotalPartsCost")).DirectionFromRightToLeft().FontSize(8).FontColor("#374151");
+                        t.Cell().Border(0.75f).BorderColor("#CBD5E1").Background("#F8FAFC").Padding(6).AlignCenter().Text(T("TotalLaborCost")).DirectionFromRightToLeft().FontSize(8).FontColor("#374151");
+                        t.Cell().Border(0.75f).BorderColor("#CBD5E1").Background("#F8FAFC").Padding(6).AlignCenter().Text(totalOrders.ToString()).FontSize(12).Bold().FontColor("#0F3A5F");
+                        t.Cell().Border(0.75f).BorderColor("#CBD5E1").Background("#F8FAFC").Padding(6).AlignCenter().Text(totalIncome.ToString("N2", System.Globalization.CultureInfo.InvariantCulture)).FontSize(12).Bold().FontColor("#0F3A5F");
+                        t.Cell().Border(0.75f).BorderColor("#CBD5E1").Background("#F8FAFC").Padding(6).AlignCenter().Text(totalParts.ToString("N2", System.Globalization.CultureInfo.InvariantCulture)).FontSize(12).Bold().FontColor("#0F3A5F");
+                        t.Cell().Border(0.75f).BorderColor("#CBD5E1").Background("#F8FAFC").Padding(6).AlignCenter().Text(totalLabor.ToString("N2", System.Globalization.CultureInfo.InvariantCulture)).FontSize(12).Bold().FontColor("#0F3A5F");
+                    });
+
+                    col.Item().PaddingTop(4).Text(T("MaintenanceRequests")).DirectionFromRightToLeft().Bold().FontSize(11).FontColor("#0F3A5F");
+                    col.Item().Table(t => BuildRequestsTable(t, orders));
+
+                    col.Item().PaddingTop(4).Text(T("StatusBreakdown")).DirectionFromRightToLeft().Bold().FontSize(11).FontColor("#0F3A5F");
+                    col.Item().Table(t => BuildStatusBreakdownTable(t, statusRows));
+
+                    col.Item().PaddingTop(4).Text(T("MonthlyBreakdown")).DirectionFromRightToLeft().Bold().FontSize(11).FontColor("#0F3A5F");
+                    col.Item().Table(t => BuildMonthlyBreakdownTable(t, monthRows));
+
+                    col.Item().PaddingTop(8).Table(t =>
+                    {
+                        t.ColumnsDefinition(c =>
+                        {
+                            c.RelativeColumn(1);
+                            c.RelativeColumn(1);
+                        });
+                        t.Cell().PaddingRight(4).Element(c => BuildSignatureBox(c, T("SignatureMaintenanceResponsible")));
+                        t.Cell().PaddingLeft(4).Element(c => BuildSignatureBox(c, T("SignatureManager")));
+                    });
+                });
+
+                page.Footer().Column(footerCol =>
                 {
                     footerCol.Item().LineHorizontal(0.5f).LineColor("#CBD5E1");
                     footerCol.Item().PaddingTop(3).Row(footerRow =>
@@ -2050,7 +2063,7 @@ public sealed class MaintenanceViewModel : ViewModelBase
                             x.CurrentPageNumber();
                         });
                     });
-                }));
+                });
             });
         }).GeneratePdf(pdfPath);
 
