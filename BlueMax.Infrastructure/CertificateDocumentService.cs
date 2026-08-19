@@ -508,33 +508,15 @@ public class CertificateDocumentService
 
         await Task.Run(() =>
         {
-            Document.Create(container =>
+            try
             {
-                container.Page(page =>
-                {
-                    page.Size(595, 842);
-                    page.Margin(2, Unit.Centimetre);
-                    page.DefaultTextStyle(x => x.FontSize(12));
-
-                    page.Header().Element(c => c.AlignCenter().Text(normalizedType).Bold().FontSize(20));
-                    page.Content().Element(c => c.Column(column =>
-                    {
-                        column.Item().Text($"Document Number: {documentNumber}").Bold();
-                        column.Item().Text($"Work Order Number: {workOrder.Id}");
-                        column.Item().Text($"Device Type: {workOrder.DeviceType}");
-                        column.Item().Text($"Brand: {workOrder.Brand}");
-                        column.Item().Text($"Model: {workOrder.Model}");
-                        column.Item().Text($"Serial Number: {workOrder.SerialNumber}");
-                        column.Item().Text($"Issue Date: {workOrder.ReceivedDate:yyyy-MM-dd}");
-                        column.Item().Text($"Status: {workOrder.Status}");
-                    }));
-                    page.Footer().AlignCenter().Text(x =>
-                    {
-                        x.Span("Page ");
-                        x.CurrentPageNumber();
-                    });
-                });
-            }).GeneratePdf(pdfPath);
+                var svc = new PdfExportService();
+                svc.ExportToPdfA(docxPath, pdfPath);
+            }
+            catch
+            {
+                LogService.LogInfo("Word PDF export failed for work order report, DOCX is still available");
+            }
         });
 
         return docxPath;
@@ -605,23 +587,15 @@ public class CertificateDocumentService
 
         await Task.Run(() =>
         {
-            Document.Create(container =>
+            try
             {
-                container.Page(page =>
-                {
-                    page.Size(595, 842);
-                    page.Margin(2, Unit.Centimetre);
-                    page.DefaultTextStyle(x => x.FontSize(12));
-
-                    page.Header().Element(c => c.AlignCenter().Text("إيصال استلام جهاز إيجار").Bold().FontSize(20));
-                    page.Content().Element(c => GenerateRentalPdfContent(c, rental));
-                    page.Footer().AlignCenter().Text(x =>
-                    {
-                        x.Span("Page ");
-                        x.CurrentPageNumber();
-                    });
-                });
-            }).GeneratePdf(pdfPath);
+                var svc = new PdfExportService();
+                svc.ExportToPdfA(docxPath, pdfPath);
+            }
+            catch
+            {
+                LogService.LogInfo("Word PDF export failed for rental receipt, DOCX is still available");
+            }
         });
 
         return docxPath;

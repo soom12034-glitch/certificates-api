@@ -285,13 +285,11 @@ public class WordTemplateEngine
             foreach (var paragraph in cell.Elements<Paragraph>())
             {
                 var text = paragraph.InnerText;
-                var newText = text;
-
-                foreach (var kvp in data)
+                var newText = TokenRegex.Replace(text, match =>
                 {
-                    var token = $"{{{{{kvp.Key}}}}}";
-                    newText = newText.Replace(token, kvp.Value?.ToString() ?? "");
-                }
+                    var key = match.Groups["key"].Value.Trim();
+                    return data.TryGetValue(key, out var val) ? (val?.ToString() ?? "") : match.Value;
+                });
 
                 if (newText != text)
                 {
