@@ -1896,7 +1896,18 @@ public sealed class MaintenanceViewModel : ViewModelBase
             var totalParts = ReportsTotalPartsCost;
             var totalLabor = ReportsTotalLaborCost;
 
-            var pdfPath = await Task.Run(() => BuildReportsPdf(ordersSnapshot, statusSnapshot, monthSnapshot, fromDate, toDate, totalOrders, totalIncome, totalParts, totalLabor));
+            var pdfPath = await Task.Run(() =>
+            {
+                try
+                {
+                    return BuildReportsPdf(ordersSnapshot, statusSnapshot, monthSnapshot, fromDate, toDate, totalOrders, totalIncome, totalParts, totalLabor);
+                }
+                catch (Exception ex)
+                {
+                    LogService.LogException(ex);
+                    return "";
+                }
+            });
 
             try
             {
@@ -1911,7 +1922,7 @@ public sealed class MaintenanceViewModel : ViewModelBase
         catch (Exception ex)
         {
             LogService.LogException(ex);
-            System.Windows.MessageBox.Show(ex.Message, T("ReportsExportFailed"), System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+            System.Windows.MessageBox.Show(ex.ToString(), T("ReportsExportFailed"), System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
         }
         finally
         {
@@ -2210,7 +2221,7 @@ public sealed class MaintenanceViewModel : ViewModelBase
         catch (Exception ex)
         {
             LogService.LogException(ex);
-            System.Windows.MessageBox.Show(ex.Message, T("ReportsExportFailed"), System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+            System.Windows.MessageBox.Show(ex.ToString(), T("ReportsExportFailed"), System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
         }
     }
 
