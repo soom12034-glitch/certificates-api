@@ -1886,7 +1886,17 @@ public sealed class MaintenanceViewModel : ViewModelBase
                 return;
             }
 
-            var pdfPath = await Task.Run(() => BuildReportsPdf());
+            var ordersSnapshot = ReportsOrders.ToList();
+            var statusSnapshot = ReportStatusBreakdown.ToList();
+            var monthSnapshot = ReportMonthBreakdown.ToList();
+            var fromDate = ReportsFromDate;
+            var toDate = ReportsToDate;
+            var totalOrders = TotalOrdersCount;
+            var totalIncome = ReportsTotalIncome;
+            var totalParts = ReportsTotalPartsCost;
+            var totalLabor = ReportsTotalLaborCost;
+
+            var pdfPath = await Task.Run(() => BuildReportsPdf(ordersSnapshot, statusSnapshot, monthSnapshot, fromDate, toDate, totalOrders, totalIncome, totalParts, totalLabor));
 
             try
             {
@@ -1910,7 +1920,12 @@ public sealed class MaintenanceViewModel : ViewModelBase
         }
     }
 
-    string BuildReportsPdf()
+    string BuildReportsPdf(
+        List<MaintenanceReportRow> orders,
+        List<ReportStatusRow> statusRows,
+        List<ReportMonthRow> monthRows,
+        DateTime fromDate, DateTime toDate,
+        int totalOrders, decimal totalIncome, decimal totalParts, decimal totalLabor)
     {
         var dir = AppPaths.ReportsOutput;
         var pdfPath = Path.Combine(dir, "MaintenanceReports_" + DateTime.Now.ToString("yyyyMMdd_HHmmss") + ".pdf");
@@ -1982,10 +1997,10 @@ public sealed class MaintenanceViewModel : ViewModelBase
                         col.Item().Row(periodRow =>
                         {
                             periodRow.RelativeItem();
-                            periodRow.AutoItem().Text(ReportsToDate.ToString("yyyy-MM-dd")).DirectionFromLeftToRight().FontSize(10).FontColor("#374151");
+                            periodRow.AutoItem().Text(toDate.ToString("yyyy-MM-dd")).DirectionFromLeftToRight().FontSize(10).FontColor("#374151");
                             periodRow.AutoItem().Text(T("ReportsTo") + "  ").DirectionFromRightToLeft().FontSize(10).FontColor("#374151");
                             periodRow.AutoItem().Text("    ").FontSize(10).FontColor("#374151");
-                            periodRow.AutoItem().Text(ReportsFromDate.ToString("yyyy-MM-dd")).DirectionFromLeftToRight().FontSize(10).FontColor("#374151");
+                            periodRow.AutoItem().Text(fromDate.ToString("yyyy-MM-dd")).DirectionFromLeftToRight().FontSize(10).FontColor("#374151");
                             periodRow.AutoItem().Text(T("ReportsFrom") + "  ").DirectionFromRightToLeft().FontSize(10).FontColor("#374151");
                             periodRow.RelativeItem();
                         });
@@ -2002,20 +2017,20 @@ public sealed class MaintenanceViewModel : ViewModelBase
                         col.Item().PaddingTop(2).Row(summary =>
                         {
                             summary.Spacing(6);
-                            summary.RelativeItem().Element(c => BuildSummaryCard(c, T("TotalOrders"), TotalOrdersCount.ToString()));
-                            summary.RelativeItem().Element(c => BuildSummaryCard(c, T("TotalIncome"), ReportsTotalIncome.ToString("N2", System.Globalization.CultureInfo.InvariantCulture)));
-                            summary.RelativeItem().Element(c => BuildSummaryCard(c, T("TotalPartsCost"), ReportsTotalPartsCost.ToString("N2", System.Globalization.CultureInfo.InvariantCulture)));
-                            summary.RelativeItem().Element(c => BuildSummaryCard(c, T("TotalLaborCost"), ReportsTotalLaborCost.ToString("N2", System.Globalization.CultureInfo.InvariantCulture)));
+                            summary.RelativeItem().Element(c => BuildSummaryCard(c, T("TotalOrders"), totalOrders.ToString()));
+                            summary.RelativeItem().Element(c => BuildSummaryCard(c, T("TotalIncome"), totalIncome.ToString("N2", System.Globalization.CultureInfo.InvariantCulture)));
+                            summary.RelativeItem().Element(c => BuildSummaryCard(c, T("TotalPartsCost"), totalParts.ToString("N2", System.Globalization.CultureInfo.InvariantCulture)));
+                            summary.RelativeItem().Element(c => BuildSummaryCard(c, T("TotalLaborCost"), totalLabor.ToString("N2", System.Globalization.CultureInfo.InvariantCulture)));
                         });
 
                         col.Item().PaddingTop(4).Text(T("MaintenanceRequests")).DirectionFromRightToLeft().Bold().FontSize(11).FontColor("#0F3A5F");
-                        col.Item().Table(BuildRequestsTable);
+                        col.Item().Table(t => BuildRequestsTable(t, orders));
 
                         col.Item().PaddingTop(4).Text(T("StatusBreakdown")).DirectionFromRightToLeft().Bold().FontSize(11).FontColor("#0F3A5F");
-                        col.Item().Table(BuildStatusBreakdownTable);
+                        col.Item().Table(t => BuildStatusBreakdownTable(t, statusRows));
 
                         col.Item().PaddingTop(4).Text(T("MonthlyBreakdown")).DirectionFromRightToLeft().Bold().FontSize(11).FontColor("#0F3A5F");
-                        col.Item().Table(BuildMonthlyBreakdownTable);
+                        col.Item().Table(t => BuildMonthlyBreakdownTable(t, monthRows));
 
                         col.Item().PaddingTop(8).EnsureSpace(100).Row(signatures =>
                         {
@@ -2059,7 +2074,7 @@ public sealed class MaintenanceViewModel : ViewModelBase
         container.Border(0.5f).BorderColor("#0F3A5F").Background("#0F3A5F").Padding(4).AlignCenter().Text(text).DirectionFromRightToLeft().Bold().FontSize(9).FontColor("#FFFFFF");
     }
 
-    void BuildStatusBreakdownTable(QuestPDF.Fluent.TableDescriptor table)
+    void BuildStatusBreakdownTable(QuestPDF.Fluent.TableDescriptor table, List<ReportStatusRow> statusRows)
     {
         table.ColumnsDefinition(c =>
         {
@@ -2073,7 +2088,7 @@ public sealed class MaintenanceViewModel : ViewModelBase
             BuildTableHeaderCell(h.Cell(), T("OrdersCount"));
             BuildTableHeaderCell(h.Cell(), T("TotalCostColumn"));
         });
-        foreach (var s in ReportStatusBreakdown)
+        foreach (var s in statusRows)
         {
             table.Cell().Border(0.5f).BorderColor("#E5E7EB").Padding(4).Text(s.Status).DirectionFromRightToLeft();
             table.Cell().Border(0.5f).BorderColor("#E5E7EB").Padding(4).AlignCenter().Text(s.Count.ToString(System.Globalization.CultureInfo.InvariantCulture));
@@ -2081,7 +2096,7 @@ public sealed class MaintenanceViewModel : ViewModelBase
         }
     }
 
-    void BuildMonthlyBreakdownTable(QuestPDF.Fluent.TableDescriptor table)
+    void BuildMonthlyBreakdownTable(QuestPDF.Fluent.TableDescriptor table, List<ReportMonthRow> monthRows)
     {
         table.ColumnsDefinition(c =>
         {
@@ -2095,7 +2110,7 @@ public sealed class MaintenanceViewModel : ViewModelBase
             BuildTableHeaderCell(h.Cell(), T("OrdersCount"));
             BuildTableHeaderCell(h.Cell(), T("TotalCostColumn"));
         });
-        foreach (var m in ReportMonthBreakdown)
+        foreach (var m in monthRows)
         {
             table.Cell().Border(0.5f).BorderColor("#E5E7EB").Padding(4).AlignCenter().Text(m.MonthLabel);
             table.Cell().Border(0.5f).BorderColor("#E5E7EB").Padding(4).AlignCenter().Text(m.Count.ToString(System.Globalization.CultureInfo.InvariantCulture));
@@ -2103,7 +2118,7 @@ public sealed class MaintenanceViewModel : ViewModelBase
         }
     }
 
-    void BuildRequestsTable(QuestPDF.Fluent.TableDescriptor table)
+    void BuildRequestsTable(QuestPDF.Fluent.TableDescriptor table, List<MaintenanceReportRow> orders)
     {
         table.ColumnsDefinition(c =>
         {
@@ -2128,7 +2143,7 @@ public sealed class MaintenanceViewModel : ViewModelBase
             BuildTableHeaderCell(h.Cell(), T("Total"));
         });
         foreach (var r in ReportsOrders)
-        {
+            {
             table.Cell().Border(0.5f).BorderColor("#E5E7EB").Padding(2).Text(r.ReceiptGroupNumber).DirectionFromRightToLeft().FontSize(9);
             table.Cell().Border(0.5f).BorderColor("#E5E7EB").Padding(2).Text(r.CustomerName).DirectionFromRightToLeft().FontSize(9);
             table.Cell().Border(0.5f).BorderColor("#E5E7EB").Padding(2).Text(r.DeviceType).DirectionFromRightToLeft().FontSize(9);
