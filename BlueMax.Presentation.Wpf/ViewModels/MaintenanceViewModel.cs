@@ -1951,6 +1951,8 @@ public sealed class MaintenanceViewModel : ViewModelBase
                 page.Margin(1.5f, QuestPDF.Infrastructure.Unit.Centimetre);
                 page.DefaultTextStyle(x => x.FontFamily("Cairo").FontSize(9).FontColor("#1F2937"));
 
+                page.Background().Border(1).BorderColor("#0F3A5F");
+
                 page.Header().Column(letterhead =>
                 {
                     letterhead.Item().Row(row =>
@@ -2039,15 +2041,20 @@ public sealed class MaintenanceViewModel : ViewModelBase
                     col.Item().PaddingTop(4).Text(T("MonthlyBreakdown")).DirectionFromRightToLeft().Bold().FontSize(11).FontColor("#0F3A5F");
                     col.Item().Table(t => BuildMonthlyBreakdownTable(t, monthRows));
 
-                    col.Item().PaddingTop(8).Table(t =>
+                    col.Item().PaddingTop(8).Row(signatures =>
                     {
-                        t.ColumnsDefinition(c =>
+                        signatures.RelativeItem().Column(c =>
                         {
-                            c.RelativeColumn(1);
-                            c.RelativeColumn(1);
+                            c.Item().AlignCenter().Text(T("SignatureMaintenanceResponsible")).DirectionFromRightToLeft().Bold().FontSize(11).FontColor("#0F3A5F");
+                            c.Item().PaddingTop(16).AlignCenter().Text(T("NameLabel") + ":  ........................").DirectionFromRightToLeft().FontSize(9).FontColor("#374151");
+                            c.Item().PaddingTop(12).AlignCenter().Text(T("SignatureLabel") + ":  ........................").DirectionFromRightToLeft().FontSize(9).FontColor("#374151");
                         });
-                        t.Cell().PaddingRight(4).Element(c => BuildSignatureBox(c, T("SignatureMaintenanceResponsible")));
-                        t.Cell().PaddingLeft(4).Element(c => BuildSignatureBox(c, T("SignatureManager")));
+                        signatures.RelativeItem().Column(c =>
+                        {
+                            c.Item().AlignCenter().Text(T("SignatureManager")).DirectionFromRightToLeft().Bold().FontSize(11).FontColor("#0F3A5F");
+                            c.Item().PaddingTop(16).AlignCenter().Text(T("NameLabel") + ":  ........................").DirectionFromRightToLeft().FontSize(9).FontColor("#374151");
+                            c.Item().PaddingTop(12).AlignCenter().Text(T("SignatureLabel") + ":  ........................").DirectionFromRightToLeft().FontSize(9).FontColor("#374151");
+                        });
                     });
                 });
 
