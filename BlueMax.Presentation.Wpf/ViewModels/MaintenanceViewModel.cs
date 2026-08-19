@@ -1900,18 +1900,7 @@ public sealed class MaintenanceViewModel : ViewModelBase
             var totalParts = ReportsTotalPartsCost;
             var totalLabor = ReportsTotalLaborCost;
 
-            var pdfPath = await Task.Run(() =>
-            {
-                try
-                {
-                    return BuildReportsPdf(ordersSnapshot, statusSnapshot, monthSnapshot, fromDate, toDate, totalOrders, totalIncome, totalParts, totalLabor);
-                }
-                catch (Exception ex)
-                {
-                    LogService.LogException(ex);
-                    return "";
-                }
-            });
+            var pdfPath = BuildReportsPdf(ordersSnapshot, statusSnapshot, monthSnapshot, fromDate, toDate, totalOrders, totalIncome, totalParts, totalLabor);
 
             try
             {
