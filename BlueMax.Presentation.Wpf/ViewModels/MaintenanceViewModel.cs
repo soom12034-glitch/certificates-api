@@ -1950,7 +1950,7 @@ public sealed class MaintenanceViewModel : ViewModelBase
                 page.Margin(1.5f, QuestPDF.Infrastructure.Unit.Centimetre);
                 page.DefaultTextStyle(x => x.FontFamily("Cairo").FontSize(9).FontColor("#1F2937"));
 
-                page.Header().Column(letterhead =>
+                page.Header().Element(h => h.Column(letterhead =>
                 {
                     letterhead.Item().Row(row =>
                     {
@@ -1985,7 +1985,7 @@ public sealed class MaintenanceViewModel : ViewModelBase
                     });
                     letterhead.Item().PaddingTop(4).Height(3).Background("#0F3A5F");
                     letterhead.Item().PaddingTop(1).Height(1).Background("#D1D5DB");
-                });
+                }));
 
                 page.Content().Column(col =>
                 {
@@ -2038,7 +2038,7 @@ public sealed class MaintenanceViewModel : ViewModelBase
                         });
                     });
 
-                page.Footer().Column(footerCol =>
+                page.Footer().Element(f => f.Column(footerCol =>
                 {
                     footerCol.Item().LineHorizontal(0.5f).LineColor("#CBD5E1");
                     footerCol.Item().PaddingTop(3).Row(footerRow =>
@@ -2050,7 +2050,7 @@ public sealed class MaintenanceViewModel : ViewModelBase
                             x.CurrentPageNumber();
                         });
                     });
-                });
+                }));
             });
         }).GeneratePdf(pdfPath);
 
@@ -2139,8 +2139,8 @@ public sealed class MaintenanceViewModel : ViewModelBase
             BuildTableHeaderCell(h.Cell(), T("LaborCost"));
             BuildTableHeaderCell(h.Cell(), T("Total"));
         });
-        foreach (var r in ReportsOrders)
-            {
+        foreach (var r in orders)
+        {
             table.Cell().Border(0.5f).BorderColor("#E5E7EB").Padding(2).Text(r.ReceiptGroupNumber).DirectionFromRightToLeft().FontSize(9);
             table.Cell().Border(0.5f).BorderColor("#E5E7EB").Padding(2).Text(r.CustomerName).DirectionFromRightToLeft().FontSize(9);
             table.Cell().Border(0.5f).BorderColor("#E5E7EB").Padding(2).Text(r.DeviceType).DirectionFromRightToLeft().FontSize(9);
