@@ -1936,6 +1936,7 @@ public sealed class MaintenanceViewModel : ViewModelBase
         var pdfPath = Path.Combine(dir, "MaintenanceReports_" + DateTime.Now.ToString("yyyyMMdd_HHmmss") + ".pdf");
 
         QuestPDF.Settings.License = QuestPDF.Infrastructure.LicenseType.Community;
+        QuestPDF.Settings.EnableDebugging = true;
         QuestPdfFonts.EnsureCairoRegistered();
 
         var report = new ReportDesignerSettingsStore().Load();
@@ -1955,7 +1956,7 @@ public sealed class MaintenanceViewModel : ViewModelBase
                 page.Margin(1.5f, QuestPDF.Infrastructure.Unit.Centimetre);
                 page.DefaultTextStyle(x => x.FontFamily("Cairo").FontSize(9).FontColor("#1F2937"));
 
-                page.Header().Element(h => h.Column(letterhead =>
+                page.Header().Column(letterhead =>
                 {
                     letterhead.Item().Row(row =>
                     {
@@ -1990,7 +1991,7 @@ public sealed class MaintenanceViewModel : ViewModelBase
                     });
                     letterhead.Item().PaddingTop(4).Height(3).Background("#0F3A5F");
                     letterhead.Item().PaddingTop(1).Height(1).Background("#D1D5DB");
-                }));
+                });
 
                 page.Content().Column(col =>
                 {
@@ -2043,7 +2044,7 @@ public sealed class MaintenanceViewModel : ViewModelBase
                         });
                     });
 
-                page.Footer().Element(f => f.Column(footerCol =>
+                page.Footer().Column(footerCol =>
                 {
                     footerCol.Item().LineHorizontal(0.5f).LineColor("#CBD5E1");
                     footerCol.Item().PaddingTop(3).Row(footerRow =>
@@ -2055,7 +2056,7 @@ public sealed class MaintenanceViewModel : ViewModelBase
                             x.CurrentPageNumber();
                         });
                     });
-                }));
+                });
             });
         }).GeneratePdf(pdfPath);
 
