@@ -1990,7 +1990,7 @@ public sealed class MaintenanceViewModel : ViewModelBase
                     letterhead.Item().PaddingTop(1).Height(1).Background("#D1D5DB");
                 });
 
-                page.Content().Column(col =>
+                page.Content().Element(e => e.Column(col =>
                 {
                     col.Spacing(6);
 
@@ -2056,7 +2056,7 @@ public sealed class MaintenanceViewModel : ViewModelBase
                             c.Item().PaddingTop(12).AlignCenter().Text(T("SignatureLabel") + ":  ........................").DirectionFromRightToLeft().FontSize(9).FontColor("#374151");
                         });
                     });
-                });
+                }));
 
                 page.Footer().Column(footerCol =>
                 {
