@@ -1880,10 +1880,6 @@ public sealed class MaintenanceViewModel : ViewModelBase
             IsReportsBusy = true;
             ReportsBusyMessage = T("ExportPdf");
 
-            System.IO.File.WriteAllText(
-                System.IO.Path.Combine(AppPaths.ReportsOutput, "last_export_debug.txt"),
-                $"{DateTime.Now:yyyy-MM-dd HH:mm:ss} ExportReportsPdf called. ReportsOrders.Count={ReportsOrders.Count}");
-
             if (ReportsOrders.Count == 0)
             {
                 System.Windows.MessageBox.Show(T("NoReportsData"), T("ExportPdf"), System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
@@ -1915,8 +1911,7 @@ public sealed class MaintenanceViewModel : ViewModelBase
         catch (Exception ex)
         {
             LogService.LogException(ex);
-            try { System.IO.File.WriteAllText(System.IO.Path.Combine(AppPaths.ReportsOutput, "last_export_debug.txt"), $"{DateTime.Now:yyyy-MM-dd HH:mm:ss} PDF ERROR:\r\n{ex}"); } catch { }
-            System.Windows.MessageBox.Show(ex.ToString(), T("ReportsExportFailed"), System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+            System.Windows.MessageBox.Show(ex.Message, T("ReportsExportFailed"), System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
         }
         finally
         {
@@ -1936,7 +1931,6 @@ public sealed class MaintenanceViewModel : ViewModelBase
         var pdfPath = Path.Combine(dir, "MaintenanceReports_" + DateTime.Now.ToString("yyyyMMdd_HHmmss") + ".pdf");
 
         QuestPDF.Settings.License = QuestPDF.Infrastructure.LicenseType.Community;
-        QuestPDF.Settings.EnableDebugging = true;
         QuestPdfFonts.EnsureCairoRegistered();
 
         var report = new ReportDesignerSettingsStore().Load();
@@ -2213,8 +2207,7 @@ public sealed class MaintenanceViewModel : ViewModelBase
         catch (Exception ex)
         {
             LogService.LogException(ex);
-            try { System.IO.File.WriteAllText(System.IO.Path.Combine(AppPaths.ReportsOutput, "last_export_debug.txt"), $"{DateTime.Now:yyyy-MM-dd HH:mm:ss} Excel ERROR:\r\n{ex}"); } catch { }
-            System.Windows.MessageBox.Show(ex.ToString(), T("ReportsExportFailed"), System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+            System.Windows.MessageBox.Show(ex.Message, T("ReportsExportFailed"), System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
         }
     }
 
