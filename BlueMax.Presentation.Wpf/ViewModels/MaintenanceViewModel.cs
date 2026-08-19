@@ -1992,11 +1992,9 @@ public sealed class MaintenanceViewModel : ViewModelBase
                     letterhead.Item().PaddingTop(1).Height(1).Background("#D1D5DB");
                 }));
 
-                page.Content().Element(content =>
+                page.Content().Column(col =>
                 {
-                    content.Column(col =>
-                    {
-                        col.Spacing(6);
+                    col.Spacing(6);
 
                         col.Item().PaddingTop(2).AlignCenter().Text(T("ReportsTitle")).DirectionFromRightToLeft().Bold().FontSize(15).FontColor("#0F3A5F");
                         col.Item().Row(periodRow =>
@@ -2037,14 +2035,13 @@ public sealed class MaintenanceViewModel : ViewModelBase
                         col.Item().PaddingTop(4).Text(T("MonthlyBreakdown")).DirectionFromRightToLeft().Bold().FontSize(11).FontColor("#0F3A5F");
                         col.Item().Table(t => BuildMonthlyBreakdownTable(t, monthRows));
 
-                        col.Item().PaddingTop(8).EnsureSpace(100).Row(signatures =>
+                        col.Item().PaddingTop(8).Row(signatures =>
                         {
                             signatures.Spacing(14);
                             signatures.RelativeItem().Element(c => BuildSignatureBox(c, T("SignatureMaintenanceResponsible")));
                             signatures.RelativeItem().Element(c => BuildSignatureBox(c, T("SignatureManager")));
                         });
                     });
-                });
 
                 page.Footer().Element(f => f.Column(footerCol =>
                 {
